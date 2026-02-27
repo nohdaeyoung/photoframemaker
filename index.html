@@ -286,8 +286,47 @@
                         </div>
                     </div>
                 </div>
+                <div class="tab-panel" id="tab-panel-photo" data-tab="photo">
+                    <div class="tab-panel-content">
+                        <div class="tab-panel-header">사진</div>
+                        <div class="mobile-photo-info" id="mobile-photo-info" style="display:none">
+                            <div class="mobile-photo-thumb-row">
+                                <img class="mobile-photo-thumb" id="mobile-photo-thumb" src="" alt="">
+                                <div class="mobile-photo-meta">
+                                    <div class="mobile-photo-name" id="mobile-photo-name"></div>
+                                    <div class="mobile-photo-size" id="mobile-photo-size"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobile-photo-actions">
+                            <button class="mobile-photo-btn" id="mobile-photo-upload-btn" type="button">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <span id="mobile-photo-upload-label">사진 추가</span>
+                            </button>
+                            <button class="mobile-photo-btn mobile-photo-btn-danger" id="mobile-photo-delete-btn" type="button" style="display:none">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                                사진 삭제
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <nav class="mobile-tab-bar" id="mobile-tab-bar">
+                <button class="tab-btn" data-tab="photo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span>사진</span>
+                </button>
                 <button class="tab-btn" data-tab="ratio">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2"/>

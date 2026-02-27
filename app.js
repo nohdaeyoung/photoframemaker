@@ -75,6 +75,13 @@ class PhotoFrameMaker {
         this.mobileUpscaleWarning = document.getElementById('mobile-upscale-warning');
         this.mobileExifSection = document.getElementById('mobile-exif-section');
         this.mobileExifGrid = document.getElementById('mobile-exif-grid');
+        this.mobilePhotoInfo = document.getElementById('mobile-photo-info');
+        this.mobilePhotoThumb = document.getElementById('mobile-photo-thumb');
+        this.mobilePhotoName = document.getElementById('mobile-photo-name');
+        this.mobilePhotoSize = document.getElementById('mobile-photo-size');
+        this.mobilePhotoUploadBtn = document.getElementById('mobile-photo-upload-btn');
+        this.mobilePhotoUploadLabel = document.getElementById('mobile-photo-upload-label');
+        this.mobilePhotoDeleteBtn = document.getElementById('mobile-photo-delete-btn');
     }
 
     setupEventListeners() {
@@ -382,6 +389,7 @@ class PhotoFrameMaker {
             this.mobileDownloadBtn.disabled = false;
             this.previewToolbar.style.display = '';
             this.previewContainer.classList.add('has-image');
+            this.updateMobilePhotoTab();
         };
         img.src = this.imageUrl;
     }
@@ -421,6 +429,7 @@ class PhotoFrameMaker {
         this.mobileExifSection.style.display = 'none';
         this.mobileExifGrid.innerHTML = '';
 
+        this.updateMobilePhotoTab();
         this.render();
         this.updateInfo();
     }
@@ -725,6 +734,24 @@ class PhotoFrameMaker {
         this.mobileExifSection.style.display = '';
     }
 
+    updateMobilePhotoTab() {
+        if (this.image) {
+            this.mobilePhotoInfo.style.display = '';
+            this.mobilePhotoThumb.src = this.imageUrl;
+            this.mobilePhotoName.textContent = this.fileName;
+            const sizeStr = this.fileSize < 1024 * 1024
+                ? (this.fileSize / 1024).toFixed(1) + ' KB'
+                : (this.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+            this.mobilePhotoSize.textContent = `${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}`;
+            this.mobilePhotoUploadLabel.textContent = '사진 변경';
+            this.mobilePhotoDeleteBtn.style.display = '';
+        } else {
+            this.mobilePhotoInfo.style.display = 'none';
+            this.mobilePhotoUploadLabel.textContent = '사진 추가';
+            this.mobilePhotoDeleteBtn.style.display = 'none';
+        }
+    }
+
     // --- Mobile tab bar ---
 
     setupBottomSheet() {
@@ -831,6 +858,17 @@ class PhotoFrameMaker {
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.render();
+        });
+
+        // Mobile photo upload button
+        this.mobilePhotoUploadBtn.addEventListener('click', () => {
+            this.fileInput.click();
+        });
+
+        // Mobile photo delete button
+        this.mobilePhotoDeleteBtn.addEventListener('click', () => {
+            this.removeImage();
+            this.closeTabPanel();
         });
 
         // Close panel on resize to desktop
