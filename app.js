@@ -47,11 +47,23 @@ class PhotoFrameMaker {
         this.infoOriginal = document.getElementById('info-original');
         this.infoOriginalLabel = document.getElementById('info-original-label');
         this.upscaleWarning = document.getElementById('upscale-warning');
+
+        this.previewToolbar = document.getElementById('preview-toolbar');
+        this.previewRemoveBtn = document.getElementById('preview-remove-btn');
     }
 
     setupEventListeners() {
+        // Preview delete button
+        this.previewRemoveBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeImage();
+        });
+
         // File upload
-        this.uploadZone.addEventListener('click', () => this.fileInput.click());
+        this.uploadZone.addEventListener('click', (e) => {
+            if (e.target.closest('.upload-remove-btn')) return;
+            this.fileInput.click();
+        });
         this.fileInput.addEventListener('change', (e) => {
             if (e.target.files[0]) this.loadImage(e.target.files[0]);
         });
@@ -344,10 +356,42 @@ class PhotoFrameMaker {
             this.render();
             this.updateInfo();
             this.downloadBtn.disabled = false;
-            this.previewHint.style.display = '';
+            this.previewToolbar.style.display = '';
             this.previewContainer.classList.add('has-image');
         };
         img.src = this.imageUrl;
+    }
+
+    removeImage() {
+        if (this.imageUrl) {
+            URL.revokeObjectURL(this.imageUrl);
+        }
+        this.image = null;
+        this.imageUrl = null;
+        this.fileName = '';
+        this.fileSize = 0;
+        this.imageOffset = { x: 0, y: 0 };
+        this.fileInput.value = '';
+
+        // Reset upload zone UI
+        this.uploadZone.classList.remove('has-image');
+        this.uploadContent.innerHTML = `
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p>클릭하거나 파일을 드래그하세요</p>
+            <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
+        `;
+
+        // Reset preview
+        this.previewContainer.classList.remove('has-image');
+        this.previewToolbar.style.display = 'none';
+        this.downloadBtn.disabled = true;
+
+        this.render();
+        this.updateInfo();
     }
 
     updateUploadUI() {
@@ -358,12 +402,19 @@ class PhotoFrameMaker {
 
         this.uploadContent.innerHTML = `
             <img class="upload-thumb" src="${this.imageUrl}" alt="미리보기">
-            <div>
+            <div class="upload-info">
                 <div class="upload-filename">${this.fileName}</div>
                 <div class="upload-filesize">${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}</div>
                 <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 변경</div>
             </div>
+            <span id="upload-remove-btn" title="사진 삭제" style="flex-shrink:0; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(0,0,0,0.1); color:#6b7280; font-size:18px; cursor:pointer; line-height:1;">&times;</span>
         `;
+
+        // Rebind inline delete button
+        document.getElementById('upload-remove-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeImage();
+        });
     }
 
     // --- Drag handling ---
