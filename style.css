@@ -449,6 +449,26 @@ body {
     line-height: 1.4;
 }
 
+/* EXIF section inside info */
+.exif-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.75rem 0;
+}
+
+.exif-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+}
+
+.exif-section .info-value {
+    word-break: break-word;
+}
+
 /* Download button */
 .download-btn {
     display: flex;
