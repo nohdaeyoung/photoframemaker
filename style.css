@@ -520,6 +520,38 @@ body {
     image-rendering: auto;
 }
 
+/* Preview upload prompt overlay */
+.preview-upload-prompt {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.preview-upload-prompt svg {
+    opacity: 0.4;
+}
+
+.preview-upload-prompt p {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.preview-upload-prompt span {
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.preview-container.has-image .preview-upload-prompt {
+    display: none;
+}
+
 /* Preview toolbar (hint + delete button) */
 .preview-toolbar {
     display: flex;

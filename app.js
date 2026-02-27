@@ -314,25 +314,6 @@ class PhotoFrameMaker {
         // Light gray placeholder for photo area
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
         this.ctx.fillRect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
-
-        // Dashed border
-        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([8, 6]);
-        this.ctx.strokeRect(photoArea.x + 1, photoArea.y + 1, photoArea.width - 2, photoArea.height - 2);
-        this.ctx.setLineDash([]);
-
-        // Icon and text
-        const cx = photoArea.x + photoArea.width / 2;
-        const cy = photoArea.y + photoArea.height / 2;
-        const iconSize = Math.min(photoArea.width, photoArea.height) * 0.12;
-        const fontSize = Math.max(12, Math.min(iconSize * 0.5, 18));
-
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        this.ctx.font = `${fontSize}px -apple-system, sans-serif`;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('사진을 업로드하세요', cx, cy);
     }
 
     // --- Image loading ---
