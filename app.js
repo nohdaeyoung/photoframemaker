@@ -904,7 +904,7 @@ class PhotoFrameMaker {
 
     // --- Download ---
 
-    download() {
+    async download() {
         if (!this.image) return;
 
         const dims = this.getCanvasDimensions();
@@ -936,18 +936,76 @@ class PhotoFrameMaker {
         ctx.drawImage(this.image, x, y, draw.width, draw.height);
         ctx.restore();
 
-        // Download as PNG (lossless)
-        offscreen.toBlob((blob) => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
-            a.download = `${baseName}_pfm.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 'image/png');
+        // Synchronous canvas → blob (preserves user gesture for Web Share API)
+        const dataURL = offscreen.toDataURL('image/png');
+        const binary = atob(dataURL.split(',')[1]);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+        const blob = new Blob([array], { type: 'image/png' });
+
+        const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
+        const fileName = `${baseName}_pfm.png`;
+
+        // 1) Try Web Share API (requires user gesture + HTTPS)
+        try {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare?.({ files: [file] })) {
+                await navigator.share({ files: [file] });
+                return;
+            }
+        } catch (e) {
+            if (e.name === 'AbortError') return; // User cancelled
+        }
+
+        // 2) Mobile fallback: show save overlay (long-press to save to Photos)
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            this.showSaveOverlay(blob);
+            return;
+        }
+
+        // 3) Desktop: traditional file download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    showSaveOverlay(blob) {
+        const url = URL.createObjectURL(blob);
+
+        const overlay = document.createElement('div');
+        overlay.className = 'save-overlay';
+        overlay.innerHTML = `
+            <div class="save-overlay-header">
+                <button class="save-overlay-close" type="button">&times;</button>
+            </div>
+            <div class="save-overlay-body">
+                <img src="${url}" alt="프레임 이미지">
+            </div>
+            <p class="save-overlay-hint">이미지를 길게 눌러 사진에 저장하세요</p>
+        `;
+
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
+
+        const close = () => {
+            overlay.classList.remove('active');
+            overlay.addEventListener('transitionend', () => {
+                overlay.remove();
+                URL.revokeObjectURL(url);
+            }, { once: true });
+        };
+
+        overlay.querySelector('.save-overlay-close').addEventListener('click', close);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) close();
+        });
     }
 }
 
