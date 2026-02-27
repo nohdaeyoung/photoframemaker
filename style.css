@@ -470,6 +470,16 @@ body {
     padding: 2rem;
     min-height: 400px;
     box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.preview-container.has-image {
+    cursor: default;
+}
+
+.preview-container.drag-over {
+    box-shadow: 0 0 0 3px var(--accent);
 }
 
 #preview-canvas {

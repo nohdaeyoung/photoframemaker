@@ -15,6 +15,7 @@ class PhotoFrameMaker {
 
         this.canvas = document.getElementById('preview-canvas');
         this.ctx = this.canvas.getContext('2d');
+        this.previewContainer = document.getElementById('preview-container');
 
         this.init();
     }
@@ -162,6 +163,29 @@ class PhotoFrameMaker {
             }
         }, { passive: false });
         document.addEventListener('touchend', () => this.onDragEnd());
+
+        // Preview area click to upload (when no image)
+        this.previewContainer.addEventListener('click', () => {
+            if (!this.image) this.fileInput.click();
+        });
+
+        // Preview area drag and drop
+        this.previewContainer.addEventListener('dragover', (e) => {
+            if (!this.image) {
+                e.preventDefault();
+                this.previewContainer.classList.add('drag-over');
+            }
+        });
+        this.previewContainer.addEventListener('dragleave', () => {
+            this.previewContainer.classList.remove('drag-over');
+        });
+        this.previewContainer.addEventListener('drop', (e) => {
+            if (!this.image) {
+                e.preventDefault();
+                this.previewContainer.classList.remove('drag-over');
+                if (e.dataTransfer.files[0]) this.loadImage(e.dataTransfer.files[0]);
+            }
+        });
 
         // Download
         this.downloadBtn.addEventListener('click', () => this.download());
@@ -321,6 +345,7 @@ class PhotoFrameMaker {
             this.updateInfo();
             this.downloadBtn.disabled = false;
             this.previewHint.style.display = '';
+            this.previewContainer.classList.add('has-image');
         };
         img.src = this.imageUrl;
     }
