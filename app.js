@@ -938,15 +938,23 @@ class PhotoFrameMaker {
 
         // Download as PNG (lossless)
         offscreen.toBlob((blob) => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
             const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
-            a.download = `${baseName}_pfm.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const fileName = `${baseName}_pfm.png`;
+
+            // Use Web Share API on mobile (iOS saves to Photos via share sheet)
+            if (navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
+                const file = new File([blob], fileName, { type: 'image/png' });
+                navigator.share({ files: [file] }).catch(() => {});
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
         }, 'image/png');
     }
 }
