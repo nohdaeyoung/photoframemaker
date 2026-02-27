@@ -520,6 +520,10 @@ body {
     image-rendering: auto;
 }
 
+.preview-container:not(.has-image) #preview-canvas {
+    pointer-events: none;
+}
+
 /* Preview upload prompt overlay */
 .preview-upload-prompt {
     position: absolute;
@@ -541,6 +545,10 @@ body {
 .preview-upload-prompt p {
     font-size: 0.95rem;
     font-weight: 500;
+}
+
+.preview-upload-prompt .prompt-mobile {
+    display: none;
 }
 
 .preview-upload-prompt span {
@@ -677,6 +685,14 @@ body {
 
     #preview-canvas {
         max-height: 100%;
+    }
+
+    .preview-upload-prompt .prompt-desktop {
+        display: none;
+    }
+
+    .preview-upload-prompt .prompt-mobile {
+        display: block;
     }
 
     .preview-toolbar {
