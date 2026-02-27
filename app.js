@@ -182,8 +182,12 @@ class PhotoFrameMaker {
         document.addEventListener('touchend', () => this.onDragEnd());
 
         // Preview area click to upload (when no image)
-        this.previewContainer.addEventListener('click', () => {
-            if (!this.image) this.fileInput.click();
+        this.previewContainer.addEventListener('click', (e) => {
+            if (!this.image) {
+                this.fileInput.style.top = e.clientY + 'px';
+                this.fileInput.style.left = e.clientX + 'px';
+                this.fileInput.click();
+            }
         });
 
         // Preview area drag and drop
