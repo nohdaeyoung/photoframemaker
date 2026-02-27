@@ -206,10 +206,19 @@ class PhotoFrameMaker {
         if (photoArea.width === 0 || photoArea.height === 0) return { width: 0, height: 0 };
 
         const imgRatio = this.image.naturalWidth / this.image.naturalHeight;
+        const areaRatio = photoArea.width / photoArea.height;
 
-        // Always fit by width (가로 기준 꽉참)
-        const drawWidth = photoArea.width;
-        const drawHeight = drawWidth / imgRatio;
+        // Contain mode: fit entire image inside photo area (no cropping)
+        let drawWidth, drawHeight;
+        if (imgRatio > areaRatio) {
+            // Image is wider than area - fit by width
+            drawWidth = photoArea.width;
+            drawHeight = drawWidth / imgRatio;
+        } else {
+            // Image is taller than area - fit by height
+            drawHeight = photoArea.height;
+            drawWidth = drawHeight * imgRatio;
+        }
         return { width: drawWidth, height: drawHeight };
     }
 
@@ -255,8 +264,8 @@ class PhotoFrameMaker {
         this.ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
         this.ctx.clip();
 
-        const x = photoArea.x + (photoArea.width - draw.width) / 2 + this.imageOffset.x;
-        const y = photoArea.y + (photoArea.height - draw.height) / 2 + this.imageOffset.y;
+        const x = photoArea.x + (photoArea.width - draw.width) / 2;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2;
 
         this.ctx.drawImage(this.image, x, y, draw.width, draw.height);
         this.ctx.restore();
@@ -464,8 +473,8 @@ class PhotoFrameMaker {
         ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
         ctx.clip();
 
-        const x = photoArea.x + (photoArea.width - draw.width) / 2 + this.imageOffset.x;
-        const y = photoArea.y + (photoArea.height - draw.height) / 2 + this.imageOffset.y;
+        const x = photoArea.x + (photoArea.width - draw.width) / 2;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2;
         ctx.drawImage(this.image, x, y, draw.width, draw.height);
         ctx.restore();
 
