@@ -1,0 +1,495 @@
+class PhotoFrameMaker {
+    constructor() {
+        this.image = null;
+        this.imageUrl = null;
+        this.fileName = '';
+        this.fileSize = 0;
+        this.canvasRatio = [1, 1];
+        this.canvasSize = 1000;
+        this.frameRatio = 5;
+        this.frameColor = '#FFFFFF';
+        this.imageOffset = { x: 0, y: 0 };
+        this.isDragging = false;
+        this.dragStart = { x: 0, y: 0 };
+        this.dragStartOffset = { x: 0, y: 0 };
+
+        this.canvas = document.getElementById('preview-canvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        this.init();
+    }
+
+    init() {
+        this.bindElements();
+        this.setupEventListeners();
+        this.updateCanvasSize();
+        this.render();
+        this.updateInfo();
+    }
+
+    bindElements() {
+        this.uploadZone = document.getElementById('upload-zone');
+        this.fileInput = document.getElementById('file-input');
+        this.uploadContent = document.getElementById('upload-content');
+        this.ratioButtons = document.getElementById('ratio-buttons');
+        this.canvasSizeInput = document.getElementById('canvas-size');
+        this.frameRatioSlider = document.getElementById('frame-ratio-slider');
+        this.frameRatioInput = document.getElementById('frame-ratio');
+        this.colorPresets = document.getElementById('color-presets');
+        this.customColorInput = document.getElementById('custom-color');
+        this.downloadBtn = document.getElementById('download-btn');
+        this.previewHint = document.getElementById('preview-hint');
+
+        this.infoCanvas = document.getElementById('info-canvas');
+        this.infoFrame = document.getElementById('info-frame');
+        this.infoPhoto = document.getElementById('info-photo');
+        this.infoOriginal = document.getElementById('info-original');
+        this.infoOriginalLabel = document.getElementById('info-original-label');
+        this.upscaleWarning = document.getElementById('upscale-warning');
+    }
+
+    setupEventListeners() {
+        // File upload
+        this.uploadZone.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) this.loadImage(e.target.files[0]);
+        });
+
+        // Drag and drop
+        this.uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.uploadZone.classList.add('drag-over');
+        });
+        this.uploadZone.addEventListener('dragleave', () => {
+            this.uploadZone.classList.remove('drag-over');
+        });
+        this.uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.uploadZone.classList.remove('drag-over');
+            if (e.dataTransfer.files[0]) this.loadImage(e.dataTransfer.files[0]);
+        });
+
+        // Paste
+        document.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    this.loadImage(item.getAsFile());
+                    break;
+                }
+            }
+        });
+
+        // Ratio buttons
+        this.ratioButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.ratio-btn');
+            if (!btn) return;
+            this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const [w, h] = btn.dataset.ratio.split(':').map(Number);
+            this.canvasRatio = [w, h];
+            this.imageOffset = { x: 0, y: 0 };
+            this.updateCanvasSize();
+            this.render();
+            this.updateInfo();
+        });
+
+        // Canvas size
+        this.canvasSizeInput.addEventListener('input', () => {
+            const val = parseInt(this.canvasSizeInput.value);
+            if (val >= 100 && val <= 10000) {
+                this.canvasSize = val;
+                this.imageOffset = { x: 0, y: 0 };
+                this.updateCanvasSize();
+                this.render();
+                this.updateInfo();
+            }
+        });
+
+        // Frame ratio
+        this.frameRatioSlider.addEventListener('input', () => {
+            this.frameRatio = parseFloat(this.frameRatioSlider.value);
+            this.frameRatioInput.value = this.frameRatio;
+            this.imageOffset = { x: 0, y: 0 };
+            this.render();
+            this.updateInfo();
+        });
+
+        this.frameRatioInput.addEventListener('input', () => {
+            let val = parseFloat(this.frameRatioInput.value);
+            if (isNaN(val)) return;
+            val = Math.max(0, Math.min(25, val));
+            this.frameRatio = val;
+            this.frameRatioSlider.value = val;
+            this.imageOffset = { x: 0, y: 0 };
+            this.render();
+            this.updateInfo();
+        });
+
+        // Color presets
+        this.colorPresets.addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (!swatch) return;
+            this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            swatch.classList.add('active');
+            this.frameColor = swatch.dataset.color;
+            this.customColorInput.value = this.frameColor;
+            this.render();
+        });
+
+        this.customColorInput.addEventListener('input', () => {
+            this.frameColor = this.customColorInput.value;
+            this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            this.render();
+        });
+
+        // Canvas drag (image repositioning)
+        this.canvas.addEventListener('mousedown', (e) => this.onDragStart(e));
+        this.canvas.addEventListener('mousemove', (e) => this.onDragMove(e));
+        document.addEventListener('mouseup', () => this.onDragEnd());
+
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                this.onDragStart(e.touches[0]);
+            }
+        }, { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                this.onDragMove(e.touches[0]);
+            }
+        }, { passive: false });
+        document.addEventListener('touchend', () => this.onDragEnd());
+
+        // Download
+        this.downloadBtn.addEventListener('click', () => this.download());
+    }
+
+    // --- Calculations ---
+
+    getCanvasDimensions() {
+        const [w, h] = this.canvasRatio;
+        const maxSide = this.canvasSize;
+        if (w >= h) {
+            return {
+                width: maxSide,
+                height: Math.round(maxSide * h / w)
+            };
+        } else {
+            return {
+                width: Math.round(maxSide * w / h),
+                height: maxSide
+            };
+        }
+    }
+
+    getFrameWidth() {
+        return Math.round(this.canvasSize * this.frameRatio / 100);
+    }
+
+    getPhotoArea() {
+        const dims = this.getCanvasDimensions();
+        const fw = this.getFrameWidth();
+        return {
+            x: fw,
+            y: fw,
+            width: Math.max(0, dims.width - 2 * fw),
+            height: Math.max(0, dims.height - 2 * fw)
+        };
+    }
+
+    getDrawDimensions() {
+        if (!this.image) return { width: 0, height: 0 };
+        const photoArea = this.getPhotoArea();
+        if (photoArea.width === 0 || photoArea.height === 0) return { width: 0, height: 0 };
+
+        const imgRatio = this.image.naturalWidth / this.image.naturalHeight;
+        const areaRatio = photoArea.width / photoArea.height;
+
+        let drawWidth, drawHeight;
+        if (imgRatio > areaRatio) {
+            drawHeight = photoArea.height;
+            drawWidth = drawHeight * imgRatio;
+        } else {
+            drawWidth = photoArea.width;
+            drawHeight = drawWidth / imgRatio;
+        }
+        return { width: drawWidth, height: drawHeight };
+    }
+
+    // --- Canvas size update ---
+
+    updateCanvasSize() {
+        const dims = this.getCanvasDimensions();
+        this.canvas.width = dims.width;
+        this.canvas.height = dims.height;
+    }
+
+    // --- Rendering ---
+
+    render() {
+        const dims = this.getCanvasDimensions();
+        this.ctx.clearRect(0, 0, dims.width, dims.height);
+
+        // Draw frame (background color)
+        this.ctx.fillStyle = this.frameColor;
+        this.ctx.fillRect(0, 0, dims.width, dims.height);
+
+        // Draw image or placeholder
+        if (this.image) {
+            this.drawImage();
+        } else {
+            this.drawPlaceholder();
+        }
+    }
+
+    drawImage() {
+        const photoArea = this.getPhotoArea();
+        if (photoArea.width === 0 || photoArea.height === 0) return;
+
+        const draw = this.getDrawDimensions();
+        if (draw.width === 0 || draw.height === 0) return;
+
+        this.ctx.save();
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+
+        // Clip to photo area
+        this.ctx.beginPath();
+        this.ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+        this.ctx.clip();
+
+        const x = photoArea.x + (photoArea.width - draw.width) / 2 + this.imageOffset.x;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2 + this.imageOffset.y;
+
+        this.ctx.drawImage(this.image, x, y, draw.width, draw.height);
+        this.ctx.restore();
+    }
+
+    drawPlaceholder() {
+        const photoArea = this.getPhotoArea();
+        if (photoArea.width <= 0 || photoArea.height <= 0) return;
+
+        // Light gray placeholder for photo area
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+        this.ctx.fillRect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+
+        // Dashed border
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([8, 6]);
+        this.ctx.strokeRect(photoArea.x + 1, photoArea.y + 1, photoArea.width - 2, photoArea.height - 2);
+        this.ctx.setLineDash([]);
+
+        // Icon and text
+        const cx = photoArea.x + photoArea.width / 2;
+        const cy = photoArea.y + photoArea.height / 2;
+        const iconSize = Math.min(photoArea.width, photoArea.height) * 0.12;
+        const fontSize = Math.max(12, Math.min(iconSize * 0.5, 18));
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        this.ctx.font = `${fontSize}px -apple-system, sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('사진을 업로드하세요', cx, cy);
+    }
+
+    // --- Image loading ---
+
+    loadImage(file) {
+        if (!file.type.startsWith('image/')) return;
+
+        if (this.imageUrl) {
+            URL.revokeObjectURL(this.imageUrl);
+        }
+
+        this.fileName = file.name;
+        this.fileSize = file.size;
+        this.imageUrl = URL.createObjectURL(file);
+
+        const img = new Image();
+        img.onload = () => {
+            this.image = img;
+            this.imageOffset = { x: 0, y: 0 };
+            this.updateUploadUI();
+            this.render();
+            this.updateInfo();
+            this.downloadBtn.disabled = false;
+            this.previewHint.style.display = '';
+        };
+        img.src = this.imageUrl;
+    }
+
+    updateUploadUI() {
+        this.uploadZone.classList.add('has-image');
+        const sizeStr = this.fileSize < 1024 * 1024
+            ? (this.fileSize / 1024).toFixed(1) + ' KB'
+            : (this.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+
+        this.uploadContent.innerHTML = `
+            <img class="upload-thumb" src="${this.imageUrl}" alt="미리보기">
+            <div>
+                <div class="upload-filename">${this.fileName}</div>
+                <div class="upload-filesize">${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}</div>
+                <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 변경</div>
+            </div>
+        `;
+    }
+
+    // --- Drag handling ---
+
+    getCanvasCoords(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    isInPhotoArea(canvasCoords) {
+        const pa = this.getPhotoArea();
+        return canvasCoords.x >= pa.x && canvasCoords.x <= pa.x + pa.width &&
+               canvasCoords.y >= pa.y && canvasCoords.y <= pa.y + pa.height;
+    }
+
+    onDragStart(e) {
+        if (!this.image) return;
+        const coords = this.getCanvasCoords(e);
+        if (!this.isInPhotoArea(coords)) return;
+
+        this.isDragging = true;
+        this.dragStart = coords;
+        this.dragStartOffset = { ...this.imageOffset };
+        this.canvas.style.cursor = 'grabbing';
+    }
+
+    onDragMove(e) {
+        if (!this.image) return;
+
+        const coords = this.getCanvasCoords(e);
+
+        if (!this.isDragging) {
+            this.canvas.style.cursor = this.isInPhotoArea(coords) ? 'grab' : 'default';
+            return;
+        }
+
+        const dx = coords.x - this.dragStart.x;
+        const dy = coords.y - this.dragStart.y;
+
+        this.imageOffset = {
+            x: this.dragStartOffset.x + dx,
+            y: this.dragStartOffset.y + dy
+        };
+
+        this.clampOffset();
+        this.render();
+    }
+
+    onDragEnd() {
+        if (this.isDragging) {
+            this.isDragging = false;
+            this.canvas.style.cursor = 'grab';
+        }
+    }
+
+    clampOffset() {
+        const photoArea = this.getPhotoArea();
+        const draw = this.getDrawDimensions();
+
+        const maxOffsetX = Math.max(0, (draw.width - photoArea.width) / 2);
+        const maxOffsetY = Math.max(0, (draw.height - photoArea.height) / 2);
+
+        this.imageOffset.x = Math.max(-maxOffsetX, Math.min(maxOffsetX, this.imageOffset.x));
+        this.imageOffset.y = Math.max(-maxOffsetY, Math.min(maxOffsetY, this.imageOffset.y));
+    }
+
+    // --- Info update ---
+
+    updateInfo() {
+        const dims = this.getCanvasDimensions();
+        const fw = this.getFrameWidth();
+        const pa = this.getPhotoArea();
+
+        this.infoCanvas.textContent = `${dims.width} × ${dims.height} px`;
+        this.infoFrame.textContent = `${fw} px`;
+        this.infoPhoto.textContent = `${pa.width} × ${pa.height} px`;
+
+        if (this.image) {
+            this.infoOriginalLabel.style.display = '';
+            this.infoOriginal.style.display = '';
+            this.infoOriginal.textContent = `${this.image.naturalWidth} × ${this.image.naturalHeight} px`;
+
+            // Check if upscaling
+            const draw = this.getDrawDimensions();
+            const scaleX = draw.width / this.image.naturalWidth;
+            const scaleY = draw.height / this.image.naturalHeight;
+            const scale = Math.min(scaleX, scaleY);
+
+            if (scale > 1.5) {
+                this.upscaleWarning.style.display = '';
+            } else {
+                this.upscaleWarning.style.display = 'none';
+            }
+        } else {
+            this.infoOriginalLabel.style.display = 'none';
+            this.infoOriginal.style.display = 'none';
+            this.upscaleWarning.style.display = 'none';
+        }
+    }
+
+    // --- Download ---
+
+    download() {
+        if (!this.image) return;
+
+        const dims = this.getCanvasDimensions();
+
+        // Use offscreen canvas for clean rendering
+        const offscreen = document.createElement('canvas');
+        offscreen.width = dims.width;
+        offscreen.height = dims.height;
+        const ctx = offscreen.getContext('2d');
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Frame
+        ctx.fillStyle = this.frameColor;
+        ctx.fillRect(0, 0, dims.width, dims.height);
+
+        // Image
+        const photoArea = this.getPhotoArea();
+        const draw = this.getDrawDimensions();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+        ctx.clip();
+
+        const x = photoArea.x + (photoArea.width - draw.width) / 2 + this.imageOffset.x;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2 + this.imageOffset.y;
+        ctx.drawImage(this.image, x, y, draw.width, draw.height);
+        ctx.restore();
+
+        // Download as PNG (lossless)
+        offscreen.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `framed_${dims.width}x${dims.height}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 'image/png');
+    }
+}
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', () => {
+    new PhotoFrameMaker();
+});

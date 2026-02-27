@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Frame Maker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>Photo Frame Maker</h1>
+            <p class="subtitle">사진에 프레임을 추가하고 고화질로 저장하세요</p>
+        </header>
+
+        <main class="main">
+            <aside class="sidebar">
+                <section class="control-section">
+                    <h2>사진 업로드</h2>
+                    <div class="upload-zone" id="upload-zone">
+                        <input type="file" id="file-input" accept="image/*" hidden>
+                        <div class="upload-content" id="upload-content">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            <p>클릭하거나 파일을 드래그하세요</p>
+                            <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section">
+                    <h2>캔버스 비율</h2>
+                    <div class="ratio-buttons" id="ratio-buttons">
+                        <button class="ratio-btn active" data-ratio="1:1">
+                            <span class="ratio-icon" style="aspect-ratio:1/1"></span>
+                            <span>1:1</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="3:4">
+                            <span class="ratio-icon" style="aspect-ratio:3/4"></span>
+                            <span>3:4</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="4:3">
+                            <span class="ratio-icon" style="aspect-ratio:4/3"></span>
+                            <span>4:3</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="3:2">
+                            <span class="ratio-icon" style="aspect-ratio:3/2"></span>
+                            <span>3:2</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="2:3">
+                            <span class="ratio-icon" style="aspect-ratio:2/3"></span>
+                            <span>2:3</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="control-section">
+                    <h2>캔버스 크기 <span class="label-hint">(긴 쪽 기준)</span></h2>
+                    <div class="input-with-suffix">
+                        <input type="number" id="canvas-size" value="1000" min="100" max="10000" step="100">
+                        <span class="suffix">px</span>
+                    </div>
+                </section>
+
+                <section class="control-section">
+                    <h2>프레임 비율</h2>
+                    <div class="frame-ratio-control">
+                        <input type="range" id="frame-ratio-slider" min="0" max="25" step="0.5" value="5">
+                        <div class="input-with-suffix input-small">
+                            <input type="number" id="frame-ratio" value="5" min="0" max="25" step="0.5">
+                            <span class="suffix">%</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section">
+                    <h2>프레임 색상</h2>
+                    <div class="color-presets" id="color-presets">
+                        <button class="color-swatch active" data-color="#FFFFFF" title="흰색">
+                            <span style="background:#FFFFFF"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#F5F0E8" title="아이보리">
+                            <span style="background:#F5F0E8"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#E8E8E8" title="밝은 회색">
+                            <span style="background:#E8E8E8"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#B0B0B0" title="회색">
+                            <span style="background:#B0B0B0"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#333333" title="어두운 회색">
+                            <span style="background:#333333"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#000000" title="검정">
+                            <span style="background:#000000"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#1B2838" title="네이비">
+                            <span style="background:#1B2838"></span>
+                        </button>
+                        <button class="color-swatch" data-color="#8B4513" title="갈색">
+                            <span style="background:#8B4513"></span>
+                        </button>
+                        <div class="color-picker-wrap">
+                            <input type="color" id="custom-color" value="#FFFFFF" title="커스텀 색상">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="16"/>
+                                <line x1="8" y1="12" x2="16" y2="12"/>
+                            </svg>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section info-section">
+                    <h2>정보</h2>
+                    <div class="info-grid">
+                        <span class="info-label">캔버스</span>
+                        <span class="info-value" id="info-canvas">1000 × 1000 px</span>
+                        <span class="info-label">프레임 두께</span>
+                        <span class="info-value" id="info-frame">50 px</span>
+                        <span class="info-label">사진 영역</span>
+                        <span class="info-value" id="info-photo">900 × 900 px</span>
+                        <span class="info-label" id="info-original-label" style="display:none">원본 이미지</span>
+                        <span class="info-value" id="info-original" style="display:none"></span>
+                    </div>
+                    <div class="warning" id="upscale-warning" style="display:none">
+                        원본 이미지가 작아 화질이 저하될 수 있습니다.
+                    </div>
+                </section>
+
+                <button class="download-btn" id="download-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    PNG 다운로드 (무손실)
+                </button>
+            </aside>
+
+            <div class="preview-area">
+                <div class="preview-container" id="preview-container">
+                    <canvas id="preview-canvas"></canvas>
+                </div>
+                <p class="preview-hint" id="preview-hint" style="display:none">
+                    사진 영역을 드래그하여 위치를 조정할 수 있습니다
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
