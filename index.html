@@ -42,7 +42,8 @@
                 </div>
             </div>
 
-            <aside class="sidebar">
+            <aside class="sidebar" id="sidebar">
+                <div class="sheet-handle" id="sheet-handle"><div class="sheet-handle-bar"></div></div>
                 <section class="control-section">
                     <h2>캔버스 비율</h2>
                     <div class="ratio-buttons" id="ratio-buttons">
@@ -69,7 +70,7 @@
                     </div>
                 </section>
 
-                <section class="control-section">
+                <section class="control-section canvas-size-section">
                     <h2>캔버스 크기 <span class="label-hint">(긴 쪽 기준)</span></h2>
                     <div class="input-with-suffix">
                         <input type="number" id="canvas-size" value="1000" min="100" max="10000" step="100">
@@ -77,7 +78,7 @@
                     </div>
                 </section>
 
-                <section class="control-section">
+                <section class="control-section upload-section">
                     <h2>사진 업로드</h2>
                     <div class="upload-zone" id="upload-zone">
                         <input type="file" id="file-input" accept="image/*" hidden>
@@ -169,6 +170,7 @@
                 </button>
             </aside>
         </main>
+        <div class="sheet-backdrop" id="sheet-backdrop"></div>
     </div>
 
     <script src="app.js"></script>

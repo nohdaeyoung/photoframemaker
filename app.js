@@ -26,6 +26,7 @@ class PhotoFrameMaker {
         this.updateCanvasSize();
         this.render();
         this.updateInfo();
+        this.setupBottomSheet();
     }
 
     bindElements() {
@@ -50,6 +51,10 @@ class PhotoFrameMaker {
 
         this.previewToolbar = document.getElementById('preview-toolbar');
         this.previewRemoveBtn = document.getElementById('preview-remove-btn');
+
+        this.sidebar = document.getElementById('sidebar');
+        this.sheetHandle = document.getElementById('sheet-handle');
+        this.sheetBackdrop = document.getElementById('sheet-backdrop');
     }
 
     setupEventListeners() {
@@ -339,6 +344,11 @@ class PhotoFrameMaker {
             this.downloadBtn.disabled = false;
             this.previewToolbar.style.display = '';
             this.previewContainer.classList.add('has-image');
+
+            // Auto-expand bottom sheet on mobile
+            if (this.sheetState !== undefined && window.innerWidth <= 900) {
+                this.setSheetState('half');
+            }
         };
         img.src = this.imageUrl;
     }
@@ -370,6 +380,11 @@ class PhotoFrameMaker {
         this.previewContainer.classList.remove('has-image');
         this.previewToolbar.style.display = 'none';
         this.downloadBtn.disabled = true;
+
+        // Collapse bottom sheet on mobile
+        if (this.sheetState !== undefined && window.innerWidth <= 900) {
+            this.setSheetState('collapsed');
+        }
 
         this.render();
         this.updateInfo();
@@ -498,6 +513,141 @@ class PhotoFrameMaker {
             this.infoOriginalLabel.style.display = 'none';
             this.infoOriginal.style.display = 'none';
             this.upscaleWarning.style.display = 'none';
+        }
+    }
+
+    // --- Bottom Sheet (mobile) ---
+
+    setupBottomSheet() {
+        if (!this.sheetHandle) return;
+
+        this.sheetState = 'collapsed';
+        let startY, startTranslateY, moved, isDraggingSheet;
+
+        const getTranslateY = () => {
+            const style = getComputedStyle(this.sidebar);
+            const matrix = new DOMMatrix(style.transform);
+            return matrix.m42;
+        };
+
+        const isMobile = () => window.innerWidth <= 900;
+
+        // Touch drag on handle
+        this.sheetHandle.addEventListener('touchstart', (e) => {
+            if (!isMobile()) return;
+            startY = e.touches[0].clientY;
+            startTranslateY = getTranslateY();
+            moved = false;
+            isDraggingSheet = true;
+            this.sidebar.style.transition = 'none';
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDraggingSheet) return;
+            const dy = e.touches[0].clientY - startY;
+            if (Math.abs(dy) > 5) moved = true;
+            const newY = Math.max(0, startTranslateY + dy);
+            this.sidebar.style.transform = `translateY(${newY}px)`;
+
+            // Update backdrop opacity proportionally
+            const maxY = this.sidebar.offsetHeight - 48;
+            const progress = 1 - Math.min(1, newY / maxY);
+            this.sheetBackdrop.style.opacity = progress * 0.4;
+            this.sheetBackdrop.style.pointerEvents = progress > 0.05 ? 'auto' : 'none';
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            if (!isDraggingSheet) return;
+            isDraggingSheet = false;
+            this.sidebar.style.transition = '';
+
+            if (!moved) {
+                this.toggleSheet();
+                return;
+            }
+
+            this.snapSheet(getTranslateY());
+        });
+
+        // Mouse click on handle (desktop testing)
+        this.sheetHandle.addEventListener('click', () => {
+            if (!isMobile()) return;
+            if (!('ontouchstart' in window)) {
+                this.toggleSheet();
+            }
+        });
+
+        // Backdrop tap to collapse
+        this.sheetBackdrop.addEventListener('click', () => {
+            this.setSheetState('collapsed');
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (!isMobile()) {
+                this.sidebar.style.transform = '';
+                this.sidebar.classList.remove('sheet-expanded');
+                this.sheetBackdrop.classList.remove('active');
+                this.sheetBackdrop.style.opacity = '';
+                this.sheetBackdrop.style.pointerEvents = '';
+            } else {
+                this.setSheetState(this.sheetState);
+            }
+        });
+
+        // Set initial collapsed state on mobile
+        if (isMobile()) {
+            requestAnimationFrame(() => this.setSheetState('collapsed'));
+        }
+    }
+
+    toggleSheet() {
+        this.setSheetState(this.sheetState === 'collapsed' ? 'half' : 'collapsed');
+    }
+
+    snapSheet(currentY) {
+        const height = this.sidebar.offsetHeight;
+        const vh = window.innerHeight;
+
+        const snaps = [
+            { state: 'collapsed', y: height - 48 },
+            { state: 'half', y: Math.max(0, height - vh * 0.55) },
+            { state: 'full', y: 0 }
+        ];
+
+        let nearest = snaps[0];
+        for (const s of snaps) {
+            if (Math.abs(currentY - s.y) < Math.abs(currentY - nearest.y)) {
+                nearest = s;
+            }
+        }
+
+        this.setSheetState(nearest.state);
+    }
+
+    setSheetState(state) {
+        this.sheetState = state;
+        const height = this.sidebar.offsetHeight;
+        const vh = window.innerHeight;
+
+        this.sidebar.classList.remove('sheet-expanded');
+        this.sheetBackdrop.style.opacity = '';
+        this.sheetBackdrop.style.pointerEvents = '';
+
+        switch (state) {
+            case 'collapsed':
+                this.sidebar.style.transform = `translateY(${height - 48}px)`;
+                this.sheetBackdrop.classList.remove('active');
+                break;
+            case 'half':
+                this.sidebar.style.transform = `translateY(${Math.max(0, height - vh * 0.55)}px)`;
+                this.sheetBackdrop.classList.add('active');
+                break;
+            case 'full':
+                this.sidebar.style.transform = 'translateY(0)';
+                this.sidebar.classList.add('sheet-expanded');
+                this.sheetBackdrop.classList.add('active');
+                break;
         }
     }
 
