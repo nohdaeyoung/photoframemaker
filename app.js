@@ -941,7 +941,8 @@ class PhotoFrameMaker {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `framed_${dims.width}x${dims.height}.png`;
+            const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
+            a.download = `${baseName}_pfm.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
