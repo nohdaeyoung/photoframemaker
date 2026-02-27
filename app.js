@@ -206,16 +206,10 @@ class PhotoFrameMaker {
         if (photoArea.width === 0 || photoArea.height === 0) return { width: 0, height: 0 };
 
         const imgRatio = this.image.naturalWidth / this.image.naturalHeight;
-        const areaRatio = photoArea.width / photoArea.height;
 
-        let drawWidth, drawHeight;
-        if (imgRatio > areaRatio) {
-            drawHeight = photoArea.height;
-            drawWidth = drawHeight * imgRatio;
-        } else {
-            drawWidth = photoArea.width;
-            drawHeight = drawWidth / imgRatio;
-        }
+        // Always fit by width (가로 기준 꽉참)
+        const drawWidth = photoArea.width;
+        const drawHeight = drawWidth / imgRatio;
         return { width: drawWidth, height: drawHeight };
     }
 
