@@ -703,7 +703,7 @@ body {
         padding: 0 1.25rem 1.25rem;
     }
 
-    .sidebar.sheet-expanded {
+    .sidebar.sheet-open {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
