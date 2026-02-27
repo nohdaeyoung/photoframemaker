@@ -168,13 +168,13 @@ class PhotoFrameMaker {
         document.addEventListener('mouseup', () => this.onDragEnd());
 
         this.canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
+            if (e.touches.length === 1 && this.image) {
                 e.preventDefault();
                 this.onDragStart(e.touches[0]);
             }
         }, { passive: false });
         this.canvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1) {
+            if (e.touches.length === 1 && this.image) {
                 e.preventDefault();
                 this.onDragMove(e.touches[0]);
             }
@@ -630,7 +630,7 @@ class PhotoFrameMaker {
         const height = this.sidebar.offsetHeight;
         const vh = window.innerHeight;
 
-        this.sidebar.classList.remove('sheet-expanded');
+        this.sidebar.classList.remove('sheet-open');
         this.sheetBackdrop.style.opacity = '';
         this.sheetBackdrop.style.pointerEvents = '';
 
@@ -641,11 +641,12 @@ class PhotoFrameMaker {
                 break;
             case 'half':
                 this.sidebar.style.transform = `translateY(${Math.max(0, height - vh * 0.55)}px)`;
+                this.sidebar.classList.add('sheet-open');
                 this.sheetBackdrop.classList.add('active');
                 break;
             case 'full':
                 this.sidebar.style.transform = 'translateY(0)';
-                this.sidebar.classList.add('sheet-expanded');
+                this.sidebar.classList.add('sheet-open');
                 this.sheetBackdrop.classList.add('active');
                 break;
         }
