@@ -103,14 +103,45 @@ body {
     font-size: 0.8rem;
 }
 
+/* Delete button (shared) */
+.delete-btn {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.15s, transform 0.1s;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.85);
+    transform: scale(1.1);
+}
+
 /* Upload zone */
 .upload-zone {
+    position: relative;
     border: 2px dashed var(--border);
     border-radius: var(--radius);
     padding: 1.5rem;
     text-align: center;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
+}
+
+.upload-zone.has-image .upload-delete-btn {
+    display: flex;
 }
 
 .upload-zone:hover,
@@ -461,6 +492,7 @@ body {
 }
 
 .preview-container {
+    position: relative;
     width: 100%;
     display: flex;
     align-items: center;
@@ -472,6 +504,10 @@ body {
     box-shadow: var(--shadow);
     cursor: pointer;
     transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.preview-container.has-image .preview-delete-btn {
+    display: flex;
 }
 
 .preview-container.has-image {
