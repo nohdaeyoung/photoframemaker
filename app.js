@@ -48,6 +48,8 @@ class PhotoFrameMaker {
         this.infoOriginal = document.getElementById('info-original');
         this.infoOriginalLabel = document.getElementById('info-original-label');
         this.upscaleWarning = document.getElementById('upscale-warning');
+        this.exifSection = document.getElementById('exif-section');
+        this.exifGrid = document.getElementById('exif-grid');
 
         this.previewToolbar = document.getElementById('preview-toolbar');
         this.previewRemoveBtn = document.getElementById('preview-remove-btn');
@@ -338,6 +340,9 @@ class PhotoFrameMaker {
         this.fileSize = file.size;
         this.imageUrl = URL.createObjectURL(file);
 
+        // Parse EXIF before creating image
+        this.parseExif(file);
+
         const img = new Image();
         img.onload = () => {
             this.image = img;
@@ -384,6 +389,10 @@ class PhotoFrameMaker {
         this.previewContainer.classList.remove('has-image');
         this.previewToolbar.style.display = 'none';
         this.downloadBtn.disabled = true;
+
+        // Reset EXIF
+        this.exifSection.style.display = 'none';
+        this.exifGrid.innerHTML = '';
 
         // Collapse bottom sheet on mobile
         if (this.sheetState !== undefined && window.innerWidth <= 900) {
@@ -518,6 +527,167 @@ class PhotoFrameMaker {
             this.infoOriginal.style.display = 'none';
             this.upscaleWarning.style.display = 'none';
         }
+    }
+
+    // --- EXIF parsing ---
+
+    async parseExif(file) {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const exifData = this.readExifFromBuffer(arrayBuffer);
+            this.displayExif(exifData);
+        } catch (e) {
+            this.exifSection.style.display = 'none';
+        }
+    }
+
+    readExifFromBuffer(buffer) {
+        const view = new DataView(buffer);
+        if (view.getUint16(0) !== 0xFFD8) return null; // Not JPEG
+
+        let offset = 2;
+        while (offset < view.byteLength - 1) {
+            const marker = view.getUint16(offset);
+            if (marker === 0xFFE1) { // APP1 (EXIF)
+                const length = view.getUint16(offset + 2);
+                const exifStart = offset + 4;
+                // Check "Exif\0\0"
+                if (view.getUint32(exifStart) === 0x45786966 && view.getUint16(exifStart + 4) === 0x0000) {
+                    return this.parseTiff(view, exifStart + 6);
+                }
+                offset += 2 + length;
+            } else if ((marker & 0xFF00) === 0xFF00) {
+                if (marker === 0xFFDA) break; // Start of scan
+                offset += 2 + view.getUint16(offset + 2);
+            } else {
+                break;
+            }
+        }
+        return null;
+    }
+
+    parseTiff(view, tiffStart) {
+        const bigEndian = view.getUint16(tiffStart) === 0x4D4D;
+        const get16 = (o) => view.getUint16(o, !bigEndian);
+        const get32 = (o) => view.getUint32(o, !bigEndian);
+
+        const ifdOffset = get32(tiffStart + 4);
+        const tags = {};
+        const exifTags = {};
+
+        // Read IFD0
+        this.readIFD(view, tiffStart, tiffStart + ifdOffset, get16, get32, tags);
+
+        // Read ExifIFD if present
+        if (tags[0x8769]) {
+            this.readIFD(view, tiffStart, tiffStart + tags[0x8769], get16, get32, exifTags);
+        }
+
+        return { ...tags, ...exifTags };
+    }
+
+    readIFD(view, tiffStart, ifdStart, get16, get32, result) {
+        try {
+            const count = get16(ifdStart);
+            for (let i = 0; i < count; i++) {
+                const entryOffset = ifdStart + 2 + i * 12;
+                const tag = get16(entryOffset);
+                const type = get16(entryOffset + 2);
+                const numValues = get32(entryOffset + 4);
+                const valueOffset = entryOffset + 8;
+
+                if (type === 2) { // ASCII string
+                    const strLen = numValues;
+                    const strOffset = strLen > 4 ? tiffStart + get32(valueOffset) : valueOffset;
+                    let str = '';
+                    for (let j = 0; j < strLen - 1; j++) {
+                        str += String.fromCharCode(view.getUint8(strOffset + j));
+                    }
+                    result[tag] = str.trim();
+                } else if (type === 3) { // SHORT
+                    result[tag] = numValues === 1 ? get16(valueOffset) : get32(valueOffset);
+                } else if (type === 4) { // LONG
+                    result[tag] = get32(valueOffset);
+                } else if (type === 5 || type === 10) { // RATIONAL or SRATIONAL
+                    const ratOffset = tiffStart + get32(valueOffset);
+                    const num = get32(ratOffset);
+                    const den = get32(ratOffset + 4);
+                    result[tag] = { num, den, value: den ? num / den : 0 };
+                }
+            }
+        } catch (e) {
+            // Ignore read errors
+        }
+    }
+
+    displayExif(data) {
+        if (!data) {
+            this.exifSection.style.display = 'none';
+            return;
+        }
+
+        const items = [];
+
+        // Camera make + model (0x010F = Make, 0x0110 = Model)
+        const make = data[0x010F] || '';
+        const model = data[0x0110] || '';
+        if (model) {
+            const camera = model.startsWith(make) ? model : (make ? `${make} ${model}` : model);
+            items.push(['카메라', camera]);
+        }
+
+        // Lens model (0xA434)
+        if (data[0xA434]) {
+            items.push(['렌즈', data[0xA434]]);
+        }
+
+        // Focal length (0x920A)
+        if (data[0x920A]) {
+            const fl = data[0x920A].value;
+            items.push(['초점거리', `${Math.round(fl)}mm`]);
+        }
+
+        // F-number (0x829D)
+        if (data[0x829D]) {
+            const f = data[0x829D].value;
+            items.push(['조리개', `f/${f % 1 === 0 ? f.toFixed(0) : f.toFixed(1)}`]);
+        }
+
+        // Exposure time (0x829A)
+        if (data[0x829A]) {
+            const { num, den } = data[0x829A];
+            if (num && den) {
+                const ss = num / den;
+                items.push(['셔터속도', ss >= 1 ? `${ss}s` : `1/${Math.round(den / num)}s`]);
+            }
+        }
+
+        // ISO (0x8827)
+        if (data[0x8827]) {
+            items.push(['ISO', `${data[0x8827]}`]);
+        }
+
+        // Date taken (0x9003 = DateTimeOriginal, 0x0132 = DateTime)
+        const dateStr = data[0x9003] || data[0x0132];
+        if (dateStr) {
+            const formatted = dateStr.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1.$2.$3');
+            items.push(['촬영일', formatted]);
+        }
+
+        // Software (0x0131)
+        if (data[0x0131]) {
+            items.push(['소프트웨어', data[0x0131]]);
+        }
+
+        if (items.length === 0) {
+            this.exifSection.style.display = 'none';
+            return;
+        }
+
+        this.exifGrid.innerHTML = items.map(([label, value]) =>
+            `<span class="info-label">${label}</span><span class="info-value">${value}</span>`
+        ).join('');
+        this.exifSection.style.display = '';
     }
 
     // --- Bottom Sheet (mobile) ---
