@@ -904,7 +904,7 @@ class PhotoFrameMaker {
 
     // --- Download ---
 
-    download() {
+    async download() {
         if (!this.image) return;
 
         const dims = this.getCanvasDimensions();
@@ -936,43 +936,44 @@ class PhotoFrameMaker {
         ctx.drawImage(this.image, x, y, draw.width, draw.height);
         ctx.restore();
 
-        // Download as PNG (lossless)
-        offscreen.toBlob(async (blob) => {
-            const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
-            const fileName = `${baseName}_pfm.png`;
+        // Synchronous canvas → blob (preserves user gesture for Web Share API)
+        const dataURL = offscreen.toDataURL('image/png');
+        const binary = atob(dataURL.split(',')[1]);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+        const blob = new Blob([array], { type: 'image/png' });
 
-            // 1) Try Web Share API (works on HTTPS, iOS/Android)
-            try {
-                const file = new File([blob], fileName, { type: 'image/png' });
-                if (navigator.canShare?.({ files: [file] })) {
-                    await navigator.share({ files: [file] });
-                    return;
-                }
-            } catch (e) {
-                if (e.name !== 'AbortError') {
-                    // Share failed (not cancelled), fall through
-                } else {
-                    return; // User cancelled share
-                }
-            }
+        const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
+        const fileName = `${baseName}_pfm.png`;
 
-            // 2) Mobile fallback: show save overlay (long-press to save to Photos)
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                this.showSaveOverlay(blob);
+        // 1) Try Web Share API (requires user gesture + HTTPS)
+        try {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare?.({ files: [file] })) {
+                await navigator.share({ files: [file] });
                 return;
             }
+        } catch (e) {
+            if (e.name === 'AbortError') return; // User cancelled
+        }
 
-            // 3) Desktop: traditional file download
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 'image/png');
+        // 2) Mobile fallback: show save overlay (long-press to save to Photos)
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            this.showSaveOverlay(blob);
+            return;
+        }
+
+        // 3) Desktop: traditional file download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     showSaveOverlay(blob) {
