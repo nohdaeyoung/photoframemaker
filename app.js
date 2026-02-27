@@ -362,6 +362,8 @@ class PhotoFrameMaker {
             this.downloadBtn.disabled = false;
             this.previewHint.style.display = '';
             this.previewContainer.classList.add('has-image');
+            this.uploadDeleteBtn.style.display = 'flex';
+            this.previewDeleteBtn.style.display = 'flex';
         };
         img.src = this.imageUrl;
     }
@@ -379,6 +381,7 @@ class PhotoFrameMaker {
 
         // Reset upload zone UI
         this.uploadZone.classList.remove('has-image');
+        this.uploadDeleteBtn.style.display = 'none';
         this.uploadContent.innerHTML = `
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -391,6 +394,7 @@ class PhotoFrameMaker {
 
         // Reset preview
         this.previewContainer.classList.remove('has-image');
+        this.previewDeleteBtn.style.display = 'none';
         this.previewHint.style.display = 'none';
         this.downloadBtn.disabled = true;
 
