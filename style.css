@@ -74,6 +74,8 @@ body {
     box-shadow: var(--shadow);
     position: sticky;
     top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
 }
 
 .control-section {
@@ -639,11 +641,11 @@ body {
 .sheet-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.15);
     z-index: 199;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.35s;
+    transition: opacity 0.25s;
 }
 
 .sheet-backdrop.active {
@@ -651,7 +653,13 @@ body {
     pointer-events: auto;
 }
 
-/* Responsive - Mobile bottom sheet layout */
+/* Mobile tab bar + panels (hidden on desktop) */
+.mobile-tab-bar,
+.mobile-tab-panels {
+    display: none;
+}
+
+/* Responsive - Mobile tab bar layout */
 @media (max-width: 900px) {
     body {
         overflow: hidden;
@@ -688,12 +696,13 @@ body {
         flex-direction: column;
         overflow: hidden;
         gap: 0;
+        position: relative;
     }
 
     .preview-area {
         flex: 1;
         overflow: hidden;
-        padding-bottom: 56px;
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
         gap: 0.25rem;
     }
 
@@ -721,29 +730,131 @@ body {
         flex-shrink: 0;
     }
 
-    /* Bottom sheet */
-    .sheet-handle {
-        display: flex;
+    /* Hide desktop sidebar on mobile */
+    .sidebar {
+        display: none;
     }
 
-    .sidebar {
+    /* --- Mobile tab bar --- */
+    .mobile-tab-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 201;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        padding: 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        height: auto;
+    }
+
+    .tab-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 8px 0 6px;
+        border: none;
+        background: none;
+        color: var(--text-secondary);
+        font-size: 0.65rem;
+        font-family: inherit;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.15s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .tab-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .tab-btn.active {
+        color: var(--accent);
+    }
+
+    .tab-btn-download:not(:disabled) {
+        color: var(--accent);
+    }
+
+    .tab-btn-download:disabled {
+        opacity: 0.35;
+    }
+
+    /* --- Tab panels --- */
+    .mobile-tab-panels {
+        display: block;
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         z-index: 200;
-        border-radius: 16px 16px 0 0;
-        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-        max-height: 80vh;
-        transform: translateY(calc(100% - 48px));
-        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
-        padding: 0 1.25rem 1.25rem;
+        pointer-events: none;
     }
 
-    .sidebar.sheet-open {
+    .tab-panel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        max-height: 60vh;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-panel.active {
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .tab-panel-content {
+        padding: 1.25rem 1.25rem;
+        /* account for tab bar height */
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px) + 1rem);
+    }
+
+    .tab-panel-header {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.75rem;
+    }
+
+    .tab-panel-sub {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .tab-panel-sub-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .mobile-ratio-buttons {
+        flex-wrap: wrap;
+    }
+
+    .mobile-ratio-buttons .ratio-btn {
+        min-width: calc(33% - 0.5rem);
     }
 
     /* Hide redundant sections on mobile */
@@ -751,12 +862,69 @@ body {
         display: none;
     }
 
-    /* Download button inside sheet (not fixed) */
-    .download-btn {
-        position: static;
+    /* Mobile photo tab */
+    .mobile-photo-thumb-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .mobile-photo-thumb {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid var(--border);
+    }
+
+    .mobile-photo-meta {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mobile-photo-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mobile-photo-size {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    .mobile-photo-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .mobile-photo-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.7rem;
         border-radius: var(--radius);
-        box-shadow: none;
-        padding: 0.85rem;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.85rem;
+        font-family: inherit;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .mobile-photo-btn-danger {
+        color: #dc3545;
+        border-color: #f5c6cb;
+        background: #fff5f5;
     }
 }
 
@@ -767,14 +935,6 @@ body {
 
     .header h1 {
         font-size: 1.15rem;
-    }
-
-    .ratio-buttons {
-        flex-wrap: wrap;
-    }
-
-    .ratio-btn {
-        min-width: calc(33% - 0.5rem);
     }
 
     .preview-container {

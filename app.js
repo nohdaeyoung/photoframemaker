@@ -57,6 +57,31 @@ class PhotoFrameMaker {
         this.sidebar = document.getElementById('sidebar');
         this.sheetHandle = document.getElementById('sheet-handle');
         this.sheetBackdrop = document.getElementById('sheet-backdrop');
+
+        // Mobile tab bar elements
+        this.mobileTabBar = document.getElementById('mobile-tab-bar');
+        this.mobileTabPanels = document.getElementById('mobile-tab-panels');
+        this.mobileDownloadBtn = document.getElementById('mobile-download-btn');
+        this.mobileCanvasSizeInput = document.getElementById('mobile-canvas-size');
+        this.mobileFrameRatioSlider = document.getElementById('mobile-frame-ratio-slider');
+        this.mobileFrameRatioInput = document.getElementById('mobile-frame-ratio');
+        this.mobileColorPresets = document.getElementById('mobile-color-presets');
+        this.mobileCustomColorInput = document.getElementById('mobile-custom-color');
+        this.mobileInfoCanvas = document.getElementById('mobile-info-canvas');
+        this.mobileInfoFrame = document.getElementById('mobile-info-frame');
+        this.mobileInfoPhoto = document.getElementById('mobile-info-photo');
+        this.mobileInfoOriginal = document.getElementById('mobile-info-original');
+        this.mobileInfoOriginalLabel = document.getElementById('mobile-info-original-label');
+        this.mobileUpscaleWarning = document.getElementById('mobile-upscale-warning');
+        this.mobileExifSection = document.getElementById('mobile-exif-section');
+        this.mobileExifGrid = document.getElementById('mobile-exif-grid');
+        this.mobilePhotoInfo = document.getElementById('mobile-photo-info');
+        this.mobilePhotoThumb = document.getElementById('mobile-photo-thumb');
+        this.mobilePhotoName = document.getElementById('mobile-photo-name');
+        this.mobilePhotoSize = document.getElementById('mobile-photo-size');
+        this.mobilePhotoUploadBtn = document.getElementById('mobile-photo-upload-btn');
+        this.mobilePhotoUploadLabel = document.getElementById('mobile-photo-upload-label');
+        this.mobilePhotoDeleteBtn = document.getElementById('mobile-photo-delete-btn');
     }
 
     setupEventListeners() {
@@ -105,9 +130,10 @@ class PhotoFrameMaker {
         this.ratioButtons.addEventListener('click', (e) => {
             const btn = e.target.closest('.ratio-btn');
             if (!btn) return;
-            this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const [w, h] = btn.dataset.ratio.split(':').map(Number);
+            const ratio = btn.dataset.ratio;
+            this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
+            document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
+            const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
             this.imageOffset = { x: 0, y: 0 };
             this.updateCanvasSize();
@@ -120,6 +146,7 @@ class PhotoFrameMaker {
             const val = parseInt(this.canvasSizeInput.value);
             if (val >= 100 && val <= 10000) {
                 this.canvasSize = val;
+                this.mobileCanvasSizeInput.value = val;
                 this.imageOffset = { x: 0, y: 0 };
                 this.updateCanvasSize();
                 this.render();
@@ -131,6 +158,8 @@ class PhotoFrameMaker {
         this.frameRatioSlider.addEventListener('input', () => {
             this.frameRatio = parseFloat(this.frameRatioSlider.value);
             this.frameRatioInput.value = this.frameRatio;
+            this.mobileFrameRatioSlider.value = this.frameRatio;
+            this.mobileFrameRatioInput.value = this.frameRatio;
             this.imageOffset = { x: 0, y: 0 };
             this.render();
             this.updateInfo();
@@ -142,6 +171,8 @@ class PhotoFrameMaker {
             val = Math.max(0, Math.min(25, val));
             this.frameRatio = val;
             this.frameRatioSlider.value = val;
+            this.mobileFrameRatioSlider.value = val;
+            this.mobileFrameRatioInput.value = val;
             this.imageOffset = { x: 0, y: 0 };
             this.render();
             this.updateInfo();
@@ -151,16 +182,20 @@ class PhotoFrameMaker {
         this.colorPresets.addEventListener('click', (e) => {
             const swatch = e.target.closest('.color-swatch');
             if (!swatch) return;
-            this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-            swatch.classList.add('active');
-            this.frameColor = swatch.dataset.color;
-            this.customColorInput.value = this.frameColor;
+            const color = swatch.dataset.color;
+            this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+            this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+            this.frameColor = color;
+            this.customColorInput.value = color;
+            this.mobileCustomColorInput.value = color;
             this.render();
         });
 
         this.customColorInput.addEventListener('input', () => {
             this.frameColor = this.customColorInput.value;
+            this.mobileCustomColorInput.value = this.frameColor;
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.render();
         });
 
@@ -351,13 +386,10 @@ class PhotoFrameMaker {
             this.render();
             this.updateInfo();
             this.downloadBtn.disabled = false;
+            this.mobileDownloadBtn.disabled = false;
             this.previewToolbar.style.display = '';
             this.previewContainer.classList.add('has-image');
-
-            // Auto-expand bottom sheet on mobile
-            if (this.sheetState !== undefined && window.innerWidth <= 900) {
-                this.setSheetState('half');
-            }
+            this.updateMobilePhotoTab();
         };
         img.src = this.imageUrl;
     }
@@ -389,16 +421,15 @@ class PhotoFrameMaker {
         this.previewContainer.classList.remove('has-image');
         this.previewToolbar.style.display = 'none';
         this.downloadBtn.disabled = true;
+        this.mobileDownloadBtn.disabled = true;
 
         // Reset EXIF
         this.exifSection.style.display = 'none';
         this.exifGrid.innerHTML = '';
+        this.mobileExifSection.style.display = 'none';
+        this.mobileExifGrid.innerHTML = '';
 
-        // Collapse bottom sheet on mobile
-        if (this.sheetState !== undefined && window.innerWidth <= 900) {
-            this.setSheetState('collapsed');
-        }
-
+        this.updateMobilePhotoTab();
         this.render();
         this.updateInfo();
     }
@@ -505,11 +536,18 @@ class PhotoFrameMaker {
         this.infoCanvas.textContent = `${dims.width} × ${dims.height} px`;
         this.infoFrame.textContent = `${fw} px`;
         this.infoPhoto.textContent = `${pa.width} × ${pa.height} px`;
+        this.mobileInfoCanvas.textContent = `${dims.width} × ${dims.height} px`;
+        this.mobileInfoFrame.textContent = `${fw} px`;
+        this.mobileInfoPhoto.textContent = `${pa.width} × ${pa.height} px`;
 
         if (this.image) {
+            const origText = `${this.image.naturalWidth} × ${this.image.naturalHeight} px`;
             this.infoOriginalLabel.style.display = '';
             this.infoOriginal.style.display = '';
-            this.infoOriginal.textContent = `${this.image.naturalWidth} × ${this.image.naturalHeight} px`;
+            this.infoOriginal.textContent = origText;
+            this.mobileInfoOriginalLabel.style.display = '';
+            this.mobileInfoOriginal.style.display = '';
+            this.mobileInfoOriginal.textContent = origText;
 
             // Check if upscaling
             const draw = this.getDrawDimensions();
@@ -517,15 +555,16 @@ class PhotoFrameMaker {
             const scaleY = draw.height / this.image.naturalHeight;
             const scale = Math.min(scaleX, scaleY);
 
-            if (scale > 1.5) {
-                this.upscaleWarning.style.display = '';
-            } else {
-                this.upscaleWarning.style.display = 'none';
-            }
+            const showWarn = scale > 1.5 ? '' : 'none';
+            this.upscaleWarning.style.display = showWarn;
+            this.mobileUpscaleWarning.style.display = showWarn;
         } else {
             this.infoOriginalLabel.style.display = 'none';
             this.infoOriginal.style.display = 'none';
             this.upscaleWarning.style.display = 'none';
+            this.mobileInfoOriginalLabel.style.display = 'none';
+            this.mobileInfoOriginal.style.display = 'none';
+            this.mobileUpscaleWarning.style.display = 'none';
         }
     }
 
@@ -623,6 +662,7 @@ class PhotoFrameMaker {
     displayExif(data) {
         if (!data) {
             this.exifSection.style.display = 'none';
+            this.mobileExifSection.style.display = 'none';
             return;
         }
 
@@ -681,149 +721,185 @@ class PhotoFrameMaker {
 
         if (items.length === 0) {
             this.exifSection.style.display = 'none';
+            this.mobileExifSection.style.display = 'none';
             return;
         }
 
-        this.exifGrid.innerHTML = items.map(([label, value]) =>
+        const html = items.map(([label, value]) =>
             `<span class="info-label">${label}</span><span class="info-value">${value}</span>`
         ).join('');
+        this.exifGrid.innerHTML = html;
         this.exifSection.style.display = '';
+        this.mobileExifGrid.innerHTML = html;
+        this.mobileExifSection.style.display = '';
     }
 
-    // --- Bottom Sheet (mobile) ---
+    updateMobilePhotoTab() {
+        if (this.image) {
+            this.mobilePhotoInfo.style.display = '';
+            this.mobilePhotoThumb.src = this.imageUrl;
+            this.mobilePhotoName.textContent = this.fileName;
+            const sizeStr = this.fileSize < 1024 * 1024
+                ? (this.fileSize / 1024).toFixed(1) + ' KB'
+                : (this.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+            this.mobilePhotoSize.textContent = `${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}`;
+            this.mobilePhotoUploadLabel.textContent = '사진 변경';
+            this.mobilePhotoDeleteBtn.style.display = '';
+        } else {
+            this.mobilePhotoInfo.style.display = 'none';
+            this.mobilePhotoUploadLabel.textContent = '사진 추가';
+            this.mobilePhotoDeleteBtn.style.display = 'none';
+        }
+    }
+
+    // --- Mobile tab bar ---
 
     setupBottomSheet() {
-        if (!this.sheetHandle) return;
+        if (!this.mobileTabBar) return;
 
-        this.sheetState = 'collapsed';
-        let startY, startTranslateY, moved, isDraggingSheet;
+        this.activeTab = null;
 
-        const getTranslateY = () => {
-            const style = getComputedStyle(this.sidebar);
-            const matrix = new DOMMatrix(style.transform);
-            return matrix.m42;
-        };
+        // Tab button clicks
+        this.mobileTabBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tab-btn');
+            if (!btn) return;
 
-        const isMobile = () => window.innerWidth <= 900;
+            const tab = btn.dataset.tab;
 
-        // Touch drag on handle
-        this.sheetHandle.addEventListener('touchstart', (e) => {
-            if (!isMobile()) return;
-            startY = e.touches[0].clientY;
-            startTranslateY = getTranslateY();
-            moved = false;
-            isDraggingSheet = true;
-            this.sidebar.style.transition = 'none';
-        }, { passive: true });
-
-        document.addEventListener('touchmove', (e) => {
-            if (!isDraggingSheet) return;
-            const dy = e.touches[0].clientY - startY;
-            if (Math.abs(dy) > 5) moved = true;
-            const newY = Math.max(0, startTranslateY + dy);
-            this.sidebar.style.transform = `translateY(${newY}px)`;
-
-            // Update backdrop opacity proportionally
-            const maxY = this.sidebar.offsetHeight - 48;
-            const progress = 1 - Math.min(1, newY / maxY);
-            this.sheetBackdrop.style.opacity = progress * 0.4;
-            this.sheetBackdrop.style.pointerEvents = progress > 0.05 ? 'auto' : 'none';
-        }, { passive: true });
-
-        document.addEventListener('touchend', () => {
-            if (!isDraggingSheet) return;
-            isDraggingSheet = false;
-            this.sidebar.style.transition = '';
-
-            if (!moved) {
-                this.toggleSheet();
+            // Download tab: trigger download directly
+            if (tab === 'download') {
+                this.download();
                 return;
             }
 
-            this.snapSheet(getTranslateY());
-        });
-
-        // Mouse click on handle (desktop testing)
-        this.sheetHandle.addEventListener('click', () => {
-            if (!isMobile()) return;
-            if (!('ontouchstart' in window)) {
-                this.toggleSheet();
-            }
-        });
-
-        // Backdrop tap to collapse
-        this.sheetBackdrop.addEventListener('click', () => {
-            this.setSheetState('collapsed');
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (!isMobile()) {
-                this.sidebar.style.transform = '';
-                this.sidebar.classList.remove('sheet-expanded');
-                this.sheetBackdrop.classList.remove('active');
-                this.sheetBackdrop.style.opacity = '';
-                this.sheetBackdrop.style.pointerEvents = '';
+            // Toggle panel: tap active tab to close
+            if (this.activeTab === tab) {
+                this.closeTabPanel();
             } else {
-                this.setSheetState(this.sheetState);
+                this.openTabPanel(tab);
             }
         });
 
-        // Set initial collapsed state on mobile
-        if (isMobile()) {
-            requestAnimationFrame(() => this.setSheetState('collapsed'));
-        }
-    }
+        // Backdrop tap to close
+        this.sheetBackdrop.addEventListener('click', () => {
+            this.closeTabPanel();
+        });
 
-    toggleSheet() {
-        this.setSheetState(this.sheetState === 'collapsed' ? 'half' : 'collapsed');
-    }
+        // Mobile ratio buttons
+        document.getElementById('mobile-ratio-buttons').addEventListener('click', (e) => {
+            const btn = e.target.closest('.ratio-btn');
+            if (!btn) return;
+            // Sync both desktop and mobile ratio buttons
+            const ratio = btn.dataset.ratio;
+            this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
+            document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
+            const [w, h] = ratio.split(':').map(Number);
+            this.canvasRatio = [w, h];
+            this.imageOffset = { x: 0, y: 0 };
+            this.updateCanvasSize();
+            this.render();
+            this.updateInfo();
+        });
 
-    snapSheet(currentY) {
-        const height = this.sidebar.offsetHeight;
-        const vh = window.innerHeight;
-
-        const snaps = [
-            { state: 'collapsed', y: height - 48 },
-            { state: 'half', y: Math.max(0, height - vh * 0.55) },
-            { state: 'full', y: 0 }
-        ];
-
-        let nearest = snaps[0];
-        for (const s of snaps) {
-            if (Math.abs(currentY - s.y) < Math.abs(currentY - nearest.y)) {
-                nearest = s;
+        // Mobile canvas size
+        this.mobileCanvasSizeInput.addEventListener('input', () => {
+            const val = parseInt(this.mobileCanvasSizeInput.value);
+            if (val >= 100 && val <= 10000) {
+                this.canvasSize = val;
+                this.canvasSizeInput.value = val;
+                this.imageOffset = { x: 0, y: 0 };
+                this.updateCanvasSize();
+                this.render();
+                this.updateInfo();
             }
-        }
+        });
 
-        this.setSheetState(nearest.state);
+        // Mobile frame ratio
+        this.mobileFrameRatioSlider.addEventListener('input', () => {
+            this.frameRatio = parseFloat(this.mobileFrameRatioSlider.value);
+            this.mobileFrameRatioInput.value = this.frameRatio;
+            this.frameRatioSlider.value = this.frameRatio;
+            this.frameRatioInput.value = this.frameRatio;
+            this.imageOffset = { x: 0, y: 0 };
+            this.render();
+            this.updateInfo();
+        });
+
+        this.mobileFrameRatioInput.addEventListener('input', () => {
+            let val = parseFloat(this.mobileFrameRatioInput.value);
+            if (isNaN(val)) return;
+            val = Math.max(0, Math.min(25, val));
+            this.frameRatio = val;
+            this.mobileFrameRatioSlider.value = val;
+            this.frameRatioSlider.value = val;
+            this.frameRatioInput.value = val;
+            this.imageOffset = { x: 0, y: 0 };
+            this.render();
+            this.updateInfo();
+        });
+
+        // Mobile color presets
+        this.mobileColorPresets.addEventListener('click', (e) => {
+            const swatch = e.target.closest('.color-swatch');
+            if (!swatch) return;
+            const color = swatch.dataset.color;
+            // Sync both
+            this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+            this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+            this.frameColor = color;
+            this.customColorInput.value = color;
+            this.mobileCustomColorInput.value = color;
+            this.render();
+        });
+
+        this.mobileCustomColorInput.addEventListener('input', () => {
+            this.frameColor = this.mobileCustomColorInput.value;
+            this.customColorInput.value = this.frameColor;
+            this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            this.render();
+        });
+
+        // Mobile photo upload button
+        this.mobilePhotoUploadBtn.addEventListener('click', () => {
+            this.fileInput.click();
+        });
+
+        // Mobile photo delete button
+        this.mobilePhotoDeleteBtn.addEventListener('click', () => {
+            this.removeImage();
+            this.closeTabPanel();
+        });
+
+        // Close panel on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 900) {
+                this.closeTabPanel();
+            }
+        });
     }
 
-    setSheetState(state) {
-        this.sheetState = state;
-        const height = this.sidebar.offsetHeight;
-        const vh = window.innerHeight;
+    openTabPanel(tab) {
+        this.activeTab = tab;
 
-        this.sidebar.classList.remove('sheet-open');
-        this.sheetBackdrop.style.opacity = '';
-        this.sheetBackdrop.style.pointerEvents = '';
+        // Update tab button active states
+        this.mobileTabBar.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
 
-        switch (state) {
-            case 'collapsed':
-                this.sidebar.style.transform = `translateY(${height - 48}px)`;
-                this.sheetBackdrop.classList.remove('active');
-                break;
-            case 'half':
-                this.sidebar.style.transform = `translateY(${Math.max(0, height - vh * 0.55)}px)`;
-                this.sidebar.classList.add('sheet-open');
-                this.sheetBackdrop.classList.add('active');
-                break;
-            case 'full':
-                this.sidebar.style.transform = 'translateY(0)';
-                this.sidebar.classList.add('sheet-open');
-                this.sheetBackdrop.classList.add('active');
-                break;
-        }
+        // Show target panel, hide others
+        this.mobileTabPanels.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.dataset.tab === tab);
+        });
+
+        this.sheetBackdrop.classList.add('active');
+    }
+
+    closeTabPanel() {
+        this.activeTab = null;
+        this.mobileTabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        this.mobileTabPanels.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        this.sheetBackdrop.classList.remove('active');
     }
 
     // --- Download ---
