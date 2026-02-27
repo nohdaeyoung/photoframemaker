@@ -247,6 +247,9 @@ class PhotoFrameMaker {
 
         // Download
         this.downloadBtn.addEventListener('click', () => this.download());
+
+        // Resize: recalculate preview container size
+        window.addEventListener('resize', () => this.updatePreviewContainerSize());
     }
 
     // --- Calculations ---
@@ -310,6 +313,51 @@ class PhotoFrameMaker {
         const dims = this.getCanvasDimensions();
         this.canvas.width = dims.width;
         this.canvas.height = dims.height;
+        this.updatePreviewContainerSize();
+    }
+
+    updatePreviewContainerSize() {
+        const [w, h] = this.canvasRatio;
+        const ratio = w / h;
+
+        const parent = this.previewContainer.parentElement;
+        const parentWidth = parent.clientWidth;
+        if (parentWidth <= 0) return;
+
+        const cs = getComputedStyle(this.previewContainer);
+        const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+        const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+
+        const isMobile = window.innerWidth <= 900;
+
+        let maxH;
+        if (isMobile) {
+            const parentCS = getComputedStyle(parent);
+            const parentPadY = parseFloat(parentCS.paddingTop) + parseFloat(parentCS.paddingBottom);
+            const contentH = parent.clientHeight - parentPadY;
+            const toolbarH = this.previewToolbar.offsetHeight || 0;
+            const gap = parseFloat(parentCS.gap) || 0;
+            maxH = contentH - toolbarH - gap;
+        } else {
+            maxH = window.innerHeight * 0.75;
+        }
+
+        const availW = parentWidth - padX;
+        const availH = maxH - padY;
+
+        if (availW <= 0 || availH <= 0) return;
+
+        let cw, ch;
+        if (availW / availH > ratio) {
+            ch = availH;
+            cw = ch * ratio;
+        } else {
+            cw = availW;
+            ch = cw / ratio;
+        }
+
+        this.previewContainer.style.width = Math.round(cw + padX) + 'px';
+        this.previewContainer.style.height = Math.round(ch + padY) + 'px';
     }
 
     // --- Rendering ---

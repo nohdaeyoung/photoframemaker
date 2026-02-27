@@ -514,8 +514,6 @@ body {
 
 .preview-container {
     position: relative;
-    width: fit-content;
-    max-width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -537,8 +535,8 @@ body {
 
 #preview-canvas {
     display: block;
-    max-width: 100%;
-    max-height: 75vh;
+    width: 100%;
+    height: 100%;
     image-rendering: auto;
 }
 
@@ -768,15 +766,12 @@ body {
         overflow: hidden;
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
         gap: 0.25rem;
+        justify-content: center;
     }
 
     .preview-container {
         min-height: 0;
         padding: 0.5rem;
-    }
-
-    #preview-canvas {
-        max-height: calc(100dvh - 200px);
     }
 
     .preview-upload-prompt .prompt-desktop {
