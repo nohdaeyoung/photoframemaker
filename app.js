@@ -48,24 +48,20 @@ class PhotoFrameMaker {
         this.infoOriginalLabel = document.getElementById('info-original-label');
         this.upscaleWarning = document.getElementById('upscale-warning');
 
-        this.uploadDeleteBtn = document.getElementById('upload-delete-btn');
-        this.previewDeleteBtn = document.getElementById('preview-delete-btn');
+        this.previewToolbar = document.getElementById('preview-toolbar');
+        this.previewRemoveBtn = document.getElementById('preview-remove-btn');
     }
 
     setupEventListeners() {
-        // Delete buttons
-        this.uploadDeleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.removeImage();
-        });
-        this.previewDeleteBtn.addEventListener('click', (e) => {
+        // Preview delete button
+        this.previewRemoveBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.removeImage();
         });
 
         // File upload
         this.uploadZone.addEventListener('click', (e) => {
-            if (e.target.closest('.delete-btn')) return;
+            if (e.target.closest('.upload-remove-btn')) return;
             this.fileInput.click();
         });
         this.fileInput.addEventListener('change', (e) => {
@@ -360,10 +356,8 @@ class PhotoFrameMaker {
             this.render();
             this.updateInfo();
             this.downloadBtn.disabled = false;
-            this.previewHint.style.display = '';
+            this.previewToolbar.style.display = '';
             this.previewContainer.classList.add('has-image');
-            this.uploadDeleteBtn.style.display = 'flex';
-            this.previewDeleteBtn.style.display = 'flex';
         };
         img.src = this.imageUrl;
     }
@@ -381,7 +375,6 @@ class PhotoFrameMaker {
 
         // Reset upload zone UI
         this.uploadZone.classList.remove('has-image');
-        this.uploadDeleteBtn.style.display = 'none';
         this.uploadContent.innerHTML = `
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -394,8 +387,7 @@ class PhotoFrameMaker {
 
         // Reset preview
         this.previewContainer.classList.remove('has-image');
-        this.previewDeleteBtn.style.display = 'none';
-        this.previewHint.style.display = 'none';
+        this.previewToolbar.style.display = 'none';
         this.downloadBtn.disabled = true;
 
         this.render();
@@ -410,12 +402,19 @@ class PhotoFrameMaker {
 
         this.uploadContent.innerHTML = `
             <img class="upload-thumb" src="${this.imageUrl}" alt="미리보기">
-            <div>
+            <div class="upload-info">
                 <div class="upload-filename">${this.fileName}</div>
                 <div class="upload-filesize">${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}</div>
                 <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 변경</div>
             </div>
+            <button class="upload-remove-btn" id="upload-remove-btn" type="button" title="사진 삭제">&times;</button>
         `;
+
+        // Rebind inline delete button
+        document.getElementById('upload-remove-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeImage();
+        });
     }
 
     // --- Drag handling ---
