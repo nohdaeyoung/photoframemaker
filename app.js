@@ -407,7 +407,7 @@ class PhotoFrameMaker {
                 <div class="upload-filesize">${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}</div>
                 <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 변경</div>
             </div>
-            <button class="upload-remove-btn" id="upload-remove-btn" type="button" title="사진 삭제">&times;</button>
+            <span id="upload-remove-btn" title="사진 삭제" style="flex-shrink:0; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(0,0,0,0.1); color:#6b7280; font-size:18px; cursor:pointer; line-height:1;">&times;</span>
         `;
 
         // Rebind inline delete button

@@ -14,6 +14,25 @@
         </header>
 
         <main class="main">
+            <div class="preview-area">
+                <div class="preview-container" id="preview-container">
+                    <canvas id="preview-canvas"></canvas>
+                </div>
+                <div class="preview-toolbar" id="preview-toolbar" style="display:none">
+                    <p class="preview-hint" id="preview-hint">
+                        사진 영역을 드래그하여 위치를 조정할 수 있습니다
+                    </p>
+                    <button class="preview-remove-btn" id="preview-remove-btn" type="button"
+                        style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid #e2e5ea; border-radius:8px; background:#fff; color:#6b7280; font-size:13px; font-family:inherit; font-weight:500; cursor:pointer; white-space:nowrap;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        사진 삭제
+                    </button>
+                </div>
+            </div>
+
             <aside class="sidebar">
                 <section class="control-section">
                     <h2>캔버스 비율</h2>
@@ -140,24 +159,6 @@
                     PNG 다운로드 (무손실)
                 </button>
             </aside>
-
-            <div class="preview-area">
-                <div class="preview-container" id="preview-container">
-                    <canvas id="preview-canvas"></canvas>
-                </div>
-                <div class="preview-toolbar" id="preview-toolbar" style="display:none">
-                    <p class="preview-hint" id="preview-hint">
-                        사진 영역을 드래그하여 위치를 조정할 수 있습니다
-                    </p>
-                    <button class="preview-remove-btn" id="preview-remove-btn" type="button">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                        사진 삭제
-                    </button>
-                </div>
-            </div>
         </main>
     </div>
 
