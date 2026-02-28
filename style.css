@@ -625,6 +625,128 @@ body {
     border-color: #dc3545;
 }
 
+/* Preview mode toggle */
+.preview-mode-toggle {
+    display: flex;
+    background: var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+    width: fit-content;
+}
+
+.preview-mode-btn {
+    padding: 5px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.preview-mode-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Instagram Feed Mockup */
+.feed-mockup {
+    width: 100%;
+    max-width: 470px;
+    align-self: center;
+}
+
+.feed-post {
+    background: #fff;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.feed-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+}
+
+.feed-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.feed-avatar::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.feed-username {
+    font-size: 14px;
+    font-weight: 600;
+    color: #262626;
+    flex: 1;
+}
+
+.feed-more {
+    color: #262626;
+    cursor: default;
+}
+
+.feed-image-wrap {
+    width: 100%;
+    background: #fafafa;
+    line-height: 0;
+}
+
+.feed-image {
+    width: 100%;
+    display: block;
+}
+
+.feed-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 6px;
+}
+
+.feed-actions svg {
+    color: #262626;
+    cursor: default;
+}
+
+.feed-actions-left {
+    display: flex;
+    gap: 14px;
+}
+
+.feed-info {
+    padding: 0 14px 14px;
+    font-size: 14px;
+    color: #262626;
+    line-height: 1.5;
+}
+
+.feed-likes {
+    margin-bottom: 4px;
+}
+
+.feed-caption strong {
+    font-weight: 600;
+}
+
 /* Bottom sheet handle (hidden on desktop) */
 .sheet-handle {
     display: none;
@@ -775,6 +897,15 @@ body {
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
         gap: 0.25rem;
         justify-content: center;
+    }
+
+    .preview-mode-toggle {
+        align-self: center;
+    }
+
+    .feed-mockup {
+        overflow-y: auto;
+        max-height: 100%;
     }
 
     .preview-container {

@@ -13,6 +13,8 @@ class PhotoFrameMaker {
         this.dragStart = { x: 0, y: 0 };
         this.dragStartOffset = { x: 0, y: 0 };
 
+        this.previewMode = 'default'; // 'default' or 'feed'
+
         this.canvas = document.getElementById('preview-canvas');
         this.ctx = this.canvas.getContext('2d');
         this.previewContainer = document.getElementById('preview-container');
@@ -53,6 +55,9 @@ class PhotoFrameMaker {
 
         this.previewToolbar = document.getElementById('preview-toolbar');
         this.previewRemoveBtn = document.getElementById('preview-remove-btn');
+        this.previewModeToggle = document.getElementById('preview-mode-toggle');
+        this.feedMockup = document.getElementById('feed-mockup');
+        this.feedImage = document.getElementById('feed-image');
 
         this.sidebar = document.getElementById('sidebar');
         this.sheetHandle = document.getElementById('sheet-handle');
@@ -245,6 +250,17 @@ class PhotoFrameMaker {
             }
         });
 
+        // Preview mode toggle
+        this.previewModeToggle.addEventListener('click', (e) => {
+            const btn = e.target.closest('.preview-mode-btn');
+            if (!btn) return;
+            const mode = btn.dataset.mode;
+            if (mode === this.previewMode) return;
+            this.previewMode = mode;
+            this.previewModeToggle.querySelectorAll('.preview-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+            this.updatePreviewMode();
+        });
+
         // Download
         this.downloadBtn.addEventListener('click', () => this.download());
 
@@ -376,6 +392,8 @@ class PhotoFrameMaker {
         } else {
             this.drawPlaceholder();
         }
+
+        this.updateFeedImage();
     }
 
     drawImage() {
@@ -408,6 +426,24 @@ class PhotoFrameMaker {
         // Light gray placeholder for photo area
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
         this.ctx.fillRect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+    }
+
+    // --- Preview mode ---
+
+    updatePreviewMode() {
+        if (this.previewMode === 'feed') {
+            this.previewContainer.style.display = 'none';
+            this.feedMockup.style.display = '';
+            this.updateFeedImage();
+        } else {
+            this.previewContainer.style.display = '';
+            this.feedMockup.style.display = 'none';
+        }
+    }
+
+    updateFeedImage() {
+        if (this.previewMode !== 'feed') return;
+        this.feedImage.src = this.canvas.toDataURL('image/png');
     }
 
     // --- Image loading ---
