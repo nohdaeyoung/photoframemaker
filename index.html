@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Frame Maker by 324.ing</title>
-    <link rel="stylesheet" href="style.css?v=20260228c">
+    <link rel="stylesheet" href="style.css?v=20260228d">
 </head>
 <body>
     <div class="app">
@@ -15,6 +15,10 @@
 
         <main class="main">
             <div class="preview-area">
+                <div class="preview-mode-toggle" id="preview-mode-toggle">
+                    <button class="preview-mode-btn active" data-mode="default">기본</button>
+                    <button class="preview-mode-btn" data-mode="feed">피드</button>
+                </div>
                 <div class="preview-container" id="preview-container">
                     <canvas id="preview-canvas"></canvas>
                     <div class="preview-upload-prompt" id="preview-upload-prompt">
@@ -28,6 +32,32 @@
                         <span class="prompt-desktop">또는 Ctrl+V로 붙여넣기</span>
                     </div>
                 </div>
+                <!-- Instagram Feed Mockup -->
+                <div class="feed-mockup" id="feed-mockup" style="display:none">
+                    <div class="feed-post">
+                        <div class="feed-header">
+                            <div class="feed-avatar"></div>
+                            <span class="feed-username">username</span>
+                            <svg class="feed-more" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                        </div>
+                        <div class="feed-image-wrap">
+                            <img class="feed-image" id="feed-image" src="" alt="">
+                        </div>
+                        <div class="feed-actions">
+                            <div class="feed-actions-left">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </div>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div class="feed-info">
+                            <div class="feed-likes">좋아요 <strong>128</strong>개</div>
+                            <div class="feed-caption"><strong>username</strong> 오늘의 사진</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="preview-toolbar" id="preview-toolbar" style="display:none">
                     <p class="preview-hint" id="preview-hint">
                         사진 영역을 드래그하여 위치를 조정할 수 있습니다
@@ -384,6 +414,6 @@
         <div class="sheet-backdrop" id="sheet-backdrop"></div>
     </div>
 
-    <script src="app.js?v=20260228b"></script>
+    <script src="app.js?v=20260228c"></script>
 </body>
 </html>
