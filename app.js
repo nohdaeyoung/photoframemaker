@@ -12,6 +12,12 @@ class PhotoFrameMaker {
         this.dragStart = { x: 0, y: 0 };
         this.dragStartOffset = { x: 0, y: 0 };
 
+        // Swipe navigation tracking
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.touchStartTime = 0;
+        this.touchMoved = false;
+
         this.previewMode = 'default';
 
         this.canvas = document.getElementById('preview-canvas');
@@ -88,6 +94,10 @@ class PhotoFrameMaker {
         this.sidebar = document.getElementById('sidebar');
         this.sheetHandle = document.getElementById('sheet-handle');
         this.sheetBackdrop = document.getElementById('sheet-backdrop');
+
+        // Canvas navigation arrows
+        this.navPrevBtn = document.getElementById('canvas-nav-prev');
+        this.navNextBtn = document.getElementById('canvas-nav-next');
 
         // Thumbnail strip
         this.thumbnailStrip = document.getElementById('thumbnail-strip');
@@ -244,16 +254,49 @@ class PhotoFrameMaker {
         this.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1 && this.hasImage) {
                 e.preventDefault();
+                this.touchStartX = e.touches[0].clientX;
+                this.touchStartY = e.touches[0].clientY;
+                this.touchStartTime = Date.now();
+                this.touchMoved = false;
                 this.onDragStart(e.touches[0]);
             }
         }, { passive: false });
         this.canvas.addEventListener('touchmove', (e) => {
             if (e.touches.length === 1 && this.hasImage) {
                 e.preventDefault();
+                this.touchMoved = true;
                 this.onDragMove(e.touches[0]);
             }
         }, { passive: false });
-        document.addEventListener('touchend', () => this.onDragEnd());
+        document.addEventListener('touchend', (e) => {
+            if (this.isDragging && this.hasMultipleImages) {
+                const touch = e.changedTouches && e.changedTouches[0];
+                if (touch) {
+                    const dx = touch.clientX - this.touchStartX;
+                    const dy = touch.clientY - this.touchStartY;
+                    const dt = Date.now() - this.touchStartTime;
+                    const absDx = Math.abs(dx);
+                    const absDy = Math.abs(dy);
+
+                    // Swipe: quick horizontal gesture (< 300ms, > 50px horizontal, more horizontal than vertical)
+                    if (dt < 300 && absDx > 50 && absDx > absDy * 1.5) {
+                        // Undo the drag offset that was applied during the swipe
+                        if (this.currentImage) {
+                            this.currentImage.imageOffset.x = this.dragStartOffset.x;
+                            this.currentImage.imageOffset.y = this.dragStartOffset.y;
+                        }
+                        if (dx > 0) {
+                            this.navigatePrev();
+                        } else {
+                            this.navigateNext();
+                        }
+                        this.isDragging = false;
+                        return;
+                    }
+                }
+            }
+            this.onDragEnd();
+        });
 
         // Preview area click to upload (when no image)
         this.previewContainer.addEventListener('click', (e) => {
@@ -291,6 +334,16 @@ class PhotoFrameMaker {
 
         // Download
         this.downloadBtn.addEventListener('click', () => this.download());
+
+        // Canvas navigation arrows
+        this.navPrevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.navigatePrev();
+        });
+        this.navNextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.navigateNext();
+        });
 
         // Thumbnail strip events
         this.thumbnailList.addEventListener('click', (e) => {
@@ -571,6 +624,7 @@ class PhotoFrameMaker {
         this.currentIndex = index;
 
         this.updateThumbnailStrip();
+        this.updateNavArrows();
         this.render();
         this.updateInfo();
         this.updateUploadUI();
@@ -578,6 +632,26 @@ class PhotoFrameMaker {
         if (this.currentImage) {
             this.displayExif(this.currentImage.exifData);
         }
+    }
+
+    // --- Canvas navigation ---
+
+    navigatePrev() {
+        if (this.currentIndex > 0) {
+            this.selectImage(this.currentIndex - 1);
+        }
+    }
+
+    navigateNext() {
+        if (this.currentIndex < this.images.length - 1) {
+            this.selectImage(this.currentIndex + 1);
+        }
+    }
+
+    updateNavArrows() {
+        const show = this.hasMultipleImages;
+        this.navPrevBtn.classList.toggle('visible', show && this.currentIndex > 0);
+        this.navNextBtn.classList.toggle('visible', show && this.currentIndex < this.images.length - 1);
     }
 
     // --- Image removal ---
@@ -612,6 +686,7 @@ class PhotoFrameMaker {
         const has = this.hasImage;
 
         this.updateThumbnailStrip();
+        this.updateNavArrows();
         this.updateUploadUI();
         this.updateDownloadButton();
         this.render();
