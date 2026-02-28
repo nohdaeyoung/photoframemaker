@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Photo Frame Maker</string>
+    <string name="title_activity_main">Photo Frame Maker</string>
+    <string name="package_name">com.dy.photoframemaker</string>
+    <string name="custom_url_scheme">com.dy.photoframemaker</string>
+</resources>

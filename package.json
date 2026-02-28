@@ -1,0 +1,23 @@
+{
+  "name": "photoframemaker",
+  "version": "1.0.0",
+  "description": "Photo Frame Maker by DY",
+  "scripts": {
+    "build": "mkdir -p www && cp index.html app.js style.css www/ && cp -r devnote.html prompt.html www/ 2>/dev/null || true",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "cap:run:android": "npm run build && npx cap run android"
+  },
+  "keywords": [],
+  "author": "DY",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
