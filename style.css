@@ -1249,7 +1249,7 @@ input[type="number"] {
         overflow: hidden;
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
         gap: 0.25rem;
-        justify-content: center;
+        justify-content: flex-start;
     }
 
     .preview-mode-toggle {
