@@ -472,6 +472,14 @@ class PhotoFrameMaker {
 
         this.previewContainer.style.width = Math.round(cw + padX) + 'px';
         this.previewContainer.style.height = Math.round(ch + padY) + 'px';
+
+        if (isMobile) {
+            this.previewContainer.style.marginLeft = 'auto';
+            this.previewContainer.style.marginRight = 'auto';
+        } else {
+            this.previewContainer.style.marginLeft = '';
+            this.previewContainer.style.marginRight = '';
+        }
     }
 
     // --- Rendering ---
