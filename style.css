@@ -51,7 +51,7 @@ body {
 }
 
 .header h1 a {
-    color: inherit;
+    color: #DA7756;
     text-decoration: none;
 }
 
@@ -1254,15 +1254,14 @@ input[type="number"] {
     }
 
     .preview-area {
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-items: center;
+        align-content: start;
         flex: 1;
         overflow: hidden;
         padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
         gap: 0.25rem;
-        justify-content: flex-start;
-    }
-
-    .preview-mode-toggle {
-        align-self: center;
     }
 
     .feed-mockup,
