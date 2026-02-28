@@ -566,6 +566,8 @@ class PhotoFrameMaker {
         }
 
         const filesToLoad = imageFiles.slice(0, available);
+        const firstNewIndex = this.images.length;
+        let isFirstLoaded = true;
 
         filesToLoad.forEach(file => {
             const imageUrl = URL.createObjectURL(file);
@@ -588,7 +590,11 @@ class PhotoFrameMaker {
                 };
 
                 this.images.push(item);
-                this.currentIndex = this.images.length - 1;
+                // Select the first image of this batch
+                if (isFirstLoaded) {
+                    this.currentIndex = firstNewIndex;
+                    isFirstLoaded = false;
+                }
 
                 // Parse EXIF async
                 this.parseExifForItem(file, item);
