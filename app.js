@@ -1,25 +1,42 @@
 class PhotoFrameMaker {
     constructor() {
-        this.image = null;
-        this.imageUrl = null;
-        this.fileName = '';
-        this.fileSize = 0;
+        // Multi-image array (max 10)
+        this.images = [];
+        this.currentIndex = 0;
+
         this.canvasRatio = [1, 1];
         this.canvasSize = 1000;
         this.frameRatio = 5;
         this.frameColor = '#FFFFFF';
-        this.imageOffset = { x: 0, y: 0 };
         this.isDragging = false;
         this.dragStart = { x: 0, y: 0 };
         this.dragStartOffset = { x: 0, y: 0 };
 
-        this.previewMode = 'default'; // 'default' or 'feed'
+        this.previewMode = 'default';
 
         this.canvas = document.getElementById('preview-canvas');
         this.ctx = this.canvas.getContext('2d');
         this.previewContainer = document.getElementById('preview-container');
 
         this.init();
+    }
+
+    // --- Convenience getters ---
+
+    get currentImage() {
+        return this.images[this.currentIndex] || null;
+    }
+
+    get imageCount() {
+        return this.images.length;
+    }
+
+    get hasImage() {
+        return this.images.length > 0;
+    }
+
+    get hasMultipleImages() {
+        return this.images.length > 1;
     }
 
     init() {
@@ -65,6 +82,12 @@ class PhotoFrameMaker {
         this.sheetHandle = document.getElementById('sheet-handle');
         this.sheetBackdrop = document.getElementById('sheet-backdrop');
 
+        // Thumbnail strip
+        this.thumbnailStrip = document.getElementById('thumbnail-strip');
+        this.thumbnailList = document.getElementById('thumbnail-list');
+        this.thumbnailAddBtn = document.getElementById('thumbnail-add-btn');
+        this.thumbnailCounter = document.getElementById('thumbnail-counter');
+
         // Mobile tab bar elements
         this.mobileTabBar = document.getElementById('mobile-tab-bar');
         this.mobileTabPanels = document.getElementById('mobile-tab-panels');
@@ -104,10 +127,10 @@ class PhotoFrameMaker {
             this.fileInput.click();
         });
         this.fileInput.addEventListener('change', (e) => {
-            if (e.target.files[0]) this.loadImage(e.target.files[0]);
+            if (e.target.files.length > 0) this.loadImages(e.target.files);
         });
 
-        // Drag and drop
+        // Drag and drop on upload zone
         this.uploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             this.uploadZone.classList.add('drag-over');
@@ -118,7 +141,7 @@ class PhotoFrameMaker {
         this.uploadZone.addEventListener('drop', (e) => {
             e.preventDefault();
             this.uploadZone.classList.remove('drag-over');
-            if (e.dataTransfer.files[0]) this.loadImage(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length > 0) this.loadImages(e.dataTransfer.files);
         });
 
         // Paste
@@ -127,7 +150,7 @@ class PhotoFrameMaker {
             for (const item of items) {
                 if (item.type.startsWith('image/')) {
                     e.preventDefault();
-                    this.loadImage(item.getAsFile());
+                    this.loadImages([item.getAsFile()]);
                     break;
                 }
             }
@@ -142,7 +165,7 @@ class PhotoFrameMaker {
             document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
-            this.imageOffset = { x: 0, y: 0 };
+            this.resetAllOffsets();
             this.updateCanvasSize();
             this.render();
             this.updateInfo();
@@ -154,7 +177,7 @@ class PhotoFrameMaker {
             if (val >= 100 && val <= 10000) {
                 this.canvasSize = val;
                 this.mobileCanvasSizeInput.value = val;
-                this.imageOffset = { x: 0, y: 0 };
+                this.resetAllOffsets();
                 this.updateCanvasSize();
                 this.render();
                 this.updateInfo();
@@ -167,7 +190,7 @@ class PhotoFrameMaker {
             this.frameRatioInput.value = this.frameRatio;
             this.mobileFrameRatioSlider.value = this.frameRatio;
             this.mobileFrameRatioInput.value = this.frameRatio;
-            this.imageOffset = { x: 0, y: 0 };
+            this.resetAllOffsets();
             this.render();
             this.updateInfo();
         });
@@ -180,7 +203,7 @@ class PhotoFrameMaker {
             this.frameRatioSlider.value = val;
             this.mobileFrameRatioSlider.value = val;
             this.mobileFrameRatioInput.value = val;
-            this.imageOffset = { x: 0, y: 0 };
+            this.resetAllOffsets();
             this.render();
             this.updateInfo();
         });
@@ -212,13 +235,13 @@ class PhotoFrameMaker {
         document.addEventListener('mouseup', () => this.onDragEnd());
 
         this.canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1 && this.image) {
+            if (e.touches.length === 1 && this.hasImage) {
                 e.preventDefault();
                 this.onDragStart(e.touches[0]);
             }
         }, { passive: false });
         this.canvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1 && this.image) {
+            if (e.touches.length === 1 && this.hasImage) {
                 e.preventDefault();
                 this.onDragMove(e.touches[0]);
             }
@@ -227,29 +250,25 @@ class PhotoFrameMaker {
 
         // Preview area click to upload (when no image)
         this.previewContainer.addEventListener('click', (e) => {
-            if (!this.image) {
+            if (!this.hasImage) {
                 this.fileInput.style.top = e.clientY + 'px';
                 this.fileInput.style.left = e.clientX + 'px';
                 this.fileInput.click();
             }
         });
 
-        // Preview area drag and drop
+        // Preview area drag and drop (always allow adding more)
         this.previewContainer.addEventListener('dragover', (e) => {
-            if (!this.image) {
-                e.preventDefault();
-                this.previewContainer.classList.add('drag-over');
-            }
+            e.preventDefault();
+            this.previewContainer.classList.add('drag-over');
         });
         this.previewContainer.addEventListener('dragleave', () => {
             this.previewContainer.classList.remove('drag-over');
         });
         this.previewContainer.addEventListener('drop', (e) => {
-            if (!this.image) {
-                e.preventDefault();
-                this.previewContainer.classList.remove('drag-over');
-                if (e.dataTransfer.files[0]) this.loadImage(e.dataTransfer.files[0]);
-            }
+            e.preventDefault();
+            this.previewContainer.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) this.loadImages(e.dataTransfer.files);
         });
 
         // Preview mode toggle
@@ -265,6 +284,24 @@ class PhotoFrameMaker {
 
         // Download
         this.downloadBtn.addEventListener('click', () => this.download());
+
+        // Thumbnail strip events
+        this.thumbnailList.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.thumbnail-remove');
+            if (removeBtn) {
+                e.stopPropagation();
+                this.removeImageAt(parseInt(removeBtn.dataset.index));
+                return;
+            }
+            const item = e.target.closest('.thumbnail-item');
+            if (item) {
+                this.selectImage(parseInt(item.dataset.index));
+            }
+        });
+
+        this.thumbnailAddBtn.addEventListener('click', () => {
+            this.fileInput.click();
+        });
 
         // Resize: recalculate preview container size
         window.addEventListener('resize', () => this.updatePreviewContainerSize());
@@ -303,22 +340,20 @@ class PhotoFrameMaker {
         };
     }
 
-    getDrawDimensions() {
-        if (!this.image) return { width: 0, height: 0 };
+    getDrawDimensions(img) {
+        const image = img || (this.currentImage && this.currentImage.image);
+        if (!image) return { width: 0, height: 0 };
         const photoArea = this.getPhotoArea();
         if (photoArea.width === 0 || photoArea.height === 0) return { width: 0, height: 0 };
 
-        const imgRatio = this.image.naturalWidth / this.image.naturalHeight;
+        const imgRatio = image.naturalWidth / image.naturalHeight;
         const areaRatio = photoArea.width / photoArea.height;
 
-        // Contain mode: fit entire image inside photo area (no cropping)
         let drawWidth, drawHeight;
         if (imgRatio > areaRatio) {
-            // Image is wider than area - fit by width
             drawWidth = photoArea.width;
             drawHeight = drawWidth / imgRatio;
         } else {
-            // Image is taller than area - fit by height
             drawHeight = photoArea.height;
             drawWidth = drawHeight * imgRatio;
         }
@@ -354,8 +389,9 @@ class PhotoFrameMaker {
             const parentPadY = parseFloat(parentCS.paddingTop) + parseFloat(parentCS.paddingBottom);
             const contentH = parent.clientHeight - parentPadY;
             const toolbarH = this.previewToolbar.offsetHeight || 0;
+            const stripH = this.thumbnailStrip.offsetHeight || 0;
             const gap = parseFloat(parentCS.gap) || 0;
-            maxH = contentH - toolbarH - gap;
+            maxH = contentH - toolbarH - stripH - gap * 2;
         } else {
             maxH = window.innerHeight * 0.75;
         }
@@ -389,7 +425,7 @@ class PhotoFrameMaker {
         this.ctx.fillRect(0, 0, dims.width, dims.height);
 
         // Draw image or placeholder
-        if (this.image) {
+        if (this.currentImage) {
             this.drawImage();
         } else {
             this.drawPlaceholder();
@@ -399,10 +435,13 @@ class PhotoFrameMaker {
     }
 
     drawImage() {
+        const cur = this.currentImage;
+        if (!cur) return;
+
         const photoArea = this.getPhotoArea();
         if (photoArea.width === 0 || photoArea.height === 0) return;
 
-        const draw = this.getDrawDimensions();
+        const draw = this.getDrawDimensions(cur.image);
         if (draw.width === 0 || draw.height === 0) return;
 
         this.ctx.save();
@@ -414,10 +453,10 @@ class PhotoFrameMaker {
         this.ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
         this.ctx.clip();
 
-        const x = photoArea.x + (photoArea.width - draw.width) / 2;
-        const y = photoArea.y + (photoArea.height - draw.height) / 2;
+        const x = photoArea.x + (photoArea.width - draw.width) / 2 + cur.imageOffset.x;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2 + cur.imageOffset.y;
 
-        this.ctx.drawImage(this.image, x, y, draw.width, draw.height);
+        this.ctx.drawImage(cur.image, x, y, draw.width, draw.height);
         this.ctx.restore();
     }
 
@@ -425,7 +464,6 @@ class PhotoFrameMaker {
         const photoArea = this.getPhotoArea();
         if (photoArea.width <= 0 || photoArea.height <= 0) return;
 
-        // Light gray placeholder for photo area
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
         this.ctx.fillRect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
     }
@@ -451,99 +489,231 @@ class PhotoFrameMaker {
         }
     }
 
-    // --- Image loading ---
+    // --- Image loading (multi) ---
 
-    loadImage(file) {
-        if (!file.type.startsWith('image/')) return;
+    loadImages(files) {
+        const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+        if (imageFiles.length === 0) return;
 
-        if (this.imageUrl) {
-            URL.revokeObjectURL(this.imageUrl);
+        const available = 10 - this.images.length;
+        if (available <= 0) {
+            this.showToast('최대 10장까지 가능합니다.');
+            return;
         }
 
-        this.fileName = file.name;
-        this.fileSize = file.size;
-        this.imageUrl = URL.createObjectURL(file);
+        if (imageFiles.length > available) {
+            this.showToast(`최대 10장까지 가능합니다. ${available}장만 추가됩니다.`);
+        }
 
-        // Parse EXIF before creating image
-        this.parseExif(file);
+        const filesToLoad = imageFiles.slice(0, available);
+        let loadedCount = 0;
 
-        const img = new Image();
-        img.onload = () => {
-            this.image = img;
-            this.imageOffset = { x: 0, y: 0 };
-            this.updateUploadUI();
-            this.render();
-            this.updateInfo();
-            this.downloadBtn.disabled = false;
-            this.mobileDownloadBtn.disabled = false;
-            this.previewToolbar.style.display = '';
-            this.previewContainer.classList.add('has-image');
-            this.updateMobilePhotoTab();
-        };
-        img.src = this.imageUrl;
+        filesToLoad.forEach(file => {
+            const imageUrl = URL.createObjectURL(file);
+            const img = new Image();
+
+            img.onload = () => {
+                const item = {
+                    image: img,
+                    imageUrl: imageUrl,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    imageOffset: { x: 0, y: 0 },
+                    exifData: null
+                };
+
+                this.images.push(item);
+                this.currentIndex = this.images.length - 1;
+
+                // Parse EXIF async
+                this.parseExifForItem(file, item);
+
+                loadedCount++;
+                if (loadedCount === filesToLoad.length) {
+                    this.onImagesChanged();
+                }
+            };
+            img.src = imageUrl;
+        });
     }
 
-    removeImage() {
-        if (this.imageUrl) {
-            URL.revokeObjectURL(this.imageUrl);
+    async parseExifForItem(file, item) {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            item.exifData = this.readExifFromBuffer(arrayBuffer);
+            // If this item is currently selected, update EXIF display
+            if (this.currentImage === item) {
+                this.displayExif(item.exifData);
+            }
+        } catch (e) {
+            // Ignore EXIF parse errors
         }
-        this.image = null;
-        this.imageUrl = null;
-        this.fileName = '';
-        this.fileSize = 0;
-        this.imageOffset = { x: 0, y: 0 };
-        this.fileInput.value = '';
+    }
 
-        // Reset upload zone UI
-        this.uploadZone.classList.remove('has-image');
-        this.uploadContent.innerHTML = `
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-            </svg>
-            <p>클릭하거나 파일을 드래그하세요</p>
-            <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
-        `;
+    // --- Image selection ---
 
-        // Reset preview
-        this.previewContainer.classList.remove('has-image');
-        this.previewToolbar.style.display = 'none';
-        this.downloadBtn.disabled = true;
-        this.mobileDownloadBtn.disabled = true;
+    selectImage(index) {
+        if (index < 0 || index >= this.images.length) return;
+        if (index === this.currentIndex) return;
+        this.currentIndex = index;
 
-        // Reset EXIF
-        this.exifSection.style.display = 'none';
-        this.exifGrid.innerHTML = '';
-        this.mobileExifSection.style.display = 'none';
-        this.mobileExifGrid.innerHTML = '';
-
-        this.updateMobilePhotoTab();
+        this.updateThumbnailStrip();
         this.render();
         this.updateInfo();
+        this.updateUploadUI();
+        this.updateMobilePhotoTab();
+        if (this.currentImage) {
+            this.displayExif(this.currentImage.exifData);
+        }
     }
 
+    // --- Image removal ---
+
+    removeImage() {
+        if (this.images.length === 0) return;
+        this.removeImageAt(this.currentIndex);
+    }
+
+    removeImageAt(index) {
+        if (index < 0 || index >= this.images.length) return;
+
+        const removed = this.images.splice(index, 1)[0];
+        URL.revokeObjectURL(removed.imageUrl);
+
+        // Adjust current index
+        if (this.images.length === 0) {
+            this.currentIndex = 0;
+        } else if (this.currentIndex >= this.images.length) {
+            this.currentIndex = this.images.length - 1;
+        } else if (index < this.currentIndex) {
+            this.currentIndex--;
+        }
+
+        this.fileInput.value = '';
+        this.onImagesChanged();
+    }
+
+    // --- Central update after images change ---
+
+    onImagesChanged() {
+        const has = this.hasImage;
+
+        this.updateThumbnailStrip();
+        this.updateUploadUI();
+        this.updateDownloadButton();
+        this.render();
+        this.updateInfo();
+        this.updateMobilePhotoTab();
+
+        this.downloadBtn.disabled = !has;
+        this.mobileDownloadBtn.disabled = !has;
+        this.previewToolbar.style.display = has ? '' : 'none';
+        this.previewContainer.classList.toggle('has-image', has);
+
+        if (!has) {
+            this.exifSection.style.display = 'none';
+            this.exifGrid.innerHTML = '';
+            this.mobileExifSection.style.display = 'none';
+            this.mobileExifGrid.innerHTML = '';
+
+            // Reset upload zone UI
+            this.uploadZone.classList.remove('has-image');
+            this.uploadContent.innerHTML = `
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p>클릭하거나 파일을 드래그하세요</p>
+                <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
+            `;
+        } else {
+            this.displayExif(this.currentImage.exifData);
+        }
+
+        this.updatePreviewContainerSize();
+    }
+
+    // --- Reset all offsets ---
+
+    resetAllOffsets() {
+        this.images.forEach(item => {
+            item.imageOffset = { x: 0, y: 0 };
+        });
+    }
+
+    // --- Thumbnail strip ---
+
+    updateThumbnailStrip() {
+        if (this.images.length <= 1) {
+            this.thumbnailStrip.style.display = 'none';
+            return;
+        }
+
+        this.thumbnailStrip.style.display = '';
+        this.thumbnailCounter.textContent = `${this.currentIndex + 1}/${this.images.length}`;
+        this.thumbnailAddBtn.style.display = this.images.length >= 10 ? 'none' : '';
+
+        this.thumbnailList.innerHTML = this.images.map((item, i) => `
+            <div class="thumbnail-item ${i === this.currentIndex ? 'active' : ''}" data-index="${i}">
+                <img src="${item.imageUrl}" alt="${item.fileName}">
+                <button class="thumbnail-remove" data-index="${i}" type="button">&times;</button>
+            </div>
+        `).join('');
+
+        // Scroll active thumbnail into view
+        requestAnimationFrame(() => {
+            const activeThumb = this.thumbnailList.querySelector('.thumbnail-item.active');
+            if (activeThumb) {
+                activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        });
+    }
+
+    // --- Upload UI ---
+
     updateUploadUI() {
+        const cur = this.currentImage;
+        if (!cur) return;
+
         this.uploadZone.classList.add('has-image');
-        const sizeStr = this.fileSize < 1024 * 1024
-            ? (this.fileSize / 1024).toFixed(1) + ' KB'
-            : (this.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+        const sizeStr = cur.fileSize < 1024 * 1024
+            ? (cur.fileSize / 1024).toFixed(1) + ' KB'
+            : (cur.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+
+        const countLabel = this.hasMultipleImages ? ` (${this.currentIndex + 1}/${this.imageCount})` : '';
 
         this.uploadContent.innerHTML = `
-            <img class="upload-thumb" src="${this.imageUrl}" alt="미리보기">
+            <img class="upload-thumb" src="${cur.imageUrl}" alt="미리보기">
             <div class="upload-info">
-                <div class="upload-filename">${this.fileName}</div>
-                <div class="upload-filesize">${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}</div>
-                <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 변경</div>
+                <div class="upload-filename">${cur.fileName}${countLabel}</div>
+                <div class="upload-filesize">${cur.image.naturalWidth} × ${cur.image.naturalHeight} px · ${sizeStr}</div>
+                <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 추가</div>
             </div>
             <span id="upload-remove-btn" title="사진 삭제" style="flex-shrink:0; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(0,0,0,0.1); color:#6b7280; font-size:18px; cursor:pointer; line-height:1;">&times;</span>
         `;
 
-        // Rebind inline delete button
         document.getElementById('upload-remove-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.removeImage();
         });
+    }
+
+    // --- Download button label ---
+
+    updateDownloadButton() {
+        const label = this.hasMultipleImages
+            ? `ZIP 다운로드 (${this.imageCount}장)`
+            : 'PNG 다운로드 (무손실)';
+
+        const btnLabel = this.downloadBtn.querySelector('.btn-label');
+        if (btnLabel) btnLabel.textContent = label;
+
+        // Mobile tab label
+        const mobileLabel = this.mobileTabBar?.querySelector('[data-tab="download"] span');
+        if (mobileLabel) {
+            mobileLabel.textContent = this.hasMultipleImages ? 'ZIP' : '저장';
+        }
     }
 
     // --- Drag handling ---
@@ -565,18 +735,18 @@ class PhotoFrameMaker {
     }
 
     onDragStart(e) {
-        if (!this.image) return;
+        if (!this.currentImage) return;
         const coords = this.getCanvasCoords(e);
         if (!this.isInPhotoArea(coords)) return;
 
         this.isDragging = true;
         this.dragStart = coords;
-        this.dragStartOffset = { ...this.imageOffset };
+        this.dragStartOffset = { ...this.currentImage.imageOffset };
         this.canvas.style.cursor = 'grabbing';
     }
 
     onDragMove(e) {
-        if (!this.image) return;
+        if (!this.currentImage) return;
 
         const coords = this.getCanvasCoords(e);
 
@@ -588,7 +758,7 @@ class PhotoFrameMaker {
         const dx = coords.x - this.dragStart.x;
         const dy = coords.y - this.dragStart.y;
 
-        this.imageOffset = {
+        this.currentImage.imageOffset = {
             x: this.dragStartOffset.x + dx,
             y: this.dragStartOffset.y + dy
         };
@@ -605,14 +775,17 @@ class PhotoFrameMaker {
     }
 
     clampOffset() {
+        const cur = this.currentImage;
+        if (!cur) return;
+
         const photoArea = this.getPhotoArea();
-        const draw = this.getDrawDimensions();
+        const draw = this.getDrawDimensions(cur.image);
 
         const maxOffsetX = Math.max(0, (draw.width - photoArea.width) / 2);
         const maxOffsetY = Math.max(0, (draw.height - photoArea.height) / 2);
 
-        this.imageOffset.x = Math.max(-maxOffsetX, Math.min(maxOffsetX, this.imageOffset.x));
-        this.imageOffset.y = Math.max(-maxOffsetY, Math.min(maxOffsetY, this.imageOffset.y));
+        cur.imageOffset.x = Math.max(-maxOffsetX, Math.min(maxOffsetX, cur.imageOffset.x));
+        cur.imageOffset.y = Math.max(-maxOffsetY, Math.min(maxOffsetY, cur.imageOffset.y));
     }
 
     // --- Info update ---
@@ -629,8 +802,9 @@ class PhotoFrameMaker {
         this.mobileInfoFrame.textContent = `${fw} px`;
         this.mobileInfoPhoto.textContent = `${pa.width} × ${pa.height} px`;
 
-        if (this.image) {
-            const origText = `${this.image.naturalWidth} × ${this.image.naturalHeight} px`;
+        const cur = this.currentImage;
+        if (cur) {
+            const origText = `${cur.image.naturalWidth} × ${cur.image.naturalHeight} px`;
             this.infoOriginalLabel.style.display = '';
             this.infoOriginal.style.display = '';
             this.infoOriginal.textContent = origText;
@@ -638,10 +812,9 @@ class PhotoFrameMaker {
             this.mobileInfoOriginal.style.display = '';
             this.mobileInfoOriginal.textContent = origText;
 
-            // Check if upscaling
-            const draw = this.getDrawDimensions();
-            const scaleX = draw.width / this.image.naturalWidth;
-            const scaleY = draw.height / this.image.naturalHeight;
+            const draw = this.getDrawDimensions(cur.image);
+            const scaleX = draw.width / cur.image.naturalWidth;
+            const scaleY = draw.height / cur.image.naturalHeight;
             const scale = Math.min(scaleX, scaleY);
 
             const showWarn = scale > 1.5 ? '' : 'none';
@@ -659,33 +832,22 @@ class PhotoFrameMaker {
 
     // --- EXIF parsing ---
 
-    async parseExif(file) {
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const exifData = this.readExifFromBuffer(arrayBuffer);
-            this.displayExif(exifData);
-        } catch (e) {
-            this.exifSection.style.display = 'none';
-        }
-    }
-
     readExifFromBuffer(buffer) {
         const view = new DataView(buffer);
-        if (view.getUint16(0) !== 0xFFD8) return null; // Not JPEG
+        if (view.getUint16(0) !== 0xFFD8) return null;
 
         let offset = 2;
         while (offset < view.byteLength - 1) {
             const marker = view.getUint16(offset);
-            if (marker === 0xFFE1) { // APP1 (EXIF)
+            if (marker === 0xFFE1) {
                 const length = view.getUint16(offset + 2);
                 const exifStart = offset + 4;
-                // Check "Exif\0\0"
                 if (view.getUint32(exifStart) === 0x45786966 && view.getUint16(exifStart + 4) === 0x0000) {
                     return this.parseTiff(view, exifStart + 6);
                 }
                 offset += 2 + length;
             } else if ((marker & 0xFF00) === 0xFF00) {
-                if (marker === 0xFFDA) break; // Start of scan
+                if (marker === 0xFFDA) break;
                 offset += 2 + view.getUint16(offset + 2);
             } else {
                 break;
@@ -703,10 +865,8 @@ class PhotoFrameMaker {
         const tags = {};
         const exifTags = {};
 
-        // Read IFD0
         this.readIFD(view, tiffStart, tiffStart + ifdOffset, get16, get32, tags);
 
-        // Read ExifIFD if present
         if (tags[0x8769]) {
             this.readIFD(view, tiffStart, tiffStart + tags[0x8769], get16, get32, exifTags);
         }
@@ -724,7 +884,7 @@ class PhotoFrameMaker {
                 const numValues = get32(entryOffset + 4);
                 const valueOffset = entryOffset + 8;
 
-                if (type === 2) { // ASCII string
+                if (type === 2) {
                     const strLen = numValues;
                     const strOffset = strLen > 4 ? tiffStart + get32(valueOffset) : valueOffset;
                     let str = '';
@@ -732,11 +892,11 @@ class PhotoFrameMaker {
                         str += String.fromCharCode(view.getUint8(strOffset + j));
                     }
                     result[tag] = str.trim();
-                } else if (type === 3) { // SHORT
+                } else if (type === 3) {
                     result[tag] = numValues === 1 ? get16(valueOffset) : get32(valueOffset);
-                } else if (type === 4) { // LONG
+                } else if (type === 4) {
                     result[tag] = get32(valueOffset);
-                } else if (type === 5 || type === 10) { // RATIONAL or SRATIONAL
+                } else if (type === 5 || type === 10) {
                     const ratOffset = tiffStart + get32(valueOffset);
                     const num = get32(ratOffset);
                     const den = get32(ratOffset + 4);
@@ -757,7 +917,6 @@ class PhotoFrameMaker {
 
         const items = [];
 
-        // Camera make + model (0x010F = Make, 0x0110 = Model)
         const make = data[0x010F] || '';
         const model = data[0x0110] || '';
         if (model) {
@@ -765,24 +924,20 @@ class PhotoFrameMaker {
             items.push(['카메라', camera]);
         }
 
-        // Lens model (0xA434)
         if (data[0xA434]) {
             items.push(['렌즈', data[0xA434]]);
         }
 
-        // Focal length (0x920A)
         if (data[0x920A]) {
             const fl = data[0x920A].value;
             items.push(['초점거리', `${Math.round(fl)}mm`]);
         }
 
-        // F-number (0x829D)
         if (data[0x829D]) {
             const f = data[0x829D].value;
             items.push(['조리개', `f/${f % 1 === 0 ? f.toFixed(0) : f.toFixed(1)}`]);
         }
 
-        // Exposure time (0x829A)
         if (data[0x829A]) {
             const { num, den } = data[0x829A];
             if (num && den) {
@@ -791,19 +946,16 @@ class PhotoFrameMaker {
             }
         }
 
-        // ISO (0x8827)
         if (data[0x8827]) {
             items.push(['ISO', `${data[0x8827]}`]);
         }
 
-        // Date taken (0x9003 = DateTimeOriginal, 0x0132 = DateTime)
         const dateStr = data[0x9003] || data[0x0132];
         if (dateStr) {
             const formatted = dateStr.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1.$2.$3');
             items.push(['촬영일', formatted]);
         }
 
-        // Software (0x0131)
         if (data[0x0131]) {
             items.push(['소프트웨어', data[0x0131]]);
         }
@@ -824,15 +976,16 @@ class PhotoFrameMaker {
     }
 
     updateMobilePhotoTab() {
-        if (this.image) {
+        const cur = this.currentImage;
+        if (cur) {
             this.mobilePhotoInfo.style.display = '';
-            this.mobilePhotoThumb.src = this.imageUrl;
-            this.mobilePhotoName.textContent = this.fileName;
-            const sizeStr = this.fileSize < 1024 * 1024
-                ? (this.fileSize / 1024).toFixed(1) + ' KB'
-                : (this.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
-            this.mobilePhotoSize.textContent = `${this.image.naturalWidth} × ${this.image.naturalHeight} px · ${sizeStr}`;
-            this.mobilePhotoUploadLabel.textContent = '사진 변경';
+            this.mobilePhotoThumb.src = cur.imageUrl;
+            this.mobilePhotoName.textContent = cur.fileName;
+            const sizeStr = cur.fileSize < 1024 * 1024
+                ? (cur.fileSize / 1024).toFixed(1) + ' KB'
+                : (cur.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+            this.mobilePhotoSize.textContent = `${cur.image.naturalWidth} × ${cur.image.naturalHeight} px · ${sizeStr}`;
+            this.mobilePhotoUploadLabel.textContent = '사진 추가';
             this.mobilePhotoDeleteBtn.style.display = '';
         } else {
             this.mobilePhotoInfo.style.display = 'none';
@@ -848,20 +1001,17 @@ class PhotoFrameMaker {
 
         this.activeTab = null;
 
-        // Tab button clicks
         this.mobileTabBar.addEventListener('click', (e) => {
             const btn = e.target.closest('.tab-btn');
             if (!btn) return;
 
             const tab = btn.dataset.tab;
 
-            // Download tab: trigger download directly
             if (tab === 'download') {
                 this.download();
                 return;
             }
 
-            // Toggle panel: tap active tab to close
             if (this.activeTab === tab) {
                 this.closeTabPanel();
             } else {
@@ -869,7 +1019,6 @@ class PhotoFrameMaker {
             }
         });
 
-        // Backdrop tap to close
         this.sheetBackdrop.addEventListener('click', () => {
             this.closeTabPanel();
         });
@@ -878,13 +1027,12 @@ class PhotoFrameMaker {
         document.getElementById('mobile-ratio-buttons').addEventListener('click', (e) => {
             const btn = e.target.closest('.ratio-btn');
             if (!btn) return;
-            // Sync both desktop and mobile ratio buttons
             const ratio = btn.dataset.ratio;
             this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
-            this.imageOffset = { x: 0, y: 0 };
+            this.resetAllOffsets();
             this.updateCanvasSize();
             this.render();
             this.updateInfo();
@@ -896,7 +1044,7 @@ class PhotoFrameMaker {
             if (val >= 100 && val <= 10000) {
                 this.canvasSize = val;
                 this.canvasSizeInput.value = val;
-                this.imageOffset = { x: 0, y: 0 };
+                this.resetAllOffsets();
                 this.updateCanvasSize();
                 this.render();
                 this.updateInfo();
@@ -909,7 +1057,7 @@ class PhotoFrameMaker {
             this.mobileFrameRatioInput.value = this.frameRatio;
             this.frameRatioSlider.value = this.frameRatio;
             this.frameRatioInput.value = this.frameRatio;
-            this.imageOffset = { x: 0, y: 0 };
+            this.resetAllOffsets();
             this.render();
             this.updateInfo();
         });
@@ -922,7 +1070,7 @@ class PhotoFrameMaker {
             this.mobileFrameRatioSlider.value = val;
             this.frameRatioSlider.value = val;
             this.frameRatioInput.value = val;
-            this.imageOffset = { x: 0, y: 0 };
+            this.resetAllOffsets();
             this.render();
             this.updateInfo();
         });
@@ -932,7 +1080,6 @@ class PhotoFrameMaker {
             const swatch = e.target.closest('.color-swatch');
             if (!swatch) return;
             const color = swatch.dataset.color;
-            // Sync both
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
             this.frameColor = color;
@@ -957,7 +1104,7 @@ class PhotoFrameMaker {
         // Mobile photo delete button
         this.mobilePhotoDeleteBtn.addEventListener('click', () => {
             this.removeImage();
-            this.closeTabPanel();
+            if (!this.hasImage) this.closeTabPanel();
         });
 
         // Close panel on resize to desktop
@@ -971,12 +1118,10 @@ class PhotoFrameMaker {
     openTabPanel(tab) {
         this.activeTab = tab;
 
-        // Update tab button active states
         this.mobileTabBar.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tab);
         });
 
-        // Show target panel, hide others
         this.mobileTabPanels.querySelectorAll('.tab-panel').forEach(panel => {
             panel.classList.toggle('active', panel.dataset.tab === tab);
         });
@@ -994,11 +1139,20 @@ class PhotoFrameMaker {
     // --- Download ---
 
     async download() {
-        if (!this.image) return;
+        if (!this.hasImage) return;
+
+        if (this.hasMultipleImages) {
+            await this.downloadAsZip();
+        } else {
+            await this.downloadSingle();
+        }
+    }
+
+    async downloadSingle() {
+        const cur = this.currentImage;
+        if (!cur) return;
 
         const dims = this.getCanvasDimensions();
-
-        // Use offscreen canvas for clean rendering
         const offscreen = document.createElement('canvas');
         offscreen.width = dims.width;
         offscreen.height = dims.height;
@@ -1007,25 +1161,22 @@ class PhotoFrameMaker {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        // Frame
         ctx.fillStyle = this.frameColor;
         ctx.fillRect(0, 0, dims.width, dims.height);
 
-        // Image
         const photoArea = this.getPhotoArea();
-        const draw = this.getDrawDimensions();
+        const draw = this.getDrawDimensions(cur.image);
 
         ctx.save();
         ctx.beginPath();
         ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
         ctx.clip();
 
-        const x = photoArea.x + (photoArea.width - draw.width) / 2;
-        const y = photoArea.y + (photoArea.height - draw.height) / 2;
-        ctx.drawImage(this.image, x, y, draw.width, draw.height);
+        const x = photoArea.x + (photoArea.width - draw.width) / 2 + cur.imageOffset.x;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2 + cur.imageOffset.y;
+        ctx.drawImage(cur.image, x, y, draw.width, draw.height);
         ctx.restore();
 
-        // Synchronous canvas → blob (preserves user gesture for Web Share API)
         const dataURL = offscreen.toDataURL('image/png');
         const binary = atob(dataURL.split(',')[1]);
         const array = new Uint8Array(binary.length);
@@ -1034,10 +1185,10 @@ class PhotoFrameMaker {
         }
         const blob = new Blob([array], { type: 'image/png' });
 
-        const baseName = this.fileName ? this.fileName.replace(/\.[^.]+$/, '') : 'photo';
+        const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
         const fileName = `${baseName}_pfm.png`;
 
-        // 1) Try Web Share API (requires user gesture + HTTPS)
+        // 1) Try Web Share API
         try {
             const file = new File([blob], fileName, { type: 'image/png' });
             if (navigator.canShare?.({ files: [file] })) {
@@ -1045,16 +1196,16 @@ class PhotoFrameMaker {
                 return;
             }
         } catch (e) {
-            if (e.name === 'AbortError') return; // User cancelled
+            if (e.name === 'AbortError') return;
         }
 
-        // 2) Mobile fallback: show save overlay (long-press to save to Photos)
+        // 2) Mobile fallback
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             this.showSaveOverlay(blob);
             return;
         }
 
-        // 3) Desktop: traditional file download
+        // 3) Desktop download
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1064,6 +1215,163 @@ class PhotoFrameMaker {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
+
+    async downloadAsZip() {
+        if (typeof JSZip === 'undefined') {
+            this.showToast('ZIP 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
+        const zip = new JSZip();
+        const total = this.images.length;
+        const dims = this.getCanvasDimensions();
+        const photoArea = this.getPhotoArea();
+
+        this.showProgress(0, total);
+
+        // Track filename duplicates
+        const nameCount = {};
+
+        for (let i = 0; i < total; i++) {
+            const item = this.images[i];
+            this.showProgress(i + 1, total);
+
+            const blob = this.renderItemToBlob(item, dims, photoArea);
+
+            // Generate unique filename
+            const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : 'photo';
+            let zipName = `${baseName}_pfm.png`;
+            if (nameCount[zipName]) {
+                nameCount[zipName]++;
+                zipName = `${baseName}_pfm(${nameCount[zipName]}).png`;
+            } else {
+                nameCount[zipName] = 1;
+            }
+
+            zip.file(zipName, blob);
+        }
+
+        this.showProgress(total, total, '압축 중...');
+
+        const zipBlob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 1 }
+        });
+
+        const fileName = `photoframe_${total}장_pfm.zip`;
+
+        // Mobile: try share for ZIP
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            try {
+                const file = new File([zipBlob], fileName, { type: 'application/zip' });
+                if (navigator.canShare?.({ files: [file] })) {
+                    this.hideProgress();
+                    await navigator.share({ files: [file] });
+                    return;
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    this.hideProgress();
+                    return;
+                }
+            }
+        }
+
+        // Desktop / fallback download
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.hideProgress();
+    }
+
+    renderItemToBlob(item, dims, photoArea) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = dims.width;
+        offscreen.height = dims.height;
+        const ctx = offscreen.getContext('2d');
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        ctx.fillStyle = this.frameColor;
+        ctx.fillRect(0, 0, dims.width, dims.height);
+
+        const draw = this.getDrawDimensions(item.image);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+        ctx.clip();
+
+        const x = photoArea.x + (photoArea.width - draw.width) / 2 + item.imageOffset.x;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2 + item.imageOffset.y;
+        ctx.drawImage(item.image, x, y, draw.width, draw.height);
+        ctx.restore();
+
+        const dataURL = offscreen.toDataURL('image/png');
+        const binary = atob(dataURL.split(',')[1]);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+        return new Blob([array], { type: 'image/png' });
+    }
+
+    // --- Progress bar ---
+
+    showProgress(current, total, text) {
+        let bar = document.getElementById('download-progress');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'download-progress';
+            bar.className = 'download-progress';
+            bar.innerHTML = `
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text"></span>
+            `;
+            this.downloadBtn.parentElement.appendChild(bar);
+        }
+        bar.style.display = '';
+        const pct = Math.round((current / total) * 100);
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-text').textContent =
+            text || `이미지 처리 중... (${current}/${total})`;
+    }
+
+    hideProgress() {
+        const bar = document.getElementById('download-progress');
+        if (bar) bar.style.display = 'none';
+    }
+
+    // --- Toast ---
+
+    showToast(message, duration = 3000) {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => toast.classList.add('show'));
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+        }, duration);
+    }
+
+    // --- Save overlay (mobile) ---
 
     showSaveOverlay(blob) {
         const url = URL.createObjectURL(blob);
