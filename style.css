@@ -747,6 +747,127 @@ body {
     font-weight: 600;
 }
 
+/* Instagram Profile Grid Mockup */
+.profile-mockup {
+    width: 100%;
+    max-width: 470px;
+    align-self: center;
+}
+
+.profile-card {
+    background: #fff;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px 20px;
+}
+
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.profile-avatar::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    justify-content: center;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 13px;
+    color: #262626;
+    line-height: 1.3;
+}
+
+.profile-stat strong {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.profile-stat span {
+    color: #262626;
+    font-weight: 400;
+}
+
+.profile-bio {
+    padding: 0 20px 12px;
+}
+
+.profile-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #262626;
+}
+
+.profile-tab-bar {
+    display: flex;
+    border-top: 1px solid #dbdbdb;
+}
+
+.profile-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    color: #8e8e8e;
+    border-top: 1px solid transparent;
+    margin-top: -1px;
+}
+
+.profile-tab.active {
+    color: #262626;
+    border-top-color: #262626;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+}
+
+.profile-grid-item {
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+
+.profile-grid-item.placeholder {
+    background: #efefef;
+}
+
+.profile-grid-item.target {
+    position: relative;
+}
+
+.profile-grid-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 /* Bottom sheet handle (hidden on desktop) */
 .sheet-handle {
     display: none;
@@ -903,7 +1024,8 @@ body {
         align-self: center;
     }
 
-    .feed-mockup {
+    .feed-mockup,
+    .profile-mockup {
         overflow-y: auto;
         max-height: 100%;
     }
