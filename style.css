@@ -256,6 +256,14 @@ body {
     border-radius: 2px;
 }
 
+.ratio-label {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 400;
+    opacity: 0.7;
+    line-height: 1.2;
+}
+
 /* Input with suffix */
 .input-with-suffix {
     display: flex;
