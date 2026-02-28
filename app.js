@@ -58,6 +58,8 @@ class PhotoFrameMaker {
         this.previewModeToggle = document.getElementById('preview-mode-toggle');
         this.feedMockup = document.getElementById('feed-mockup');
         this.feedImage = document.getElementById('feed-image');
+        this.profileMockup = document.getElementById('profile-mockup');
+        this.profileGridImage = document.getElementById('profile-grid-image');
 
         this.sidebar = document.getElementById('sidebar');
         this.sheetHandle = document.getElementById('sheet-handle');
@@ -393,7 +395,7 @@ class PhotoFrameMaker {
             this.drawPlaceholder();
         }
 
-        this.updateFeedImage();
+        this.updateMockupImages();
     }
 
     drawImage() {
@@ -431,19 +433,22 @@ class PhotoFrameMaker {
     // --- Preview mode ---
 
     updatePreviewMode() {
-        if (this.previewMode === 'feed') {
-            this.previewContainer.style.display = 'none';
-            this.feedMockup.style.display = '';
-            this.updateFeedImage();
-        } else {
-            this.previewContainer.style.display = '';
-            this.feedMockup.style.display = 'none';
-        }
+        const isFeed = this.previewMode === 'feed';
+        const isProfile = this.previewMode === 'profile';
+        this.previewContainer.style.display = (isFeed || isProfile) ? 'none' : '';
+        this.feedMockup.style.display = isFeed ? '' : 'none';
+        this.profileMockup.style.display = isProfile ? '' : 'none';
+        if (isFeed || isProfile) this.updateMockupImages();
     }
 
-    updateFeedImage() {
-        if (this.previewMode !== 'feed') return;
-        this.feedImage.src = this.canvas.toDataURL('image/png');
+    updateMockupImages() {
+        if (this.previewMode === 'default') return;
+        const dataUrl = this.canvas.toDataURL('image/png');
+        if (this.previewMode === 'feed') {
+            this.feedImage.src = dataUrl;
+        } else if (this.previewMode === 'profile') {
+            this.profileGridImage.src = dataUrl;
+        }
     }
 
     // --- Image loading ---
