@@ -1500,6 +1500,12 @@ input[type="number"] {
     /* Mobile thumbnail strip */
     .thumbnail-strip {
         padding: 2px 0;
+        justify-content: center;
+    }
+
+    .thumbnail-list {
+        flex: 0 1 auto;
+        justify-content: center;
     }
 
     .thumbnail-item .thumbnail-remove {

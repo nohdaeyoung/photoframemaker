@@ -712,6 +712,8 @@ class PhotoFrameMaker {
         this.previewToolbar.style.display = has ? '' : 'none';
         this.previewContainer.classList.toggle('has-image', has);
 
+        this.updatePreviewContainerSize();
+
         if (!has) {
             this.exifSection.style.display = 'none';
             this.exifGrid.innerHTML = '';
