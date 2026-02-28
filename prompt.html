@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Log — Photo Frame Maker by 324.ing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; background: #fafafa; line-height: 1.7; }
+        .container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .desc { color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; color: #2563eb; }
+        h3 { font-size: 1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.4rem; }
+        hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
+        blockquote { border-left: 3px solid #d1d5db; padding: 0.4rem 0 0.4rem 1rem; margin: 0.4rem 0; color: #374151; font-size: 0.95rem; background: #f9fafb; border-radius: 0 6px 6px 0; }
+        .back { display: inline-block; margin-bottom: 1rem; color: #6b7280; text-decoration: none; font-size: 0.9rem; }
+        .back:hover { color: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back" href="/">&larr; Photo Frame Maker</a>
+        <h1>Prompt Log</h1>
+        <p class="desc">개발 과정에서 사용된 주요 프롬프트를 일자별로 기록합니다.</p>
+
+        <hr>
+        <h2>2026-02-27</h2>
+
+        <h3>프로젝트 초기 생성</h3>
+        <blockquote>사진에 여백 프레임을 추가할 수 있는 웹 앱을 만들어줘.<br>캔버스 비율 선택, 프레임 두께/색상 조절, PNG 다운로드 기능이 필요해.</blockquote>
+
+        <h3>이미지 표시 모드 변경</h3>
+        <blockquote>이미지가 잘리지 않게 전체가 보이도록 해줘 (Contain 모드)</blockquote>
+
+        <h3>UI 레이아웃 조정</h3>
+        <blockquote>설정 패널을 오른쪽으로 옮겨줘.</blockquote>
+        <blockquote>프리뷰 영역 클릭하면 사진 업로드되게 해줘.</blockquote>
+        <blockquote>사진 삭제 버튼 추가해줘.</blockquote>
+
+        <h3>타이틀 변경</h3>
+        <blockquote>타이틀을 "Photo Frame Maker by 324.ing"으로 바꿔줘</blockquote>
+
+        <h3>모바일 UX 개선</h3>
+        <blockquote>모바일에서 하단에 탭 바 형태로 바꿔줘.</blockquote>
+        <blockquote>모바일에서 터치가 안 되는 문제 해결해줘.</blockquote>
+        <blockquote>모바일 사진 탭에 썸네일이랑 파일 정보 보여줘.</blockquote>
+
+        <h3>EXIF 메타데이터</h3>
+        <blockquote>EXIF 정보를 파싱해서 정보 섹션에 보여줘 (카메라, 렌즈, 조리개, ISO 등)</blockquote>
+
+        <h3>다운로드 개선</h3>
+        <blockquote>다운로드 파일명을 원본이름_pfm.png로 해줘.</blockquote>
+        <blockquote>iOS에서 사진 앱에 바로 저장되게 해줘 (Web Share API).</blockquote>
+
+        <h3>프리뷰 영역</h3>
+        <blockquote>프리뷰 영역의 체크무늬 배경이 캔버스 비율에 맞게 표시되도록 해줘.</blockquote>
+
+        <hr>
+        <h2>2026-02-28</h2>
+
+        <h3>인스타그램 비율 추가</h3>
+        <blockquote>인스타그램 게시물(4:5)이랑 스토리/릴스(9:16) 비율 추가해줘.</blockquote>
+        <blockquote>비율 버튼에 "인스타 게시물", "스토리/릴스" 같은 라벨도 표시해줘.</blockquote>
+        <blockquote>비율 버튼 레이아웃을 그리드로 바꿔줘.</blockquote>
+
+        <h3>인스타그램 미리보기 모드</h3>
+        <blockquote>인스타 피드에서 보이는 모습을 미리보기로 보여줘.</blockquote>
+        <blockquote>인스타 계정 페이지(프로필 그리드)에서 보이는 모습도 필요해.</blockquote>
+
+        <h3>여러 장 작업 기능 기획</h3>
+        <blockquote>여러장 작업할 수 있는 기능을 넣어줘. 최대 10장까지. 일단 기획부터 해줘봐.</blockquote>
+
+        <h3>문서화</h3>
+        <blockquote>지금까지 작업한 내용을 일자별 기능별로 devnote.md에 작성해주고, 프롬프트화해서 prompt.md에 작성해줘. 프로젝트 메인 페이지 하단 푸터에 카피라이트와 함께 두 문서 링크해.</blockquote>
+    </div>
+</body>
+</html>
