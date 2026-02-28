@@ -506,13 +506,18 @@ class PhotoFrameMaker {
         }
 
         const filesToLoad = imageFiles.slice(0, available);
-        let loadedCount = 0;
 
         filesToLoad.forEach(file => {
             const imageUrl = URL.createObjectURL(file);
             const img = new Image();
 
             img.onload = () => {
+                // Safety check for concurrent loads
+                if (this.images.length >= 10) {
+                    URL.revokeObjectURL(imageUrl);
+                    return;
+                }
+
                 const item = {
                     image: img,
                     imageUrl: imageUrl,
@@ -528,10 +533,11 @@ class PhotoFrameMaker {
                 // Parse EXIF async
                 this.parseExifForItem(file, item);
 
-                loadedCount++;
-                if (loadedCount === filesToLoad.length) {
-                    this.onImagesChanged();
-                }
+                // Update UI immediately for each loaded image
+                this.onImagesChanged();
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(imageUrl);
             };
             img.src = imageUrl;
         });
@@ -1218,7 +1224,11 @@ class PhotoFrameMaker {
 
     async downloadAsZip() {
         if (typeof JSZip === 'undefined') {
-            this.showToast('ZIP 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            this.showToast('ZIP 라이브러리 로딩 중... 잠시 후 다시 시도해주세요.');
+            // Try loading JSZip dynamically
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.head.appendChild(script);
             return;
         }
 
