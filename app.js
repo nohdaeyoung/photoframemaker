@@ -46,6 +46,13 @@ class PhotoFrameMaker {
         this.render();
         this.updateInfo();
         this.setupBottomSheet();
+
+        // Ensure correct initial state
+        this.previewToolbar.style.display = 'none';
+        this.thumbnailStrip.style.display = 'none';
+        this.downloadBtn.disabled = true;
+        this.mobileDownloadBtn.disabled = true;
+        this.previewContainer.classList.remove('has-image');
     }
 
     bindElements() {
@@ -1416,7 +1423,11 @@ class PhotoFrameMaker {
     }
 }
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize app (handle case where DOMContentLoaded already fired)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new PhotoFrameMaker();
+    });
+} else {
     new PhotoFrameMaker();
-});
+}
