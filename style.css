@@ -215,12 +215,12 @@ body {
 
 /* Ratio buttons */
 .ratio-buttons {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.5rem;
 }
 
 .ratio-btn {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -914,11 +914,7 @@ body {
     }
 
     .mobile-ratio-buttons {
-        flex-wrap: wrap;
-    }
-
-    .mobile-ratio-buttons .ratio-btn {
-        min-width: calc(33% - 0.5rem);
+        grid-template-columns: repeat(3, 1fr);
     }
 
     /* Hide redundant sections on mobile */
