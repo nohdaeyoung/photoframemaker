@@ -497,11 +497,18 @@ class PhotoFrameMaker {
         const isMobile = window.innerWidth <= 900;
 
         if (isMobile) {
-            // Let CSS grid allocate row space, then read the cell size
-            this.previewContainer.style.width = '100%';
-            this.previewContainer.style.height = '100%';
+            if (this.previewContainer.style.display === 'none') return;
+
+            // Temporarily let flex: 1 measure the available space
+            this.previewContainer.style.width = '';
+            this.previewContainer.style.height = '';
+            this.previewContainer.style.flex = '1';
 
             const cellRect = this.previewContainer.getBoundingClientRect();
+
+            // Restore flex after measurement
+            this.previewContainer.style.flex = '';
+
             const availW = cellRect.width - padX;
             const availH = cellRect.height - padY;
 
