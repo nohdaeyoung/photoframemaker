@@ -42,12 +42,16 @@ class PhotoFrameMaker {
         return this.images.length;
     }
 
+    get loadedImages() {
+        return this.images.filter(item => item !== null);
+    }
+
     get hasImage() {
-        return this.images.length > 0;
+        return this.loadedImages.length > 0;
     }
 
     get hasMultipleImages() {
-        return this.images.length > 1;
+        return this.loadedImages.length > 1;
     }
 
     init() {
@@ -495,10 +499,21 @@ class PhotoFrameMaker {
             const parentCS = getComputedStyle(parent);
             const parentPadY = parseFloat(parentCS.paddingTop) + parseFloat(parentCS.paddingBottom);
             const contentH = parent.clientHeight - parentPadY;
-            const toolbarH = this.previewToolbar.offsetHeight || 0;
-            const stripH = this.thumbnailStrip.offsetHeight || 0;
             const gap = parseFloat(parentCS.gap) || 0;
-            maxH = contentH - toolbarH - stripH - gap * 2;
+
+            // Sum heights of all visible siblings in the grid
+            let siblingsH = 0;
+            let visibleCount = 0;
+            for (const child of parent.children) {
+                if (child === this.previewContainer) continue;
+                if (child.offsetHeight > 0 && child.style.display !== 'none') {
+                    siblingsH += child.offsetHeight;
+                    visibleCount++;
+                }
+            }
+            // Grid gaps: between all visible children (canvas + siblings)
+            const totalGaps = visibleCount * gap;
+            maxH = contentH - siblingsH - totalGaps;
         } else {
             maxH = window.innerHeight * 0.75;
         }
@@ -606,7 +621,8 @@ class PhotoFrameMaker {
 
     updateProfileGrid() {
         const totalCells = 9;
-        if (this.images.length <= 1) {
+        const loaded = this.loadedImages;
+        if (loaded.length <= 1) {
             // Single image: center position (index 4)
             this.profileGrid.innerHTML = '';
             for (let i = 0; i < totalCells; i++) {
@@ -638,7 +654,8 @@ class PhotoFrameMaker {
 
             for (let i = 0; i < totalCells; i++) {
                 const div = document.createElement('div');
-                if (i < this.images.length) {
+                const item = this.images[i];
+                if (i < this.images.length && item) {
                     div.className = 'profile-grid-item target' + (i === savedIndex ? ' current' : '');
                     const img = document.createElement('img');
                     img.className = 'profile-grid-image';
@@ -655,7 +672,6 @@ class PhotoFrameMaker {
                         tempCtx.fillStyle = this.frameColor;
                         tempCtx.fillRect(0, 0, dims.width, dims.height);
 
-                        const item = this.images[i];
                         const photoArea = this.getPhotoArea();
                         const draw = this.getDrawDimensions(item.image);
 
@@ -699,19 +715,23 @@ class PhotoFrameMaker {
 
         const filesToLoad = imageFiles.slice(0, available);
         const firstNewIndex = this.images.length;
-        let isFirstLoaded = true;
 
-        filesToLoad.forEach(file => {
+        // Pre-allocate slots to preserve file order
+        const slots = filesToLoad.map(() => {
+            const placeholder = null;
+            this.images.push(placeholder);
+            return this.images.length - 1;
+        });
+
+        this.currentIndex = firstNewIndex;
+        let loadedCount = 0;
+
+        filesToLoad.forEach((file, i) => {
+            const slotIndex = slots[i];
             const imageUrl = URL.createObjectURL(file);
             const img = new Image();
 
             img.onload = () => {
-                // Safety check for concurrent loads
-                if (this.images.length >= 10) {
-                    URL.revokeObjectURL(imageUrl);
-                    return;
-                }
-
                 const item = {
                     image: img,
                     imageUrl: imageUrl,
@@ -721,21 +741,36 @@ class PhotoFrameMaker {
                     exifData: null
                 };
 
-                this.images.push(item);
-                // Select the first image of this batch
-                if (isFirstLoaded) {
-                    this.currentIndex = firstNewIndex;
-                    isFirstLoaded = false;
-                }
+                this.images[slotIndex] = item;
+                loadedCount++;
 
                 // Parse EXIF async
                 this.parseExifForItem(file, item);
 
-                // Update UI immediately for each loaded image
+                // Remove remaining null placeholders when all loaded
+                if (loadedCount === filesToLoad.length) {
+                    this.images = this.images.filter(item => item !== null);
+                    // Recalculate currentIndex if needed
+                    if (this.currentIndex >= this.images.length) {
+                        this.currentIndex = Math.max(0, this.images.length - 1);
+                    }
+                }
+
                 this.onImagesChanged();
             };
             img.onerror = () => {
                 URL.revokeObjectURL(imageUrl);
+                this.images[slotIndex] = null;
+                loadedCount++;
+
+                // Clean up null slots when all done
+                if (loadedCount === filesToLoad.length) {
+                    this.images = this.images.filter(item => item !== null);
+                    if (this.currentIndex >= this.images.length) {
+                        this.currentIndex = Math.max(0, this.images.length - 1);
+                    }
+                    this.onImagesChanged();
+                }
             };
             img.src = imageUrl;
         });
@@ -803,8 +838,8 @@ class PhotoFrameMaker {
             return;
         }
         this.feedDots.style.display = '';
-        this.feedDots.innerHTML = this.images.map((_, i) =>
-            `<div class="feed-dot${i === this.currentIndex ? ' active' : ''}"></div>`
+        this.feedDots.innerHTML = this.images.map((item, i) =>
+            item ? `<div class="feed-dot${i === this.currentIndex ? ' active' : ''}"></div>` : ''
         ).join('');
     }
 
@@ -872,7 +907,10 @@ class PhotoFrameMaker {
                 <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
             `;
         } else {
-            this.displayExif(this.currentImage.exifData);
+            const cur = this.currentImage;
+            if (cur) {
+                this.displayExif(cur.exifData);
+            }
         }
 
         this.updatePreviewContainerSize();
@@ -882,14 +920,15 @@ class PhotoFrameMaker {
 
     resetAllOffsets() {
         this.images.forEach(item => {
-            item.imageOffset = { x: 0, y: 0 };
+            if (item) item.imageOffset = { x: 0, y: 0 };
         });
     }
 
     // --- Thumbnail strip ---
 
     updateThumbnailStrip() {
-        if (this.images.length <= 1) {
+        const loaded = this.loadedImages;
+        if (loaded.length <= 1) {
             this.thumbnailStrip.style.display = 'none';
             return;
         }
@@ -898,12 +937,14 @@ class PhotoFrameMaker {
         this.thumbnailCounter.textContent = `${this.currentIndex + 1}/${this.images.length}`;
         this.thumbnailAddBtn.style.display = this.images.length >= 10 ? 'none' : '';
 
-        this.thumbnailList.innerHTML = this.images.map((item, i) => `
+        this.thumbnailList.innerHTML = this.images.map((item, i) => {
+            if (!item) return '';
+            return `
             <div class="thumbnail-item ${i === this.currentIndex ? 'active' : ''}" data-index="${i}">
                 <img src="${item.imageUrl}" alt="${item.fileName}">
                 <button class="thumbnail-remove" data-index="${i}" type="button">&times;</button>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
         // Scroll active thumbnail into view
         requestAnimationFrame(() => {
