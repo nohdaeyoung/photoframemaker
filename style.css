@@ -877,6 +877,86 @@ body {
     display: block;
 }
 
+/* Instagram Dark Mode (system dark mode) */
+@media (prefers-color-scheme: dark) {
+    /* Feed mockup */
+    .feed-post {
+        background: #000;
+        border-color: #262626;
+    }
+
+    .feed-avatar::after {
+        background: #000;
+    }
+
+    .feed-username {
+        color: #f5f5f5;
+    }
+
+    .feed-more {
+        color: #f5f5f5;
+    }
+
+    .feed-image-wrap {
+        background: #121212;
+    }
+
+    .feed-actions svg {
+        color: #f5f5f5;
+    }
+
+    .feed-info {
+        color: #f5f5f5;
+    }
+
+    .feed-likes {
+        color: #f5f5f5;
+    }
+
+    .feed-caption strong {
+        color: #f5f5f5;
+    }
+
+    /* Profile mockup */
+    .profile-card {
+        background: #000;
+        border-color: #262626;
+    }
+
+    .profile-avatar::after {
+        background: #000;
+    }
+
+    .profile-stat {
+        color: #f5f5f5;
+    }
+
+    .profile-stat span {
+        color: #f5f5f5;
+    }
+
+    .profile-name {
+        color: #f5f5f5;
+    }
+
+    .profile-tab-bar {
+        border-top-color: #262626;
+    }
+
+    .profile-tab {
+        color: #a8a8a8;
+    }
+
+    .profile-tab.active {
+        color: #f5f5f5;
+        border-top-color: #f5f5f5;
+    }
+
+    .profile-grid-item.placeholder {
+        background: #121212;
+    }
+}
+
 /* Bottom sheet handle (hidden on desktop) */
 .sheet-handle {
     display: none;
