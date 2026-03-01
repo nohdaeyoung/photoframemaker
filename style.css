@@ -1559,8 +1559,8 @@ input[type="number"] {
 
     .feed-mockup,
     .profile-mockup {
+        align-self: stretch;
         overflow-y: auto;
-        max-height: 100%;
         width: 100%;
     }
 
