@@ -1377,6 +1377,15 @@ body {
     right: 0;
 }
 
+/* Thumbnail toggle button — hidden on desktop */
+.thumbnail-toggle-btn {
+    display: none;
+}
+
+.thumbnail-list-wrapper {
+    display: contents;
+}
+
 /* Download progress */
 .download-progress {
     margin-top: 0.5rem;
@@ -1790,9 +1799,49 @@ input[type="number"] {
         right: 4px;
     }
 
-    /* Mobile thumbnail strip — 5-column grid */
+    /* Mobile thumbnail strip — toggle + 5-column grid */
     .thumbnail-strip {
         padding: 2px 0;
+    }
+
+    .thumbnail-toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 6px 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .thumbnail-toggle-label {
+        color: var(--text);
+    }
+
+    .thumbnail-toggle-count {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .thumbnail-toggle-arrow {
+        transition: transform 0.2s ease;
+    }
+
+    .thumbnail-strip.expanded .thumbnail-toggle-arrow {
+        transform: rotate(180deg);
+    }
+
+    .thumbnail-list-wrapper {
+        display: none;
+        width: 100%;
+    }
+
+    .thumbnail-strip.expanded .thumbnail-list-wrapper {
+        display: block;
     }
 
     .thumbnail-list {
@@ -1823,10 +1872,7 @@ input[type="number"] {
     }
 
     .thumbnail-counter {
-        position: static;
-        display: block;
-        text-align: center;
-        margin-top: 2px;
+        display: none;
     }
 }
 
