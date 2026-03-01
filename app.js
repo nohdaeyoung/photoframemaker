@@ -459,14 +459,14 @@ class PhotoFrameMaker {
         const imgRatio = image.naturalWidth / image.naturalHeight;
         const areaRatio = photoArea.width / photoArea.height;
 
-        // Cover mode: fill entire photo area, allowing drag to reposition
+        // Contain mode: fit entire image within photo area (no cropping)
         let drawWidth, drawHeight;
         if (imgRatio > areaRatio) {
-            drawHeight = photoArea.height;
-            drawWidth = drawHeight * imgRatio;
-        } else {
             drawWidth = photoArea.width;
             drawHeight = drawWidth / imgRatio;
+        } else {
+            drawHeight = photoArea.height;
+            drawWidth = drawHeight * imgRatio;
         }
         return { width: drawWidth, height: drawHeight };
     }
@@ -477,6 +477,8 @@ class PhotoFrameMaker {
         const dims = this.getCanvasDimensions();
         this.canvas.width = dims.width;
         this.canvas.height = dims.height;
+        // Set aspect-ratio fallback so canvas never distorts
+        this.canvas.style.aspectRatio = `${dims.width} / ${dims.height}`;
         this.updatePreviewContainerSize();
     }
 
@@ -534,6 +536,11 @@ class PhotoFrameMaker {
 
         this.previewContainer.style.width = Math.round(cw + padX) + 'px';
         this.previewContainer.style.height = Math.round(ch + padY) + 'px';
+
+        // Set canvas CSS dimensions directly (avoid percentage-based sizing
+        // which can resolve incorrectly in flex containers on some mobile browsers)
+        this.canvas.style.width = Math.round(cw) + 'px';
+        this.canvas.style.height = Math.round(ch) + 'px';
 
         if (isMobile) {
             this.previewContainer.style.marginLeft = 'auto';
@@ -1049,7 +1056,7 @@ class PhotoFrameMaker {
         const coords = this.getCanvasCoords(e);
 
         if (!this.isDragging) {
-            this.canvas.style.cursor = this.isInPhotoArea(coords) ? 'grab' : 'default';
+            this.canvas.style.cursor = 'default';
             return;
         }
 
