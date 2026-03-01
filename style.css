@@ -1790,12 +1790,13 @@ input[type="number"] {
         right: 4px;
     }
 
-    /* Mobile thumbnail strip — visibility controlled by JS */
-    .thumbnail-strip {
-        padding: 0;
+    /* Mobile: hide thumbnail strip in preview area, show only inside photo tab panel */
+    .preview-area > .thumbnail-strip {
+        display: none !important;
     }
 
     .mobile-thumbnail-slot .thumbnail-strip {
+        display: block !important;
         padding: 4px 0;
     }
 
