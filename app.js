@@ -1359,6 +1359,11 @@ class PhotoFrameMaker {
                 return;
             }
 
+            if (tab === 'photo' && !this.hasImage) {
+                this.fileInput.click();
+                return;
+            }
+
             if (this.activeTab === tab) {
                 this.closeTabPanel();
             } else {
