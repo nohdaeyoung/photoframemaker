@@ -212,6 +212,10 @@
         <header class="header">
             <h1>Photo Frame Maker by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a></h1>
             <p class="subtitle">사진에 프레임을 추가하고 고화질로 저장하세요</p>
+            <div class="app-mode-toggle" id="app-mode-toggle">
+                <button class="app-mode-btn active" data-mode="frame">프레임</button>
+                <button class="app-mode-btn" data-mode="split">분할</button>
+            </div>
         </header>
 
         <main class="main">
@@ -381,6 +385,14 @@
                     </div>
                 </section>
 
+                <section class="control-section split-section" id="split-section" style="display:none">
+                    <h2>분할 수</h2>
+                    <div class="split-buttons" id="split-buttons">
+                        <button class="split-btn active" data-split="2">2분할</button>
+                        <button class="split-btn" data-split="3">3분할</button>
+                    </div>
+                </section>
+
                 <section class="control-section canvas-size-section">
                     <h2>캔버스 크기 <span class="label-hint">(긴 쪽 기준)</span></h2>
                     <div class="input-with-suffix">
@@ -520,6 +532,13 @@
                                 <span class="ratio-icon" style="aspect-ratio:2/3"></span>
                                 <span>2:3</span>
                             </button>
+                        </div>
+                        <div class="mobile-split-section" id="mobile-split-section" style="display:none">
+                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem">분할 수</div>
+                            <div class="split-buttons" id="mobile-split-buttons">
+                                <button class="split-btn active" data-split="2">2분할</button>
+                                <button class="split-btn" data-split="3">3분할</button>
+                            </div>
                         </div>
                         <div class="tab-panel-sub">
                             <span class="tab-panel-sub-label">캔버스 크기 <span class="label-hint">(긴 쪽)</span></span>
