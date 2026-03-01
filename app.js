@@ -115,11 +115,8 @@ class PhotoFrameMaker {
         // Thumbnail strip
         this.thumbnailStrip = document.getElementById('thumbnail-strip');
         this.thumbnailList = document.getElementById('thumbnail-list');
-        this.thumbnailListWrapper = document.getElementById('thumbnail-list-wrapper');
         this.thumbnailAddBtn = document.getElementById('thumbnail-add-btn');
         this.thumbnailCounter = document.getElementById('thumbnail-counter');
-        this.thumbnailToggleBtn = document.getElementById('thumbnail-toggle-btn');
-        this.thumbnailToggleCount = document.getElementById('thumbnail-toggle-count');
 
         // Mobile tab bar elements
         this.mobileTabBar = document.getElementById('mobile-tab-bar');
@@ -414,11 +411,6 @@ class PhotoFrameMaker {
 
         this.thumbnailAddBtn.addEventListener('click', () => {
             this.fileInput.click();
-        });
-
-        this.thumbnailToggleBtn.addEventListener('click', () => {
-            this.thumbnailStrip.classList.toggle('expanded');
-            this.updatePreviewContainerSize();
         });
 
         // Resize: recalculate preview container size
@@ -966,12 +958,12 @@ class PhotoFrameMaker {
         const loaded = this.loadedImages;
         if (loaded.length <= 1) {
             this.thumbnailStrip.style.display = 'none';
+            this.thumbnailStrip.classList.remove('mobile-visible');
             return;
         }
 
         this.thumbnailStrip.style.display = '';
         this.thumbnailCounter.textContent = `${this.currentIndex + 1}/${this.images.length}`;
-        this.thumbnailToggleCount.textContent = `${this.currentIndex + 1}/${this.images.length}`;
         this.thumbnailAddBtn.style.display = this.images.length >= 10 ? 'none' : '';
 
         this.thumbnailList.innerHTML = this.images.map((item, i) => {
@@ -983,14 +975,15 @@ class PhotoFrameMaker {
             </div>`;
         }).join('');
 
-        // On mobile, move add button into the thumbnail list grid
         const isMobile = window.innerWidth <= 900;
         if (isMobile) {
+            // Move add button into the thumbnail list grid
             this.thumbnailList.appendChild(this.thumbnailAddBtn);
+            // Keep mobile-visible in sync with photo tab state
+            this.thumbnailStrip.classList.toggle('mobile-visible', this.activeTab === 'photo');
         } else {
-            // Ensure add button is back in the wrapper on desktop
             if (this.thumbnailAddBtn.parentElement === this.thumbnailList) {
-                this.thumbnailListWrapper.appendChild(this.thumbnailAddBtn);
+                this.thumbnailStrip.insertBefore(this.thumbnailAddBtn, this.thumbnailCounter);
             }
         }
 
@@ -1012,7 +1005,6 @@ class PhotoFrameMaker {
         });
         const label = `${this.currentIndex + 1}/${this.images.length}`;
         this.thumbnailCounter.textContent = label;
-        this.thumbnailToggleCount.textContent = label;
 
         if (window.innerWidth > 900) {
             const activeThumb = this.thumbnailList.querySelector('.thumbnail-item.active');
@@ -1479,6 +1471,13 @@ class PhotoFrameMaker {
         });
 
         this.sheetBackdrop.classList.add('active');
+
+        // Show thumbnail strip when photo tab is opened (if multiple images)
+        if (tab === 'photo' && this.hasMultipleImages) {
+            this.thumbnailStrip.classList.add('mobile-visible');
+        } else {
+            this.thumbnailStrip.classList.remove('mobile-visible');
+        }
     }
 
     closeTabPanel() {
@@ -1486,6 +1485,7 @@ class PhotoFrameMaker {
         this.mobileTabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         this.mobileTabPanels.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
         this.sheetBackdrop.classList.remove('active');
+        this.thumbnailStrip.classList.remove('mobile-visible');
     }
 
     // --- Download ---
