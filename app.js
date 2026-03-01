@@ -115,8 +115,11 @@ class PhotoFrameMaker {
         // Thumbnail strip
         this.thumbnailStrip = document.getElementById('thumbnail-strip');
         this.thumbnailList = document.getElementById('thumbnail-list');
+        this.thumbnailListWrapper = document.getElementById('thumbnail-list-wrapper');
         this.thumbnailAddBtn = document.getElementById('thumbnail-add-btn');
         this.thumbnailCounter = document.getElementById('thumbnail-counter');
+        this.thumbnailToggleBtn = document.getElementById('thumbnail-toggle-btn');
+        this.thumbnailToggleCount = document.getElementById('thumbnail-toggle-count');
 
         // Mobile tab bar elements
         this.mobileTabBar = document.getElementById('mobile-tab-bar');
@@ -411,6 +414,11 @@ class PhotoFrameMaker {
 
         this.thumbnailAddBtn.addEventListener('click', () => {
             this.fileInput.click();
+        });
+
+        this.thumbnailToggleBtn.addEventListener('click', () => {
+            this.thumbnailStrip.classList.toggle('expanded');
+            this.updatePreviewContainerSize();
         });
 
         // Resize: recalculate preview container size
@@ -945,6 +953,7 @@ class PhotoFrameMaker {
 
         this.thumbnailStrip.style.display = '';
         this.thumbnailCounter.textContent = `${this.currentIndex + 1}/${this.images.length}`;
+        this.thumbnailToggleCount.textContent = `${this.currentIndex + 1}/${this.images.length}`;
         this.thumbnailAddBtn.style.display = this.images.length >= 10 ? 'none' : '';
 
         this.thumbnailList.innerHTML = this.images.map((item, i) => {
@@ -956,14 +965,14 @@ class PhotoFrameMaker {
             </div>`;
         }).join('');
 
-        // On mobile, move add button into the grid
+        // On mobile, move add button into the thumbnail list grid
         const isMobile = window.innerWidth <= 900;
         if (isMobile) {
             this.thumbnailList.appendChild(this.thumbnailAddBtn);
         } else {
-            // Ensure add button is back outside the list on desktop
+            // Ensure add button is back in the wrapper on desktop
             if (this.thumbnailAddBtn.parentElement === this.thumbnailList) {
-                this.thumbnailStrip.insertBefore(this.thumbnailAddBtn, this.thumbnailCounter);
+                this.thumbnailListWrapper.appendChild(this.thumbnailAddBtn);
             }
         }
 
