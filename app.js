@@ -979,12 +979,9 @@ class PhotoFrameMaker {
         const isMobile = window.innerWidth <= 900;
         if (isMobile) {
             this.thumbnailList.appendChild(this.thumbnailAddBtn);
-            // If photo tab is open, move strip into panel and show it
+            // Move strip into photo panel slot if photo tab is open
             if (this.activeTab === 'photo') {
                 this.mobileThumbnailSlot.appendChild(this.thumbnailStrip);
-                this.thumbnailStrip.style.display = '';
-            } else {
-                this.thumbnailStrip.style.display = 'none';
             }
         } else {
             this.thumbnailStrip.style.display = '';
@@ -1481,7 +1478,6 @@ class PhotoFrameMaker {
         // Move thumbnail strip into photo panel when photo tab opens
         if (tab === 'photo' && this.hasMultipleImages) {
             this.mobileThumbnailSlot.appendChild(this.thumbnailStrip);
-            this.thumbnailStrip.style.display = '';
         } else {
             this.returnThumbnailStrip();
         }
