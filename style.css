@@ -1141,7 +1141,7 @@ body {
     display: flex;
     gap: 6px;
     overflow-x: auto;
-    flex: 0 1 auto;
+    max-width: fit-content;
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
     padding: 2px;
