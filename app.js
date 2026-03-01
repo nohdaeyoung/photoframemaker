@@ -18,6 +18,11 @@ class PhotoFrameMaker {
         this.touchStartTime = 0;
         this.touchMoved = false;
 
+        // Feed swipe tracking
+        this.feedTouchStartX = 0;
+        this.feedTouchStartY = 0;
+        this.feedTouchStartTime = 0;
+
         this.previewMode = 'default';
 
         this.canvas = document.getElementById('preview-canvas');
@@ -88,7 +93,11 @@ class PhotoFrameMaker {
         this.previewModeToggle = document.getElementById('preview-mode-toggle');
         this.feedMockup = document.getElementById('feed-mockup');
         this.feedImage = document.getElementById('feed-image');
+        this.feedNavPrevBtn = document.getElementById('feed-nav-prev');
+        this.feedNavNextBtn = document.getElementById('feed-nav-next');
+        this.feedDots = document.getElementById('feed-dots');
         this.profileMockup = document.getElementById('profile-mockup');
+        this.profileGrid = document.getElementById('profile-grid');
         this.profileGridImage = document.getElementById('profile-grid-image');
 
         this.sidebar = document.getElementById('sidebar');
@@ -345,6 +354,43 @@ class PhotoFrameMaker {
             this.navigateNext();
         });
 
+        // Feed navigation arrows
+        this.feedNavPrevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.navigatePrev();
+        });
+        this.feedNavNextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.navigateNext();
+        });
+
+        // Feed image swipe navigation (mobile)
+        this.feedImage.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1 && this.hasMultipleImages) {
+                this.feedTouchStartX = e.touches[0].clientX;
+                this.feedTouchStartY = e.touches[0].clientY;
+                this.feedTouchStartTime = Date.now();
+            }
+        }, { passive: true });
+        this.feedImage.addEventListener('touchend', (e) => {
+            if (!this.hasMultipleImages) return;
+            const touch = e.changedTouches && e.changedTouches[0];
+            if (!touch) return;
+            const dx = touch.clientX - this.feedTouchStartX;
+            const dy = touch.clientY - this.feedTouchStartY;
+            const dt = Date.now() - this.feedTouchStartTime;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            if (dt < 300 && absDx > 50 && absDx > absDy * 1.5) {
+                e.preventDefault();
+                if (dx > 0) {
+                    this.navigatePrev();
+                } else {
+                    this.navigateNext();
+                }
+            }
+        });
+
         // Thumbnail strip events
         this.thumbnailList.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.thumbnail-remove');
@@ -554,7 +600,84 @@ class PhotoFrameMaker {
         if (this.previewMode === 'feed') {
             this.feedImage.src = dataUrl;
         } else if (this.previewMode === 'profile') {
-            this.profileGridImage.src = dataUrl;
+            this.updateProfileGrid();
+        }
+    }
+
+    updateProfileGrid() {
+        const totalCells = 9;
+        if (this.images.length <= 1) {
+            // Single image: center position (index 4)
+            this.profileGrid.innerHTML = '';
+            for (let i = 0; i < totalCells; i++) {
+                if (i === 4) {
+                    const div = document.createElement('div');
+                    div.className = 'profile-grid-item target';
+                    const img = document.createElement('img');
+                    img.className = 'profile-grid-image';
+                    img.id = 'profile-grid-image';
+                    img.src = this.canvas.toDataURL('image/png');
+                    img.alt = '';
+                    div.appendChild(img);
+                    this.profileGrid.appendChild(div);
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'profile-grid-item placeholder';
+                    this.profileGrid.appendChild(div);
+                }
+            }
+            this.profileGridImage = document.getElementById('profile-grid-image');
+        } else {
+            // Multiple images: fill from top-left
+            this.profileGrid.innerHTML = '';
+            const savedIndex = this.currentIndex;
+            const savedCanvas = document.createElement('canvas');
+            savedCanvas.width = this.canvas.width;
+            savedCanvas.height = this.canvas.height;
+            savedCanvas.getContext('2d').drawImage(this.canvas, 0, 0);
+
+            for (let i = 0; i < totalCells; i++) {
+                const div = document.createElement('div');
+                if (i < this.images.length) {
+                    div.className = 'profile-grid-item target' + (i === savedIndex ? ' current' : '');
+                    const img = document.createElement('img');
+                    img.className = 'profile-grid-image';
+                    img.alt = '';
+                    if (i === savedIndex) {
+                        img.src = savedCanvas.toDataURL('image/png');
+                    } else {
+                        // Render other images to temp canvas
+                        const tempCanvas = document.createElement('canvas');
+                        const dims = this.getCanvasDimensions();
+                        tempCanvas.width = dims.width;
+                        tempCanvas.height = dims.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.fillStyle = this.frameColor;
+                        tempCtx.fillRect(0, 0, dims.width, dims.height);
+
+                        const item = this.images[i];
+                        const photoArea = this.getPhotoArea();
+                        const draw = this.getDrawDimensions(item.image);
+
+                        tempCtx.save();
+                        tempCtx.beginPath();
+                        tempCtx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+                        tempCtx.clip();
+                        const x = photoArea.x + (photoArea.width - draw.width) / 2 + item.imageOffset.x;
+                        const y = photoArea.y + (photoArea.height - draw.height) / 2 + item.imageOffset.y;
+                        tempCtx.imageSmoothingEnabled = true;
+                        tempCtx.imageSmoothingQuality = 'high';
+                        tempCtx.drawImage(item.image, x, y, draw.width, draw.height);
+                        tempCtx.restore();
+
+                        img.src = tempCanvas.toDataURL('image/png');
+                    }
+                    div.appendChild(img);
+                } else {
+                    div.className = 'profile-grid-item placeholder';
+                }
+                this.profileGrid.appendChild(div);
+            }
         }
     }
 
@@ -665,8 +788,24 @@ class PhotoFrameMaker {
 
     updateNavArrows() {
         const show = this.hasMultipleImages;
-        this.navPrevBtn.classList.toggle('visible', show && this.currentIndex > 0);
-        this.navNextBtn.classList.toggle('visible', show && this.currentIndex < this.images.length - 1);
+        const showPrev = show && this.currentIndex > 0;
+        const showNext = show && this.currentIndex < this.images.length - 1;
+        this.navPrevBtn.classList.toggle('visible', showPrev);
+        this.navNextBtn.classList.toggle('visible', showNext);
+        this.feedNavPrevBtn.classList.toggle('visible', showPrev);
+        this.feedNavNextBtn.classList.toggle('visible', showNext);
+        this.updateFeedDots();
+    }
+
+    updateFeedDots() {
+        if (!this.hasMultipleImages) {
+            this.feedDots.style.display = 'none';
+            return;
+        }
+        this.feedDots.style.display = '';
+        this.feedDots.innerHTML = this.images.map((_, i) =>
+            `<div class="feed-dot${i === this.currentIndex ? ' active' : ''}"></div>`
+        ).join('');
     }
 
     // --- Image removal ---
