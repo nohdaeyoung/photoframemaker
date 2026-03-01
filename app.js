@@ -25,6 +25,11 @@ class PhotoFrameMaker {
 
         this.previewMode = 'default';
 
+        // Split mode
+        this.appMode = 'frame'; // 'frame' | 'split'
+        this.splitCount = 2;
+        this.splitCurrentPanel = 0;
+
         this.canvas = document.getElementById('preview-canvas');
         this.ctx = this.canvas.getContext('2d');
         this.previewContainer = document.getElementById('preview-container');
@@ -144,6 +149,13 @@ class PhotoFrameMaker {
         this.mobilePhotoUploadBtn = document.getElementById('mobile-photo-upload-btn');
         this.mobilePhotoUploadLabel = document.getElementById('mobile-photo-upload-label');
         this.mobilePhotoDeleteBtn = document.getElementById('mobile-photo-delete-btn');
+
+        // App mode toggle & split controls
+        this.appModeToggle = document.getElementById('app-mode-toggle');
+        this.splitSection = document.getElementById('split-section');
+        this.splitButtons = document.getElementById('split-buttons');
+        this.mobileSplitSection = document.getElementById('mobile-split-section');
+        this.mobileSplitButtons = document.getElementById('mobile-split-buttons');
     }
 
     setupEventListeners() {
@@ -284,7 +296,7 @@ class PhotoFrameMaker {
             }
         }, { passive: false });
         document.addEventListener('touchend', (e) => {
-            if (this.isDragging && this.hasMultipleImages) {
+            if (this.isDragging && (this.hasMultipleImages || (this.appMode === 'split' && this.splitCount > 1))) {
                 const touch = e.changedTouches && e.changedTouches[0];
                 if (touch) {
                     const dx = touch.clientX - this.touchStartX;
@@ -407,7 +419,17 @@ class PhotoFrameMaker {
             }
             const item = e.target.closest('.thumbnail-item');
             if (item) {
-                this.selectImage(parseInt(item.dataset.index));
+                const idx = parseInt(item.dataset.index);
+                if (this.appMode === 'split') {
+                    if (idx !== this.splitCurrentPanel) {
+                        this.splitCurrentPanel = idx;
+                        this.render();
+                        this.updateNavArrows();
+                        this.updateSplitThumbnailHighlight();
+                    }
+                } else {
+                    this.selectImage(idx);
+                }
             }
         });
 
@@ -417,6 +439,20 @@ class PhotoFrameMaker {
 
         // Resize: recalculate preview container size
         window.addEventListener('resize', () => this.updatePreviewContainerSize());
+
+        // App mode toggle (프레임 / 분할)
+        this.appModeToggle.addEventListener('click', (e) => {
+            const btn = e.target.closest('.app-mode-btn');
+            if (!btn) return;
+            this.switchAppMode(btn.dataset.mode);
+        });
+
+        // Split count buttons (desktop)
+        this.splitButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.split-btn');
+            if (!btn) return;
+            this.setSplitCount(parseInt(btn.dataset.split));
+        });
     }
 
     // --- Calculations ---
@@ -471,6 +507,159 @@ class PhotoFrameMaker {
             drawWidth = drawHeight * imgRatio;
         }
         return { width: drawWidth, height: drawHeight };
+    }
+
+    // --- App mode switching ---
+
+    switchAppMode(mode) {
+        if (mode === this.appMode) return;
+        this.appMode = mode;
+
+        const isSplit = mode === 'split';
+
+        // Toggle mode buttons
+        this.appModeToggle.querySelectorAll('.app-mode-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.mode === mode)
+        );
+
+        // Toggle split section visibility
+        this.splitSection.style.display = isSplit ? '' : 'none';
+        this.mobileSplitSection.style.display = isSplit ? '' : 'none';
+
+        // In split mode, hide preview mode toggle and force default view
+        this.previewModeToggle.style.display = isSplit ? 'none' : '';
+        if (isSplit && this.previewMode !== 'default') {
+            this.previewMode = 'default';
+            this.previewModeToggle.querySelectorAll('.preview-mode-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.mode === 'default')
+            );
+            this.updatePreviewMode();
+        }
+
+        // Reset split panel
+        this.splitCurrentPanel = 0;
+
+        // Re-render everything
+        this.render();
+        this.updateNavArrows();
+        this.updateThumbnailStrip();
+        this.updateDownloadButton();
+        this.updateInfo();
+    }
+
+    setSplitCount(count) {
+        if (count === this.splitCount) return;
+        this.splitCount = count;
+        this.splitCurrentPanel = 0;
+
+        // Update buttons (desktop + mobile)
+        [this.splitButtons, this.mobileSplitButtons].forEach(container => {
+            container.querySelectorAll('.split-btn').forEach(b =>
+                b.classList.toggle('active', parseInt(b.dataset.split) === count)
+            );
+        });
+
+        this.render();
+        this.updateNavArrows();
+        this.updateThumbnailStrip();
+        this.updateDownloadButton();
+        this.updateInfo();
+    }
+
+    // --- Split rendering helpers ---
+
+    getSplitStripDimensions(img) {
+        const stripWidth = img.naturalWidth / this.splitCount;
+        return { width: stripWidth, height: img.naturalHeight };
+    }
+
+    getSplitSourceRect(img, panelIndex) {
+        const stripWidth = img.naturalWidth / this.splitCount;
+        return {
+            sx: stripWidth * panelIndex,
+            sy: 0,
+            sw: stripWidth,
+            sh: img.naturalHeight
+        };
+    }
+
+    getSplitDrawDimensions(img) {
+        const photoArea = this.getPhotoArea();
+        if (photoArea.width === 0 || photoArea.height === 0) return { width: 0, height: 0 };
+
+        const strip = this.getSplitStripDimensions(img);
+        const stripRatio = strip.width / strip.height;
+        const areaRatio = photoArea.width / photoArea.height;
+
+        let drawWidth, drawHeight;
+        if (stripRatio > areaRatio) {
+            drawWidth = photoArea.width;
+            drawHeight = drawWidth / stripRatio;
+        } else {
+            drawHeight = photoArea.height;
+            drawWidth = drawHeight * stripRatio;
+        }
+        return { width: drawWidth, height: drawHeight };
+    }
+
+    drawSplitImage() {
+        const cur = this.currentImage;
+        if (!cur) return;
+
+        const photoArea = this.getPhotoArea();
+        if (photoArea.width === 0 || photoArea.height === 0) return;
+
+        const img = cur.image;
+        const draw = this.getSplitDrawDimensions(img);
+        if (draw.width === 0 || draw.height === 0) return;
+
+        const src = this.getSplitSourceRect(img, this.splitCurrentPanel);
+
+        const x = photoArea.x + (photoArea.width - draw.width) / 2;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2;
+
+        this.ctx.save();
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+        this.ctx.beginPath();
+        this.ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+        this.ctx.clip();
+        this.ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, x, y, draw.width, draw.height);
+        this.ctx.restore();
+    }
+
+    renderSplitPanelToBlob(item, dims, photoArea, panelIndex) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = dims.width;
+        offscreen.height = dims.height;
+        const ctx = offscreen.getContext('2d');
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = this.frameColor;
+        ctx.fillRect(0, 0, dims.width, dims.height);
+
+        const img = item.image;
+        const src = this.getSplitSourceRect(img, panelIndex);
+        const draw = this.getSplitDrawDimensions(img);
+
+        const x = photoArea.x + (photoArea.width - draw.width) / 2;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+        ctx.clip();
+        ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, x, y, draw.width, draw.height);
+        ctx.restore();
+
+        const dataURL = offscreen.toDataURL('image/png');
+        const binary = atob(dataURL.split(',')[1]);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+        }
+        return new Blob([array], { type: 'image/png' });
     }
 
     // --- Canvas size update ---
@@ -571,7 +760,11 @@ class PhotoFrameMaker {
 
         // Draw image or placeholder
         if (this.currentImage) {
-            this.drawImage();
+            if (this.appMode === 'split') {
+                this.drawSplitImage();
+            } else {
+                this.drawImage();
+            }
         } else {
             this.drawPlaceholder();
         }
@@ -842,18 +1035,47 @@ class PhotoFrameMaker {
     // --- Canvas navigation ---
 
     navigatePrev() {
+        if (this.appMode === 'split') {
+            if (this.splitCurrentPanel > 0) {
+                this.splitCurrentPanel--;
+                this.render();
+                this.updateNavArrows();
+                this.updateSplitThumbnailHighlight();
+            }
+            return;
+        }
         if (this.currentIndex > 0) {
             this.selectImage(this.currentIndex - 1);
         }
     }
 
     navigateNext() {
+        if (this.appMode === 'split') {
+            if (this.splitCurrentPanel < this.splitCount - 1) {
+                this.splitCurrentPanel++;
+                this.render();
+                this.updateNavArrows();
+                this.updateSplitThumbnailHighlight();
+            }
+            return;
+        }
         if (this.currentIndex < this.images.length - 1) {
             this.selectImage(this.currentIndex + 1);
         }
     }
 
     updateNavArrows() {
+        if (this.appMode === 'split') {
+            const show = this.hasImage && this.splitCount > 1;
+            const showPrev = show && this.splitCurrentPanel > 0;
+            const showNext = show && this.splitCurrentPanel < this.splitCount - 1;
+            this.navPrevBtn.classList.toggle('visible', showPrev);
+            this.navNextBtn.classList.toggle('visible', showNext);
+            this.feedNavPrevBtn.classList.toggle('visible', false);
+            this.feedNavNextBtn.classList.toggle('visible', false);
+            this.feedDots.style.display = 'none';
+            return;
+        }
         const show = this.hasMultipleImages;
         const showPrev = show && this.currentIndex > 0;
         const showNext = show && this.currentIndex < this.images.length - 1;
@@ -959,6 +1181,10 @@ class PhotoFrameMaker {
     // --- Thumbnail strip ---
 
     updateThumbnailStrip() {
+        if (this.appMode === 'split') {
+            this.updateSplitThumbnails();
+            return;
+        }
         const loaded = this.loadedImages;
         if (loaded.length <= 1) {
             this.thumbnailStrip.style.display = 'none';
@@ -1019,6 +1245,68 @@ class PhotoFrameMaker {
         }
     }
 
+    updateSplitThumbnails() {
+        const cur = this.currentImage;
+        if (!cur || this.splitCount <= 1) {
+            this.thumbnailStrip.style.display = 'none';
+            this.returnThumbnailStrip();
+            return;
+        }
+
+        this.thumbnailCounter.textContent = `${this.splitCurrentPanel + 1}/${this.splitCount}`;
+        this.thumbnailAddBtn.style.display = 'none';
+
+        const img = cur.image;
+        const stripWidth = img.naturalWidth / this.splitCount;
+
+        this.thumbnailList.innerHTML = '';
+
+        for (let i = 0; i < this.splitCount; i++) {
+            const div = document.createElement('div');
+            div.className = `thumbnail-item${i === this.splitCurrentPanel ? ' active' : ''}`;
+            div.dataset.index = i;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 130;
+            canvas.height = 130;
+            const ctx = canvas.getContext('2d');
+
+            // Draw strip fitted in thumbnail
+            const stripAspect = stripWidth / img.naturalHeight;
+            let dx, dy, dw, dh;
+            if (stripAspect > 1) {
+                dw = 130;
+                dh = dw / stripAspect;
+                dx = 0;
+                dy = (130 - dh) / 2;
+            } else {
+                dh = 130;
+                dw = dh * stripAspect;
+                dx = (130 - dw) / 2;
+                dy = 0;
+            }
+
+            ctx.drawImage(img, stripWidth * i, 0, stripWidth, img.naturalHeight, dx, dy, dw, dh);
+            div.appendChild(canvas);
+            this.thumbnailList.appendChild(div);
+        }
+
+        const isMobile = window.innerWidth <= 900;
+        if (isMobile && this.activeTab === 'photo') {
+            this.mobileThumbnailSlot.appendChild(this.thumbnailStrip);
+        }
+
+        this.thumbnailStrip.style.display = '';
+    }
+
+    updateSplitThumbnailHighlight() {
+        const items = this.thumbnailList.querySelectorAll('.thumbnail-item');
+        items.forEach(item => {
+            item.classList.toggle('active', parseInt(item.dataset.index) === this.splitCurrentPanel);
+        });
+        this.thumbnailCounter.textContent = `${this.splitCurrentPanel + 1}/${this.splitCount}`;
+    }
+
     // --- Upload UI ---
 
     updateUploadUI() {
@@ -1051,17 +1339,26 @@ class PhotoFrameMaker {
     // --- Download button label ---
 
     updateDownloadButton() {
-        const label = this.hasMultipleImages
-            ? `ZIP 다운로드 (${this.imageCount}장)`
-            : 'PNG 다운로드 (무손실)';
+        let label;
+        let mobileText;
+
+        if (this.appMode === 'split' && this.hasImage) {
+            label = `ZIP 다운로드 (${this.splitCount}장 분할)`;
+            mobileText = 'ZIP';
+        } else if (this.hasMultipleImages) {
+            label = `ZIP 다운로드 (${this.imageCount}장)`;
+            mobileText = 'ZIP';
+        } else {
+            label = 'PNG 다운로드 (무손실)';
+            mobileText = '저장';
+        }
 
         const btnLabel = this.downloadBtn.querySelector('.btn-label');
         if (btnLabel) btnLabel.textContent = label;
 
-        // Mobile tab label
         const mobileLabel = this.mobileTabBar?.querySelector('[data-tab="download"] span');
         if (mobileLabel) {
-            mobileLabel.textContent = this.hasMultipleImages ? 'ZIP' : '저장';
+            mobileLabel.textContent = mobileText;
         }
     }
 
@@ -1090,8 +1387,10 @@ class PhotoFrameMaker {
 
         this.isDragging = true;
         this.dragStart = coords;
-        this.dragStartOffset = { ...this.currentImage.imageOffset };
-        this.canvas.style.cursor = 'grabbing';
+        this.dragStartOffset = this.appMode === 'split'
+            ? { x: 0, y: 0 }
+            : { ...this.currentImage.imageOffset };
+        this.canvas.style.cursor = this.appMode === 'split' ? 'default' : 'grabbing';
     }
 
     onDragMove(e) {
@@ -1103,6 +1402,9 @@ class PhotoFrameMaker {
             this.canvas.style.cursor = 'default';
             return;
         }
+
+        // In split mode, don't allow dragging (only swipe for navigation)
+        if (this.appMode === 'split') return;
 
         const dx = coords.x - this.dragStart.x;
         const dy = coords.y - this.dragStart.y;
@@ -1153,7 +1455,13 @@ class PhotoFrameMaker {
 
         const cur = this.currentImage;
         if (cur) {
-            const origText = `${cur.image.naturalWidth} × ${cur.image.naturalHeight} px`;
+            let origText;
+            if (this.appMode === 'split') {
+                const strip = this.getSplitStripDimensions(cur.image);
+                origText = `${cur.image.naturalWidth} × ${cur.image.naturalHeight} px (패널 ${this.splitCurrentPanel + 1}/${this.splitCount})`;
+            } else {
+                origText = `${cur.image.naturalWidth} × ${cur.image.naturalHeight} px`;
+            }
             this.infoOriginalLabel.style.display = '';
             this.infoOriginal.style.display = '';
             this.infoOriginal.textContent = origText;
@@ -1161,8 +1469,13 @@ class PhotoFrameMaker {
             this.mobileInfoOriginal.style.display = '';
             this.mobileInfoOriginal.textContent = origText;
 
-            const draw = this.getDrawDimensions(cur.image);
-            const scaleX = draw.width / cur.image.naturalWidth;
+            const draw = this.appMode === 'split'
+                ? this.getSplitDrawDimensions(cur.image)
+                : this.getDrawDimensions(cur.image);
+            const sourceWidth = this.appMode === 'split'
+                ? cur.image.naturalWidth / this.splitCount
+                : cur.image.naturalWidth;
+            const scaleX = draw.width / sourceWidth;
             const scaleY = draw.height / cur.image.naturalHeight;
             const scale = Math.min(scaleX, scaleY);
 
@@ -1450,6 +1763,13 @@ class PhotoFrameMaker {
             this.render();
         });
 
+        // Mobile split buttons
+        this.mobileSplitButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.split-btn');
+            if (!btn) return;
+            this.setSplitCount(parseInt(btn.dataset.split));
+        });
+
         // Mobile photo upload button
         this.mobilePhotoUploadBtn.addEventListener('click', () => {
             this.fileInput.click();
@@ -1509,11 +1829,81 @@ class PhotoFrameMaker {
     async download() {
         if (!this.hasImage) return;
 
+        if (this.appMode === 'split') {
+            await this.downloadSplit();
+            return;
+        }
+
         if (this.hasMultipleImages) {
             await this.downloadAsZip();
         } else {
             await this.downloadSingle();
         }
+    }
+
+    async downloadSplit() {
+        const cur = this.currentImage;
+        if (!cur) return;
+
+        if (typeof JSZip === 'undefined') {
+            this.showToast('ZIP 라이브러리 로딩 중... 잠시 후 다시 시도해주세요.');
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.head.appendChild(script);
+            return;
+        }
+
+        const zip = new JSZip();
+        const dims = this.getCanvasDimensions();
+        const photoArea = this.getPhotoArea();
+        const total = this.splitCount;
+
+        this.showProgress(0, total);
+
+        const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
+
+        for (let i = 0; i < total; i++) {
+            this.showProgress(i + 1, total);
+            const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
+            zip.file(`${baseName}_split_${i + 1}.png`, blob);
+        }
+
+        this.showProgress(total, total, '압축 중...');
+
+        const zipBlob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 1 }
+        });
+
+        const fileName = `${baseName}_split_${total}장.zip`;
+
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            try {
+                const file = new File([zipBlob], fileName, { type: 'application/zip' });
+                if (navigator.canShare?.({ files: [file] })) {
+                    this.hideProgress();
+                    await navigator.share({ files: [file] });
+                    return;
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    this.hideProgress();
+                    return;
+                }
+            }
+        }
+
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        this.hideProgress();
     }
 
     async downloadSingle() {
