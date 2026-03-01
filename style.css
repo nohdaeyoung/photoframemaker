@@ -1128,23 +1128,21 @@ body {
 
 /* Thumbnail strip */
 .thumbnail-strip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    text-align: center;
     width: 100%;
     padding: 4px 0;
     position: relative;
 }
 
 .thumbnail-list {
-    display: flex;
+    display: inline-flex;
     gap: 6px;
     overflow-x: auto;
-    max-width: fit-content;
+    max-width: 100%;
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
     padding: 2px;
+    vertical-align: middle;
 }
 
 .thumbnail-list::-webkit-scrollbar {
@@ -1209,12 +1207,13 @@ body {
     border: 2px dashed #d1d5db;
     background: none;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     color: #9ca3af;
-    flex-shrink: 0;
     transition: border-color 0.15s, color 0.15s;
+    vertical-align: middle;
+    margin-left: 8px;
 }
 
 .thumbnail-add-btn:hover {
@@ -1635,12 +1634,6 @@ input[type="number"] {
     /* Mobile thumbnail strip */
     .thumbnail-strip {
         padding: 2px 0;
-        justify-content: center;
-    }
-
-    .thumbnail-list {
-        flex: 0 1 auto;
-        justify-content: center;
     }
 
     .thumbnail-item .thumbnail-remove {
