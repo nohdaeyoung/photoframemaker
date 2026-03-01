@@ -946,13 +946,26 @@ class PhotoFrameMaker {
             </div>`;
         }).join('');
 
-        // Scroll active thumbnail into view
-        requestAnimationFrame(() => {
-            const activeThumb = this.thumbnailList.querySelector('.thumbnail-item.active');
-            if (activeThumb) {
-                activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        // On mobile, move add button into the grid
+        const isMobile = window.innerWidth <= 900;
+        if (isMobile) {
+            this.thumbnailList.appendChild(this.thumbnailAddBtn);
+        } else {
+            // Ensure add button is back outside the list on desktop
+            if (this.thumbnailAddBtn.parentElement === this.thumbnailList) {
+                this.thumbnailStrip.insertBefore(this.thumbnailAddBtn, this.thumbnailCounter);
             }
-        });
+        }
+
+        // Scroll active thumbnail into view (desktop only, mobile uses grid)
+        if (!isMobile) {
+            requestAnimationFrame(() => {
+                const activeThumb = this.thumbnailList.querySelector('.thumbnail-item.active');
+                if (activeThumb) {
+                    activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            });
+        }
     }
 
     // --- Upload UI ---
