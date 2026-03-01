@@ -409,13 +409,14 @@ class PhotoFrameMaker {
         const imgRatio = image.naturalWidth / image.naturalHeight;
         const areaRatio = photoArea.width / photoArea.height;
 
+        // Cover mode: fill entire photo area, allowing drag to reposition
         let drawWidth, drawHeight;
         if (imgRatio > areaRatio) {
-            drawWidth = photoArea.width;
-            drawHeight = drawWidth / imgRatio;
-        } else {
             drawHeight = photoArea.height;
             drawWidth = drawHeight * imgRatio;
+        } else {
+            drawWidth = photoArea.width;
+            drawHeight = drawWidth / imgRatio;
         }
         return { width: drawWidth, height: drawHeight };
     }
@@ -711,6 +712,8 @@ class PhotoFrameMaker {
         this.mobileDownloadBtn.disabled = !has;
         this.previewToolbar.style.display = has ? '' : 'none';
         this.previewContainer.classList.toggle('has-image', has);
+
+        this.updatePreviewContainerSize();
 
         if (!has) {
             this.exifSection.style.display = 'none';
@@ -1290,24 +1293,22 @@ class PhotoFrameMaker {
         const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
         const fileName = `${baseName}_pfm.png`;
 
-        // 1) Try Web Share API
-        try {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            if (navigator.canShare?.({ files: [file] })) {
-                await navigator.share({ files: [file] });
-                return;
-            }
-        } catch (e) {
-            if (e.name === 'AbortError') return;
-        }
-
-        // 2) Mobile fallback
+        // 1) Mobile: Try Web Share API, then fallback to save overlay
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            try {
+                const file = new File([blob], fileName, { type: 'image/png' });
+                if (navigator.canShare?.({ files: [file] })) {
+                    await navigator.share({ files: [file] });
+                    return;
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+            }
             this.showSaveOverlay(blob);
             return;
         }
 
-        // 3) Desktop download
+        // 2) Desktop download
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
