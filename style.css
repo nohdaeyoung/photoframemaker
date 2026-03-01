@@ -976,6 +976,138 @@ body {
 }
 
 /* Footer */
+/* SEO Content Section */
+.seo-content {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 1.5rem;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+}
+
+.seo-inner {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.seo-content h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+}
+
+.seo-content h2:first-child {
+    margin-top: 0;
+}
+
+.seo-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text);
+}
+
+.seo-content p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.seo-features {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.seo-feature {
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.seo-feature p {
+    margin-bottom: 0;
+}
+
+.seo-feature-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.seo-feature-list li {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding: 0.35rem 0;
+    padding-left: 1.25rem;
+    position: relative;
+}
+
+.seo-feature-list li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+}
+
+.seo-feature-list li strong {
+    color: var(--text);
+}
+
+.seo-steps {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.seo-steps li {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding: 0.35rem 0;
+}
+
+.seo-steps li strong {
+    color: var(--text);
+}
+
+.seo-faq dt {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 1rem;
+}
+
+.seo-faq dt:first-child {
+    margin-top: 0;
+}
+
+.seo-faq dd {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    padding-left: 0;
+}
+
+.seo-faq dd a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.seo-faq dd a:hover {
+    text-decoration: underline;
+}
+
+.seo-diff {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-style: italic;
+}
+
 .footer {
     text-align: center;
     padding: 16px;

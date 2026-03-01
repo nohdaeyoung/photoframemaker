@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Sitemap: https://f.324.ing/sitemap.xml
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
