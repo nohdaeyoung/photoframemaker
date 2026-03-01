@@ -115,11 +115,8 @@ class PhotoFrameMaker {
         // Thumbnail strip
         this.thumbnailStrip = document.getElementById('thumbnail-strip');
         this.thumbnailList = document.getElementById('thumbnail-list');
-        this.thumbnailListWrapper = document.getElementById('thumbnail-list-wrapper');
         this.thumbnailAddBtn = document.getElementById('thumbnail-add-btn');
         this.thumbnailCounter = document.getElementById('thumbnail-counter');
-        this.thumbnailToggleBtn = document.getElementById('thumbnail-toggle-btn');
-        this.thumbnailToggleCount = document.getElementById('thumbnail-toggle-count');
 
         // Mobile tab bar elements
         this.mobileTabBar = document.getElementById('mobile-tab-bar');
@@ -416,11 +413,6 @@ class PhotoFrameMaker {
             this.fileInput.click();
         });
 
-        this.thumbnailToggleBtn.addEventListener('click', () => {
-            this.thumbnailStrip.classList.toggle('expanded');
-            this.updatePreviewContainerSize();
-        });
-
         // Resize: recalculate preview container size
         window.addEventListener('resize', () => this.updatePreviewContainerSize());
     }
@@ -564,7 +556,8 @@ class PhotoFrameMaker {
 
     // --- Rendering ---
 
-    render() {
+    render(keepProfileCache) {
+        if (!keepProfileCache) this.invalidateProfileCache();
         const dims = this.getCanvasDimensions();
         this.ctx.clearRect(0, 0, dims.width, dims.height);
 
@@ -629,7 +622,7 @@ class PhotoFrameMaker {
 
     updateMockupImages() {
         if (this.previewMode === 'default') return;
-        const dataUrl = this.canvas.toDataURL('image/png');
+        const dataUrl = this.canvas.toDataURL('image/jpeg', 0.85);
         if (this.previewMode === 'feed') {
             this.feedImage.src = dataUrl;
         } else if (this.previewMode === 'profile') {
@@ -637,11 +630,42 @@ class PhotoFrameMaker {
         }
     }
 
+    renderItemToDataUrl(item) {
+        const dims = this.getCanvasDimensions();
+        if (!this._profileTempCanvas) {
+            this._profileTempCanvas = document.createElement('canvas');
+        }
+        const tc = this._profileTempCanvas;
+        tc.width = dims.width;
+        tc.height = dims.height;
+        const ctx = tc.getContext('2d');
+        ctx.fillStyle = this.frameColor;
+        ctx.fillRect(0, 0, dims.width, dims.height);
+
+        const photoArea = this.getPhotoArea();
+        const draw = this.getDrawDimensions(item.image);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
+        ctx.clip();
+        const x = photoArea.x + (photoArea.width - draw.width) / 2 + item.imageOffset.x;
+        const y = photoArea.y + (photoArea.height - draw.height) / 2 + item.imageOffset.y;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'medium';
+        ctx.drawImage(item.image, x, y, draw.width, draw.height);
+        ctx.restore();
+        return tc.toDataURL('image/jpeg', 0.8);
+    }
+
+    invalidateProfileCache() {
+        this._profileCache = null;
+    }
+
     updateProfileGrid() {
         const totalCells = 9;
         const loaded = this.loadedImages;
         if (loaded.length <= 1) {
-            // Single image: center position (index 4)
+            this._profileCache = null;
             this.profileGrid.innerHTML = '';
             for (let i = 0; i < totalCells; i++) {
                 if (i === 4) {
@@ -650,7 +674,7 @@ class PhotoFrameMaker {
                     const img = document.createElement('img');
                     img.className = 'profile-grid-image';
                     img.id = 'profile-grid-image';
-                    img.src = this.canvas.toDataURL('image/png');
+                    img.src = this.canvas.toDataURL('image/jpeg', 0.85);
                     img.alt = '';
                     div.appendChild(img);
                     this.profileGrid.appendChild(div);
@@ -662,50 +686,28 @@ class PhotoFrameMaker {
             }
             this.profileGridImage = document.getElementById('profile-grid-image');
         } else {
-            // Multiple images: fill from top-left
-            this.profileGrid.innerHTML = '';
-            const savedIndex = this.currentIndex;
-            const savedCanvas = document.createElement('canvas');
-            savedCanvas.width = this.canvas.width;
-            savedCanvas.height = this.canvas.height;
-            savedCanvas.getContext('2d').drawImage(this.canvas, 0, 0);
+            // Use cache: only re-render the current image
+            if (!this._profileCache) this._profileCache = {};
+            const cache = this._profileCache;
+            const curIdx = this.currentIndex;
 
+            // Always update current image from main canvas
+            cache[curIdx] = this.canvas.toDataURL('image/jpeg', 0.85);
+
+            // Build grid — render other images only if not cached
+            this.profileGrid.innerHTML = '';
             for (let i = 0; i < totalCells; i++) {
                 const div = document.createElement('div');
                 const item = this.images[i];
                 if (i < this.images.length && item) {
-                    div.className = 'profile-grid-item target' + (i === savedIndex ? ' current' : '');
+                    div.className = 'profile-grid-item target' + (i === curIdx ? ' current' : '');
                     const img = document.createElement('img');
                     img.className = 'profile-grid-image';
                     img.alt = '';
-                    if (i === savedIndex) {
-                        img.src = savedCanvas.toDataURL('image/png');
-                    } else {
-                        // Render other images to temp canvas
-                        const tempCanvas = document.createElement('canvas');
-                        const dims = this.getCanvasDimensions();
-                        tempCanvas.width = dims.width;
-                        tempCanvas.height = dims.height;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.fillStyle = this.frameColor;
-                        tempCtx.fillRect(0, 0, dims.width, dims.height);
-
-                        const photoArea = this.getPhotoArea();
-                        const draw = this.getDrawDimensions(item.image);
-
-                        tempCtx.save();
-                        tempCtx.beginPath();
-                        tempCtx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
-                        tempCtx.clip();
-                        const x = photoArea.x + (photoArea.width - draw.width) / 2 + item.imageOffset.x;
-                        const y = photoArea.y + (photoArea.height - draw.height) / 2 + item.imageOffset.y;
-                        tempCtx.imageSmoothingEnabled = true;
-                        tempCtx.imageSmoothingQuality = 'high';
-                        tempCtx.drawImage(item.image, x, y, draw.width, draw.height);
-                        tempCtx.restore();
-
-                        img.src = tempCanvas.toDataURL('image/png');
+                    if (!cache[i]) {
+                        cache[i] = this.renderItemToDataUrl(item);
                     }
+                    img.src = cache[i];
                     div.appendChild(img);
                 } else {
                     div.className = 'profile-grid-item placeholder';
@@ -812,17 +814,25 @@ class PhotoFrameMaker {
     selectImage(index) {
         if (index < 0 || index >= this.images.length) return;
         if (index === this.currentIndex) return;
+        const prevIndex = this.currentIndex;
         this.currentIndex = index;
 
-        this.updateThumbnailStrip();
+        // Critical path: render canvas + nav arrows immediately
+        // Only invalidate cache for the previously selected image (it may have been dragged)
+        if (this._profileCache) delete this._profileCache[prevIndex];
+        this.render(true);
         this.updateNavArrows();
-        this.render();
-        this.updateInfo();
-        this.updateUploadUI();
-        this.updateMobilePhotoTab();
-        if (this.currentImage) {
-            this.displayExif(this.currentImage.exifData);
-        }
+        this.updateThumbnailHighlight();
+
+        // Defer non-critical UI updates
+        requestAnimationFrame(() => {
+            this.updateInfo();
+            this.updateUploadUI();
+            this.updateMobilePhotoTab();
+            if (this.currentImage) {
+                this.displayExif(this.currentImage.exifData);
+            }
+        });
     }
 
     // --- Canvas navigation ---
@@ -948,12 +958,12 @@ class PhotoFrameMaker {
         const loaded = this.loadedImages;
         if (loaded.length <= 1) {
             this.thumbnailStrip.style.display = 'none';
+            this.thumbnailStrip.classList.remove('mobile-visible');
             return;
         }
 
         this.thumbnailStrip.style.display = '';
         this.thumbnailCounter.textContent = `${this.currentIndex + 1}/${this.images.length}`;
-        this.thumbnailToggleCount.textContent = `${this.currentIndex + 1}/${this.images.length}`;
         this.thumbnailAddBtn.style.display = this.images.length >= 10 ? 'none' : '';
 
         this.thumbnailList.innerHTML = this.images.map((item, i) => {
@@ -965,14 +975,15 @@ class PhotoFrameMaker {
             </div>`;
         }).join('');
 
-        // On mobile, move add button into the thumbnail list grid
         const isMobile = window.innerWidth <= 900;
         if (isMobile) {
+            // Move add button into the thumbnail list grid
             this.thumbnailList.appendChild(this.thumbnailAddBtn);
+            // Keep mobile-visible in sync with photo tab state
+            this.thumbnailStrip.classList.toggle('mobile-visible', this.activeTab === 'photo');
         } else {
-            // Ensure add button is back in the wrapper on desktop
             if (this.thumbnailAddBtn.parentElement === this.thumbnailList) {
-                this.thumbnailListWrapper.appendChild(this.thumbnailAddBtn);
+                this.thumbnailStrip.insertBefore(this.thumbnailAddBtn, this.thumbnailCounter);
             }
         }
 
@@ -984,6 +995,22 @@ class PhotoFrameMaker {
                     activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 }
             });
+        }
+    }
+
+    updateThumbnailHighlight() {
+        const items = this.thumbnailList.querySelectorAll('.thumbnail-item');
+        items.forEach(item => {
+            item.classList.toggle('active', parseInt(item.dataset.index) === this.currentIndex);
+        });
+        const label = `${this.currentIndex + 1}/${this.images.length}`;
+        this.thumbnailCounter.textContent = label;
+
+        if (window.innerWidth > 900) {
+            const activeThumb = this.thumbnailList.querySelector('.thumbnail-item.active');
+            if (activeThumb) {
+                activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
         }
     }
 
@@ -1444,6 +1471,13 @@ class PhotoFrameMaker {
         });
 
         this.sheetBackdrop.classList.add('active');
+
+        // Show thumbnail strip when photo tab is opened (if multiple images)
+        if (tab === 'photo' && this.hasMultipleImages) {
+            this.thumbnailStrip.classList.add('mobile-visible');
+        } else {
+            this.thumbnailStrip.classList.remove('mobile-visible');
+        }
     }
 
     closeTabPanel() {
@@ -1451,6 +1485,7 @@ class PhotoFrameMaker {
         this.mobileTabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         this.mobileTabPanels.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
         this.sheetBackdrop.classList.remove('active');
+        this.thumbnailStrip.classList.remove('mobile-visible');
     }
 
     // --- Download ---
