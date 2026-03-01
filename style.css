@@ -1130,6 +1130,7 @@ body {
 .thumbnail-strip {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     width: 100%;
     padding: 4px 0;
@@ -1139,7 +1140,7 @@ body {
     display: flex;
     gap: 6px;
     overflow-x: auto;
-    flex: 1;
+    flex: 0 1 auto;
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
     padding: 2px;
