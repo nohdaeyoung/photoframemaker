@@ -117,6 +117,8 @@ class PhotoFrameMaker {
         this.thumbnailList = document.getElementById('thumbnail-list');
         this.thumbnailAddBtn = document.getElementById('thumbnail-add-btn');
         this.thumbnailCounter = document.getElementById('thumbnail-counter');
+        this.thumbnailStripParent = this.thumbnailStrip.parentElement;
+        this.mobileThumbnailSlot = document.getElementById('mobile-thumbnail-slot');
 
         // Mobile tab bar elements
         this.mobileTabBar = document.getElementById('mobile-tab-bar');
@@ -958,11 +960,10 @@ class PhotoFrameMaker {
         const loaded = this.loadedImages;
         if (loaded.length <= 1) {
             this.thumbnailStrip.style.display = 'none';
-            this.thumbnailStrip.classList.remove('mobile-visible');
+            this.returnThumbnailStrip();
             return;
         }
 
-        this.thumbnailStrip.style.display = '';
         this.thumbnailCounter.textContent = `${this.currentIndex + 1}/${this.images.length}`;
         this.thumbnailAddBtn.style.display = this.images.length >= 10 ? 'none' : '';
 
@@ -977,11 +978,16 @@ class PhotoFrameMaker {
 
         const isMobile = window.innerWidth <= 900;
         if (isMobile) {
-            // Move add button into the thumbnail list grid
             this.thumbnailList.appendChild(this.thumbnailAddBtn);
-            // Keep mobile-visible in sync with photo tab state
-            this.thumbnailStrip.classList.toggle('mobile-visible', this.activeTab === 'photo');
+            // If photo tab is open, move strip into panel and show it
+            if (this.activeTab === 'photo') {
+                this.mobileThumbnailSlot.appendChild(this.thumbnailStrip);
+                this.thumbnailStrip.style.display = '';
+            } else {
+                this.thumbnailStrip.style.display = 'none';
+            }
         } else {
+            this.thumbnailStrip.style.display = '';
             if (this.thumbnailAddBtn.parentElement === this.thumbnailList) {
                 this.thumbnailStrip.insertBefore(this.thumbnailAddBtn, this.thumbnailCounter);
             }
@@ -1472,11 +1478,12 @@ class PhotoFrameMaker {
 
         this.sheetBackdrop.classList.add('active');
 
-        // Show thumbnail strip when photo tab is opened (if multiple images)
+        // Move thumbnail strip into photo panel when photo tab opens
         if (tab === 'photo' && this.hasMultipleImages) {
-            this.thumbnailStrip.classList.add('mobile-visible');
+            this.mobileThumbnailSlot.appendChild(this.thumbnailStrip);
+            this.thumbnailStrip.style.display = '';
         } else {
-            this.thumbnailStrip.classList.remove('mobile-visible');
+            this.returnThumbnailStrip();
         }
     }
 
@@ -1485,7 +1492,13 @@ class PhotoFrameMaker {
         this.mobileTabBar.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         this.mobileTabPanels.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
         this.sheetBackdrop.classList.remove('active');
-        this.thumbnailStrip.classList.remove('mobile-visible');
+        this.returnThumbnailStrip();
+    }
+
+    returnThumbnailStrip() {
+        if (this.thumbnailStrip.parentElement !== this.thumbnailStripParent) {
+            this.thumbnailStripParent.insertBefore(this.thumbnailStrip, this.thumbnailStripParent.querySelector('.preview-toolbar'));
+        }
     }
 
     // --- Download ---
