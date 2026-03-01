@@ -499,10 +499,21 @@ class PhotoFrameMaker {
             const parentCS = getComputedStyle(parent);
             const parentPadY = parseFloat(parentCS.paddingTop) + parseFloat(parentCS.paddingBottom);
             const contentH = parent.clientHeight - parentPadY;
-            const toolbarH = this.previewToolbar.offsetHeight || 0;
-            const stripH = this.thumbnailStrip.offsetHeight || 0;
             const gap = parseFloat(parentCS.gap) || 0;
-            maxH = contentH - toolbarH - stripH - gap * 2;
+
+            // Sum heights of all visible siblings in the grid
+            let siblingsH = 0;
+            let visibleCount = 0;
+            for (const child of parent.children) {
+                if (child === this.previewContainer) continue;
+                if (child.offsetHeight > 0 && child.style.display !== 'none') {
+                    siblingsH += child.offsetHeight;
+                    visibleCount++;
+                }
+            }
+            // Grid gaps: between all visible children (canvas + siblings)
+            const totalGaps = visibleCount * gap;
+            maxH = contentH - siblingsH - totalGaps;
         } else {
             maxH = window.innerHeight * 0.75;
         }
@@ -896,7 +907,10 @@ class PhotoFrameMaker {
                 <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
             `;
         } else {
-            this.displayExif(this.currentImage.exifData);
+            const cur = this.currentImage;
+            if (cur) {
+                this.displayExif(cur.exifData);
+            }
         }
 
         this.updatePreviewContainerSize();
