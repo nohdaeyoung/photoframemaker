@@ -501,7 +501,10 @@ class PhotoFrameMaker {
         if (isMobile) {
             if (this.previewContainer.style.display === 'none') return;
 
-            // Temporarily let flex: 1 measure the available space
+            // Use parent width for horizontal space (container may not stretch due to align-items: center)
+            const availW = parentWidth - padX;
+
+            // Temporarily let flex: 1 measure available vertical space
             this.previewContainer.style.width = '';
             this.previewContainer.style.height = '';
             this.previewContainer.style.flex = '1';
@@ -511,7 +514,6 @@ class PhotoFrameMaker {
             // Restore flex after measurement
             this.previewContainer.style.flex = '';
 
-            const availW = cellRect.width - padX;
             const availH = cellRect.height - padY;
 
             if (availW <= 0 || availH <= 0) return;
