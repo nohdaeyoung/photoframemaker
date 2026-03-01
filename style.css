@@ -1779,18 +1779,43 @@ input[type="number"] {
         right: 4px;
     }
 
-    /* Mobile thumbnail strip */
+    /* Mobile thumbnail strip — 5-column grid */
     .thumbnail-strip {
         padding: 2px 0;
+    }
+
+    .thumbnail-list {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+        overflow-x: visible;
+        width: 100%;
+        padding: 0;
+    }
+
+    .thumbnail-item {
+        width: auto;
+        height: auto;
+        aspect-ratio: 1;
     }
 
     .thumbnail-item .thumbnail-remove {
         opacity: 1;
     }
 
-    .thumbnail-item {
-        width: 60px;
-        height: 60px;
+    .thumbnail-add-btn {
+        width: auto;
+        height: auto;
+        aspect-ratio: 1;
+        margin-left: 0;
+        border-radius: 6px;
+    }
+
+    .thumbnail-counter {
+        position: static;
+        display: block;
+        text-align: center;
+        margin-top: 2px;
     }
 }
 
