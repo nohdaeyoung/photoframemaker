@@ -409,13 +409,14 @@ class PhotoFrameMaker {
         const imgRatio = image.naturalWidth / image.naturalHeight;
         const areaRatio = photoArea.width / photoArea.height;
 
+        // Cover mode: fill entire photo area, allowing drag to reposition
         let drawWidth, drawHeight;
         if (imgRatio > areaRatio) {
-            drawWidth = photoArea.width;
-            drawHeight = drawWidth / imgRatio;
-        } else {
             drawHeight = photoArea.height;
             drawWidth = drawHeight * imgRatio;
+        } else {
+            drawWidth = photoArea.width;
+            drawHeight = drawWidth / imgRatio;
         }
         return { width: drawWidth, height: drawHeight };
     }
