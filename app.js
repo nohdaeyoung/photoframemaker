@@ -496,56 +496,52 @@ class PhotoFrameMaker {
 
         const isMobile = window.innerWidth <= 900;
 
-        let maxH;
         if (isMobile) {
-            const parentCS = getComputedStyle(parent);
-            const parentPadY = parseFloat(parentCS.paddingTop) + parseFloat(parentCS.paddingBottom);
-            const contentH = parent.clientHeight - parentPadY;
-            const gap = parseFloat(parentCS.gap) || 0;
+            // Let CSS grid allocate row space, then read the cell size
+            this.previewContainer.style.width = '100%';
+            this.previewContainer.style.height = '100%';
 
-            // Sum heights of all visible siblings in the grid
-            let siblingsH = 0;
-            let visibleCount = 0;
-            for (const child of parent.children) {
-                if (child === this.previewContainer) continue;
-                if (child.offsetHeight > 0 && child.style.display !== 'none') {
-                    siblingsH += child.offsetHeight;
-                    visibleCount++;
-                }
+            const cellRect = this.previewContainer.getBoundingClientRect();
+            const availW = cellRect.width - padX;
+            const availH = cellRect.height - padY;
+
+            if (availW <= 0 || availH <= 0) return;
+
+            let cw, ch;
+            if (availW / availH > ratio) {
+                ch = availH;
+                cw = ch * ratio;
+            } else {
+                cw = availW;
+                ch = cw / ratio;
             }
-            // Grid gaps: between all visible children (canvas + siblings)
-            const totalGaps = visibleCount * gap;
-            maxH = contentH - siblingsH - totalGaps;
-        } else {
-            maxH = window.innerHeight * 0.75;
-        }
 
-        const availW = parentWidth - padX;
-        const availH = maxH - padY;
-
-        if (availW <= 0 || availH <= 0) return;
-
-        let cw, ch;
-        if (availW / availH > ratio) {
-            ch = availH;
-            cw = ch * ratio;
-        } else {
-            cw = availW;
-            ch = cw / ratio;
-        }
-
-        this.previewContainer.style.width = Math.round(cw + padX) + 'px';
-        this.previewContainer.style.height = Math.round(ch + padY) + 'px';
-
-        // Set canvas CSS dimensions directly (avoid percentage-based sizing
-        // which can resolve incorrectly in flex containers on some mobile browsers)
-        this.canvas.style.width = Math.round(cw) + 'px';
-        this.canvas.style.height = Math.round(ch) + 'px';
-
-        if (isMobile) {
+            this.previewContainer.style.width = Math.round(cw + padX) + 'px';
+            this.previewContainer.style.height = Math.round(ch + padY) + 'px';
+            this.canvas.style.width = Math.round(cw) + 'px';
+            this.canvas.style.height = Math.round(ch) + 'px';
             this.previewContainer.style.marginLeft = 'auto';
             this.previewContainer.style.marginRight = 'auto';
         } else {
+            const maxH = window.innerHeight * 0.75;
+            const availW = parentWidth - padX;
+            const availH = maxH - padY;
+
+            if (availW <= 0 || availH <= 0) return;
+
+            let cw, ch;
+            if (availW / availH > ratio) {
+                ch = availH;
+                cw = ch * ratio;
+            } else {
+                cw = availW;
+                ch = cw / ratio;
+            }
+
+            this.previewContainer.style.width = Math.round(cw + padX) + 'px';
+            this.previewContainer.style.height = Math.round(ch + padY) + 'px';
+            this.canvas.style.width = Math.round(cw) + 'px';
+            this.canvas.style.height = Math.round(ch) + 'px';
             this.previewContainer.style.marginLeft = '';
             this.previewContainer.style.marginRight = '';
         }
