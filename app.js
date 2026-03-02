@@ -764,8 +764,7 @@ class PhotoFrameMaker {
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.fillStyle = this.frameColor;
-        ctx.fillRect(0, 0, dims.width, dims.height);
+        ctx.clearRect(0, 0, dims.width, dims.height);
 
         const img = item.image;
         const src = this.getSplitSourceRect(img, panelIndex);
