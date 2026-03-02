@@ -62,6 +62,7 @@ class PhotoFrameMaker {
     init() {
         this.bindElements();
         this.setupEventListeners();
+        this.syncFramePxInputs();
         this.updateCanvasSize();
         this.render();
         this.updateInfo();
@@ -83,6 +84,7 @@ class PhotoFrameMaker {
         this.canvasSizeInput = document.getElementById('canvas-size');
         this.frameRatioSlider = document.getElementById('frame-ratio-slider');
         this.frameRatioInput = document.getElementById('frame-ratio');
+        this.frameRatioPxInput = document.getElementById('frame-ratio-px');
         this.colorPresets = document.getElementById('color-presets');
         this.customColorInput = document.getElementById('custom-color');
         this.downloadBtn = document.getElementById('download-btn');
@@ -132,6 +134,7 @@ class PhotoFrameMaker {
         this.mobileCanvasSizeInput = document.getElementById('mobile-canvas-size');
         this.mobileFrameRatioSlider = document.getElementById('mobile-frame-ratio-slider');
         this.mobileFrameRatioInput = document.getElementById('mobile-frame-ratio');
+        this.mobileFrameRatioPxInput = document.getElementById('mobile-frame-ratio-px');
         this.mobileColorPresets = document.getElementById('mobile-color-presets');
         this.mobileCustomColorInput = document.getElementById('mobile-custom-color');
         this.mobileInfoCanvas = document.getElementById('mobile-info-canvas');
@@ -209,6 +212,7 @@ class PhotoFrameMaker {
             document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
+            this.syncFramePxInputs();
             this.resetAllOffsets();
             this.updateCanvasSize();
             this.render();
@@ -221,6 +225,7 @@ class PhotoFrameMaker {
             if (val >= 100 && val <= 10000) {
                 this.canvasSize = val;
                 this.mobileCanvasSizeInput.value = val;
+                this.syncFramePxInputs();
                 this.resetAllOffsets();
                 this.updateCanvasSize();
                 this.render();
@@ -234,6 +239,7 @@ class PhotoFrameMaker {
             this.frameRatioInput.value = this.frameRatio;
             this.mobileFrameRatioSlider.value = this.frameRatio;
             this.mobileFrameRatioInput.value = this.frameRatio;
+            this.syncFramePxInputs();
             this.resetAllOffsets();
             this.render();
             this.updateInfo();
@@ -247,9 +253,32 @@ class PhotoFrameMaker {
             this.frameRatioSlider.value = val;
             this.mobileFrameRatioSlider.value = val;
             this.mobileFrameRatioInput.value = val;
+            this.syncFramePxInputs();
             this.resetAllOffsets();
             this.render();
             this.updateInfo();
+        });
+
+        // Frame ratio pixel input (desktop)
+        this.frameRatioPxInput.addEventListener('input', () => {
+            let px = parseInt(this.frameRatioPxInput.value, 10);
+            if (isNaN(px)) return;
+            const maxPx = Math.round(this.canvasSize * 25 / 100);
+            px = Math.max(0, Math.min(maxPx, px));
+            const pct = this.canvasSize > 0 ? (px / this.canvasSize) * 100 : 0;
+            const rounded = Math.round(pct * 2) / 2;
+            this.frameRatio = rounded;
+            this.frameRatioSlider.value = rounded;
+            this.frameRatioInput.value = rounded;
+            this.mobileFrameRatioSlider.value = rounded;
+            this.mobileFrameRatioInput.value = rounded;
+            this.mobileFrameRatioPxInput.value = px;
+            this.resetAllOffsets();
+            this.render();
+            this.updateInfo();
+        });
+        this.frameRatioPxInput.addEventListener('change', () => {
+            this.syncFramePxInputs();
         });
 
         // Color presets
@@ -475,6 +504,12 @@ class PhotoFrameMaker {
 
     getFrameWidth() {
         return Math.round(this.canvasSize * this.frameRatio / 100);
+    }
+
+    syncFramePxInputs() {
+        const px = this.getFrameWidth();
+        this.frameRatioPxInput.value = px;
+        this.mobileFrameRatioPxInput.value = px;
     }
 
     getPhotoArea() {
@@ -1699,6 +1734,7 @@ class PhotoFrameMaker {
             document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
+            this.syncFramePxInputs();
             this.resetAllOffsets();
             this.updateCanvasSize();
             this.render();
@@ -1711,6 +1747,7 @@ class PhotoFrameMaker {
             if (val >= 100 && val <= 10000) {
                 this.canvasSize = val;
                 this.canvasSizeInput.value = val;
+                this.syncFramePxInputs();
                 this.resetAllOffsets();
                 this.updateCanvasSize();
                 this.render();
@@ -1724,6 +1761,7 @@ class PhotoFrameMaker {
             this.mobileFrameRatioInput.value = this.frameRatio;
             this.frameRatioSlider.value = this.frameRatio;
             this.frameRatioInput.value = this.frameRatio;
+            this.syncFramePxInputs();
             this.resetAllOffsets();
             this.render();
             this.updateInfo();
@@ -1737,9 +1775,32 @@ class PhotoFrameMaker {
             this.mobileFrameRatioSlider.value = val;
             this.frameRatioSlider.value = val;
             this.frameRatioInput.value = val;
+            this.syncFramePxInputs();
             this.resetAllOffsets();
             this.render();
             this.updateInfo();
+        });
+
+        // Mobile frame ratio pixel input
+        this.mobileFrameRatioPxInput.addEventListener('input', () => {
+            let px = parseInt(this.mobileFrameRatioPxInput.value, 10);
+            if (isNaN(px)) return;
+            const maxPx = Math.round(this.canvasSize * 25 / 100);
+            px = Math.max(0, Math.min(maxPx, px));
+            const pct = this.canvasSize > 0 ? (px / this.canvasSize) * 100 : 0;
+            const rounded = Math.round(pct * 2) / 2;
+            this.frameRatio = rounded;
+            this.frameRatioSlider.value = rounded;
+            this.frameRatioInput.value = rounded;
+            this.mobileFrameRatioSlider.value = rounded;
+            this.mobileFrameRatioInput.value = rounded;
+            this.frameRatioPxInput.value = px;
+            this.resetAllOffsets();
+            this.render();
+            this.updateInfo();
+        });
+        this.mobileFrameRatioPxInput.addEventListener('change', () => {
+            this.syncFramePxInputs();
         });
 
         // Mobile color presets

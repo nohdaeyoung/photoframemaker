@@ -150,10 +150,6 @@ body {
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     box-shadow: var(--shadow);
-    position: sticky;
-    top: 1.5rem;
-    max-height: calc(100vh - 3rem);
-    overflow-y: auto;
 }
 
 .control-section {
