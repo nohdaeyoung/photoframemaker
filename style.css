@@ -30,6 +30,7 @@ body {
     color: var(--text);
     line-height: 1.5;
     min-height: 100vh;
+    padding-top: env(safe-area-inset-top, 0px);
 }
 
 .app {
@@ -1571,8 +1572,7 @@ input[type="number"] {
     }
 
     .app {
-        height: 100vh;
-        height: 100dvh;
+        height: calc(100dvh - env(safe-area-inset-top, 0px));
         max-width: none;
         display: flex;
         flex-direction: column;
