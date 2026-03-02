@@ -166,6 +166,12 @@ class PhotoFrameMaker {
         this.mobileSplitButtons = document.getElementById('mobile-split-buttons');
         this.splitDirectionButtons = document.getElementById('split-direction-buttons');
         this.mobileSplitDirectionButtons = document.getElementById('mobile-split-direction-buttons');
+        this.frameRatioSection = document.getElementById('frame-ratio-section');
+        this.frameColorSection = document.getElementById('frame-color-section');
+        this.mobileTabBtnFrame = document.querySelector('.tab-btn[data-tab="frame"]');
+        this.mobileTabBtnColor = document.querySelector('.tab-btn[data-tab="color"]');
+        this.tabPanelFrame = document.getElementById('tab-panel-frame');
+        this.tabPanelColor = document.getElementById('tab-panel-color');
     }
 
     setupEventListeners() {
@@ -597,6 +603,17 @@ class PhotoFrameMaker {
         }
         this.resetAllOffsets();
         this.updateCanvasSize();
+
+        // In split mode, hide frame controls
+        this.frameRatioSection.style.display = isSplit ? 'none' : '';
+        this.frameColorSection.style.display = isSplit ? 'none' : '';
+        this.mobileTabBtnFrame.style.display = isSplit ? 'none' : '';
+        this.mobileTabBtnColor.style.display = isSplit ? 'none' : '';
+        // Close frame/color tab panels if open when entering split mode
+        if (isSplit) {
+            this.tabPanelFrame.classList.remove('active');
+            this.tabPanelColor.classList.remove('active');
+        }
 
         // In split mode, hide preview mode toggle and force default view
         this.previewModeToggle.style.display = isSplit ? 'none' : '';
