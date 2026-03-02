@@ -390,7 +390,12 @@
                 </section>
 
                 <section class="control-section split-section" id="split-section" style="display:none">
-                    <h2>분할 수</h2>
+                    <h2>분할 방향</h2>
+                    <div class="split-buttons" id="split-direction-buttons">
+                        <button class="split-btn active" data-direction="horizontal">가로</button>
+                        <button class="split-btn" data-direction="vertical">세로</button>
+                    </div>
+                    <h2 style="margin-top:0.75rem">분할 수</h2>
                     <div class="split-buttons" id="split-buttons">
                         <button class="split-btn active" data-split="2">2분할</button>
                         <button class="split-btn" data-split="3">3분할</button>
@@ -400,7 +405,7 @@
                 <section class="control-section canvas-size-section">
                     <h2>캔버스 크기 <span class="label-hint">(긴 쪽 기준)</span></h2>
                     <div class="input-with-suffix">
-                        <input type="number" id="canvas-size" value="1000" min="100" max="10000" step="100">
+                        <input type="number" id="canvas-size" inputmode="numeric" value="1000" min="100" max="10000" step="100">
                         <span class="suffix">px</span>
                     </div>
                 </section>
@@ -427,11 +432,11 @@
                         <input type="range" id="frame-ratio-slider" min="0" max="25" step="0.5" value="5">
                         <div class="frame-ratio-inputs">
                             <div class="input-with-suffix input-small">
-                                <input type="number" id="frame-ratio" value="5" min="0" max="25" step="0.5">
+                                <input type="number" id="frame-ratio" inputmode="decimal" value="5" min="0" max="25" step="0.5">
                                 <span class="suffix">%</span>
                             </div>
                             <div class="input-with-suffix input-small">
-                                <input type="number" id="frame-ratio-px" value="50" min="0" step="1">
+                                <input type="number" id="frame-ratio-px" inputmode="numeric" value="50" min="0" step="1">
                                 <span class="suffix">px</span>
                             </div>
                         </div>
@@ -544,7 +549,12 @@
                             </button>
                         </div>
                         <div class="mobile-split-section" id="mobile-split-section" style="display:none">
-                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem">분할 수</div>
+                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem">분할 방향</div>
+                            <div class="split-buttons" id="mobile-split-direction-buttons">
+                                <button class="split-btn active" data-direction="horizontal">가로</button>
+                                <button class="split-btn" data-direction="vertical">세로</button>
+                            </div>
+                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem;margin-top:0.75rem">분할 수</div>
                             <div class="split-buttons" id="mobile-split-buttons">
                                 <button class="split-btn active" data-split="2">2분할</button>
                                 <button class="split-btn" data-split="3">3분할</button>
@@ -553,7 +563,7 @@
                         <div class="tab-panel-sub">
                             <span class="tab-panel-sub-label">캔버스 크기 <span class="label-hint">(긴 쪽)</span></span>
                             <div class="input-with-suffix input-small">
-                                <input type="number" id="mobile-canvas-size" value="1000" min="100" max="10000" step="100">
+                                <input type="number" id="mobile-canvas-size" inputmode="numeric" value="1000" min="100" max="10000" step="100">
                                 <span class="suffix">px</span>
                             </div>
                         </div>
@@ -566,11 +576,11 @@
                             <input type="range" id="mobile-frame-ratio-slider" min="0" max="25" step="0.5" value="5">
                             <div class="frame-ratio-inputs">
                                 <div class="input-with-suffix input-small">
-                                    <input type="number" id="mobile-frame-ratio" value="5" min="0" max="25" step="0.5">
+                                    <input type="number" id="mobile-frame-ratio" inputmode="decimal" value="5" min="0" max="25" step="0.5">
                                     <span class="suffix">%</span>
                                 </div>
                                 <div class="input-with-suffix input-small">
-                                    <input type="number" id="mobile-frame-ratio-px" value="50" min="0" step="1">
+                                    <input type="number" id="mobile-frame-ratio-px" inputmode="numeric" value="50" min="0" step="1">
                                     <span class="suffix">px</span>
                                 </div>
                             </div>
