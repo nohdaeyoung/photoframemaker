@@ -2021,6 +2021,7 @@ class PhotoFrameMaker {
         this.showProgress(0, total);
 
         const nameCount = {};
+        const files = [];
 
         for (let i = 0; i < total; i++) {
             const item = this.images[i];
@@ -2037,8 +2038,19 @@ class PhotoFrameMaker {
                 nameCount[fileName] = 1;
             }
 
-            await this.triggerDownload(blob, fileName);
-            if (i < total - 1) await new Promise(r => setTimeout(r, 300));
+            files.push({ blob, fileName });
+        }
+
+        // Try batch share (iOS Safari: one share sheet for all files)
+        if (await this.tryBatchShare(files)) {
+            this.hideProgress();
+            return;
+        }
+
+        // Fallback: download one by one
+        for (let i = 0; i < files.length; i++) {
+            await this.triggerDownload(files[i].blob, files[i].fileName);
+            if (i < files.length - 1) await new Promise(r => setTimeout(r, 300));
         }
 
         this.hideProgress();
@@ -2057,11 +2069,23 @@ class PhotoFrameMaker {
         this.showProgress(0, total);
 
         if (isMobile) {
+            const files = [];
             for (let i = 0; i < total; i++) {
                 this.showProgress(i + 1, total);
                 const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
-                await this.triggerDownload(blob, `${baseName}_split_${i + 1}.png`);
-                if (i < total - 1) await new Promise(r => setTimeout(r, 300));
+                files.push({ blob, fileName: `${baseName}_split_${i + 1}.png` });
+            }
+
+            // Try batch share (iOS Safari: one share sheet for all files)
+            if (await this.tryBatchShare(files)) {
+                this.hideProgress();
+                return;
+            }
+
+            // Fallback: download one by one
+            for (let i = 0; i < files.length; i++) {
+                await this.triggerDownload(files[i].blob, files[i].fileName);
+                if (i < files.length - 1) await new Promise(r => setTimeout(r, 300));
             }
             this.hideProgress();
             return;
@@ -2192,6 +2216,29 @@ class PhotoFrameMaker {
         const fileName = `photoframe_${total}장_pfm.zip`;
         await this.triggerDownload(zipBlob, fileName);
         this.hideProgress();
+    }
+
+    /**
+     * Try sharing multiple files at once via Web Share API (iOS Safari).
+     * Returns true if successful, false if not supported or failed.
+     */
+    async tryBatchShare(filesArray) {
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        if (!isIOS || !navigator.canShare) return false;
+
+        try {
+            const shareFiles = filesArray.map(f =>
+                new File([f.blob], f.fileName, { type: f.blob.type })
+            );
+            if (!navigator.canShare({ files: shareFiles })) return false;
+
+            await navigator.share({ files: shareFiles });
+            return true;
+        } catch (e) {
+            if (e.name === 'AbortError') return true; // user cancelled, don't fallback
+            console.error('Batch share failed:', e);
+            return false;
+        }
     }
 
     async triggerDownload(blob, fileName) {
