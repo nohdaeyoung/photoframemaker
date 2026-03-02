@@ -2037,7 +2037,7 @@ class PhotoFrameMaker {
                 nameCount[fileName] = 1;
             }
 
-            this.triggerDownload(blob, fileName);
+            await this.triggerDownload(blob, fileName);
             if (i < total - 1) await new Promise(r => setTimeout(r, 300));
         }
 
@@ -2060,7 +2060,7 @@ class PhotoFrameMaker {
             for (let i = 0; i < total; i++) {
                 this.showProgress(i + 1, total);
                 const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
-                this.triggerDownload(blob, `${baseName}_split_${i + 1}.png`);
+                await this.triggerDownload(blob, `${baseName}_split_${i + 1}.png`);
                 if (i < total - 1) await new Promise(r => setTimeout(r, 300));
             }
             this.hideProgress();
@@ -2095,7 +2095,7 @@ class PhotoFrameMaker {
             compressionOptions: { level: 1 }
         });
 
-        this.triggerDownload(zipBlob, `${baseName}_split_${total}장.zip`);
+        await this.triggerDownload(zipBlob, `${baseName}_split_${total}장.zip`);
         this.hideProgress();
     }
 
@@ -2139,7 +2139,7 @@ class PhotoFrameMaker {
         const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
         const fileName = `${baseName}_pfm.png`;
 
-        this.triggerDownload(blob, fileName);
+        await this.triggerDownload(blob, fileName);
     }
 
     async downloadAsZip() {
@@ -2190,11 +2190,30 @@ class PhotoFrameMaker {
         });
 
         const fileName = `photoframe_${total}장_pfm.zip`;
-        this.triggerDownload(zipBlob, fileName);
+        await this.triggerDownload(zipBlob, fileName);
         this.hideProgress();
     }
 
-    triggerDownload(blob, fileName) {
+    async triggerDownload(blob, fileName) {
+        // Capacitor native app: save to Downloads via Filesystem API
+        if (window.Capacitor?.isNativePlatform()) {
+            try {
+                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const base64 = await this.blobToBase64(blob);
+                await Filesystem.writeFile({
+                    path: 'Download/' + fileName,
+                    data: base64,
+                    directory: Directory.ExternalStorage,
+                    recursive: true
+                });
+                this.showToast(`저장 완료: ${fileName}`);
+                return;
+            } catch (e) {
+                console.error('Filesystem save failed:', e);
+            }
+        }
+
+        // Web browser: standard <a download>
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -2203,6 +2222,15 @@ class PhotoFrameMaker {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
+
+    blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
     }
 
     renderItemToBlob(item, dims, photoArea) {
