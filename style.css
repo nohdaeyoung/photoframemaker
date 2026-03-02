@@ -30,7 +30,18 @@ body {
     color: var(--text);
     line-height: 1.5;
     min-height: 100vh;
-    padding-top: env(safe-area-inset-top, 0px);
+}
+
+body::before {
+    content: '';
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+    z-index: 9999;
 }
 
 .app {
@@ -1572,12 +1583,12 @@ input[type="number"] {
     }
 
     .app {
-        height: calc(100dvh - env(safe-area-inset-top, 0px));
+        height: 100dvh;
         max-width: none;
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        padding: 0.5rem 0.75rem 0;
+        padding: calc(env(safe-area-inset-top, 0px) + 0.5rem) 0.75rem 0;
     }
 
     .footer {
