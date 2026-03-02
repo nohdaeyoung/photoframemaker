@@ -503,6 +503,7 @@ class PhotoFrameMaker {
     }
 
     getFrameWidth() {
+        if (this.appMode === 'split') return 0;
         return Math.round(this.canvasSize * this.frameRatio / 100);
     }
 
@@ -575,6 +576,7 @@ class PhotoFrameMaker {
         this.splitCurrentPanel = 0;
 
         // Re-render everything
+        this.syncFramePxInputs();
         this.render();
         this.updateNavArrows();
         this.updateThumbnailStrip();
