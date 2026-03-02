@@ -29,6 +29,7 @@ class PhotoFrameMaker {
         this.appMode = 'frame'; // 'frame' | 'split'
         this.splitCount = 2;
         this.splitCurrentPanel = 0;
+        this.savedRatioBeforeSplit = null;
 
         this.canvas = document.getElementById('preview-canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -81,6 +82,9 @@ class PhotoFrameMaker {
         this.fileInput = document.getElementById('file-input');
         this.uploadContent = document.getElementById('upload-content');
         this.ratioButtons = document.getElementById('ratio-buttons');
+        this.ratioSection = document.getElementById('ratio-section');
+        this.mobileRatioButtons = document.getElementById('mobile-ratio-buttons');
+        this.mobileRatioHeader = document.getElementById('mobile-ratio-header');
         this.canvasSizeInput = document.getElementById('canvas-size');
         this.frameRatioSlider = document.getElementById('frame-ratio-slider');
         this.frameRatioInput = document.getElementById('frame-ratio');
@@ -503,6 +507,7 @@ class PhotoFrameMaker {
     }
 
     getFrameWidth() {
+        if (this.appMode === 'split') return 0;
         return Math.round(this.canvasSize * this.frameRatio / 100);
     }
 
@@ -561,6 +566,28 @@ class PhotoFrameMaker {
         this.splitSection.style.display = isSplit ? '' : 'none';
         this.mobileSplitSection.style.display = isSplit ? '' : 'none';
 
+        // In split mode, force 3:4 ratio and hide ratio selection
+        if (isSplit) {
+            this.savedRatioBeforeSplit = [...this.canvasRatio];
+            this.canvasRatio = [3, 4];
+            this.ratioSection.style.display = 'none';
+            this.mobileRatioHeader.style.display = 'none';
+            this.mobileRatioButtons.style.display = 'none';
+        } else {
+            if (this.savedRatioBeforeSplit) {
+                this.canvasRatio = this.savedRatioBeforeSplit;
+                this.savedRatioBeforeSplit = null;
+            }
+            this.ratioSection.style.display = '';
+            this.mobileRatioHeader.style.display = '';
+            this.mobileRatioButtons.style.display = '';
+            const ratioStr = this.canvasRatio.join(':');
+            this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratioStr));
+            this.mobileRatioButtons.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratioStr));
+        }
+        this.resetAllOffsets();
+        this.updateCanvasSize();
+
         // In split mode, hide preview mode toggle and force default view
         this.previewModeToggle.style.display = isSplit ? 'none' : '';
         if (isSplit && this.previewMode !== 'default') {
@@ -575,6 +602,7 @@ class PhotoFrameMaker {
         this.splitCurrentPanel = 0;
 
         // Re-render everything
+        this.syncFramePxInputs();
         this.render();
         this.updateNavArrows();
         this.updateThumbnailStrip();
