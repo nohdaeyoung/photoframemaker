@@ -579,7 +579,7 @@ class PhotoFrameMaker {
         // In split mode, force ratio based on direction and hide ratio selection
         if (isSplit) {
             this.savedRatioBeforeSplit = [...this.canvasRatio];
-            this.canvasRatio = [3, 4];
+            this.canvasRatio = this.splitDirection === 'horizontal' ? [3, 4] : [4, 3];
             this.ratioSection.style.display = 'none';
             this.mobileRatioHeader.style.display = 'none';
             this.mobileRatioButtons.style.display = 'none';
@@ -652,7 +652,7 @@ class PhotoFrameMaker {
         });
 
         // Update forced ratio based on direction
-        this.canvasRatio = [3, 4];
+        this.canvasRatio = direction === 'horizontal' ? [3, 4] : [4, 3];
 
         this.resetAllOffsets();
         this.updateCanvasSize();
