@@ -764,8 +764,7 @@ class PhotoFrameMaker {
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.fillStyle = this.frameColor;
-        ctx.fillRect(0, 0, dims.width, dims.height);
+        ctx.clearRect(0, 0, dims.width, dims.height);
 
         const img = item.image;
         const src = this.getSplitSourceRect(img, panelIndex);
@@ -2022,7 +2021,6 @@ class PhotoFrameMaker {
         this.showProgress(0, total);
 
         const nameCount = {};
-        const files = [];
 
         for (let i = 0; i < total; i++) {
             const item = this.images[i];
@@ -2039,24 +2037,11 @@ class PhotoFrameMaker {
                 nameCount[fileName] = 1;
             }
 
-            files.push(new File([blob], fileName, { type: 'image/png' }));
+            await this.triggerDownload(blob, fileName);
+            if (i < total - 1) await new Promise(r => setTimeout(r, 300));
         }
 
-        try {
-            if (navigator.canShare?.({ files })) {
-                this.hideProgress();
-                await navigator.share({ files });
-                return;
-            }
-        } catch (e) {
-            if (e.name === 'AbortError') {
-                this.hideProgress();
-                return;
-            }
-        }
-
-        // Fallback to ZIP if share not supported
-        await this.downloadAsZip();
+        this.hideProgress();
     }
 
     async downloadSplit() {
@@ -2071,30 +2056,25 @@ class PhotoFrameMaker {
 
         this.showProgress(0, total);
 
+        if (isMobile) {
+            for (let i = 0; i < total; i++) {
+                this.showProgress(i + 1, total);
+                const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
+                await this.triggerDownload(blob, `${baseName}_split_${i + 1}.png`);
+                if (i < total - 1) await new Promise(r => setTimeout(r, 300));
+            }
+            this.hideProgress();
+            return;
+        }
+
+        // Desktop: ZIP download
         const files = [];
         for (let i = 0; i < total; i++) {
             this.showProgress(i + 1, total);
             const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
-            files.push(new File([blob], `${baseName}_split_${i + 1}.png`, { type: 'image/png' }));
+            files.push({ name: `${baseName}_split_${i + 1}.png`, blob });
         }
 
-        // Mobile: share as individual image files
-        if (isMobile) {
-            try {
-                if (navigator.canShare?.({ files })) {
-                    this.hideProgress();
-                    await navigator.share({ files });
-                    return;
-                }
-            } catch (e) {
-                if (e.name === 'AbortError') {
-                    this.hideProgress();
-                    return;
-                }
-            }
-        }
-
-        // Desktop / fallback: ZIP download
         if (typeof JSZip === 'undefined') {
             this.hideProgress();
             this.showToast('ZIP 라이브러리 로딩 중... 잠시 후 다시 시도해주세요.');
@@ -2105,9 +2085,7 @@ class PhotoFrameMaker {
         }
 
         const zip = new JSZip();
-        for (let i = 0; i < files.length; i++) {
-            zip.file(files[i].name, files[i]);
-        }
+        for (const f of files) zip.file(f.name, f.blob);
 
         this.showProgress(total, total, '압축 중...');
 
@@ -2117,16 +2095,7 @@ class PhotoFrameMaker {
             compressionOptions: { level: 1 }
         });
 
-        const fileName = `${baseName}_split_${total}장.zip`;
-        const url = URL.createObjectURL(zipBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
+        await this.triggerDownload(zipBlob, `${baseName}_split_${total}장.zip`);
         this.hideProgress();
     }
 
@@ -2170,30 +2139,7 @@ class PhotoFrameMaker {
         const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
         const fileName = `${baseName}_pfm.png`;
 
-        // 1) Mobile: Try Web Share API, then fallback to save overlay
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            try {
-                const file = new File([blob], fileName, { type: 'image/png' });
-                if (navigator.canShare?.({ files: [file] })) {
-                    await navigator.share({ files: [file] });
-                    return;
-                }
-            } catch (e) {
-                if (e.name === 'AbortError') return;
-            }
-            this.showSaveOverlay(blob);
-            return;
-        }
-
-        // 2) Desktop download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        await this.triggerDownload(blob, fileName);
     }
 
     async downloadAsZip() {
@@ -2244,26 +2190,31 @@ class PhotoFrameMaker {
         });
 
         const fileName = `photoframe_${total}장_pfm.zip`;
+        await this.triggerDownload(zipBlob, fileName);
+        this.hideProgress();
+    }
 
-        // Mobile: try share for ZIP
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    async triggerDownload(blob, fileName) {
+        // Capacitor native app: save to Downloads via Filesystem API
+        if (window.Capacitor?.isNativePlatform()) {
             try {
-                const file = new File([zipBlob], fileName, { type: 'application/zip' });
-                if (navigator.canShare?.({ files: [file] })) {
-                    this.hideProgress();
-                    await navigator.share({ files: [file] });
-                    return;
-                }
+                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const base64 = await this.blobToBase64(blob);
+                await Filesystem.writeFile({
+                    path: 'Download/' + fileName,
+                    data: base64,
+                    directory: Directory.ExternalStorage,
+                    recursive: true
+                });
+                this.showToast(`저장 완료: ${fileName}`);
+                return;
             } catch (e) {
-                if (e.name === 'AbortError') {
-                    this.hideProgress();
-                    return;
-                }
+                console.error('Filesystem save failed:', e);
             }
         }
 
-        // Desktop / fallback download
-        const url = URL.createObjectURL(zipBlob);
+        // Web browser: standard <a download>
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
@@ -2271,8 +2222,15 @@ class PhotoFrameMaker {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
 
-        this.hideProgress();
+    blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
     }
 
     renderItemToBlob(item, dims, photoArea) {
