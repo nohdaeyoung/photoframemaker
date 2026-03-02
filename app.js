@@ -2262,6 +2262,21 @@ class PhotoFrameMaker {
             }
         }
 
+        // iOS Safari: use Web Share API so user can save to Photos
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        if (isIOS && navigator.canShare) {
+            try {
+                const file = new File([blob], fileName, { type: blob.type });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file] });
+                    return;
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                console.error('Web Share failed:', e);
+            }
+        }
+
         // Web browser: standard <a download>
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
