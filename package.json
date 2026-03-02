@@ -13,10 +13,10 @@
   "author": "DY",
   "license": "ISC",
   "dependencies": {
+    "@capacitor-community/media": "^9.0.2",
     "@capacitor/android": "^8.1.0",
     "@capacitor/cli": "^8.1.0",
-    "@capacitor/core": "^8.1.0",
-    "@capacitor/filesystem": "^8.1.2"
+    "@capacitor/core": "^8.1.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
