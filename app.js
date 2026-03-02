@@ -2195,21 +2195,37 @@ class PhotoFrameMaker {
     }
 
     async triggerDownload(blob, fileName) {
-        // Capacitor native app: save to Downloads via Filesystem API
+        // Capacitor native app: save to Photos/Gallery via Media plugin
         if (window.Capacitor?.isNativePlatform()) {
             try {
-                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const { Media } = await import('@capacitor-community/media');
                 const base64 = await this.blobToBase64(blob);
-                await Filesystem.writeFile({
-                    path: 'Download/' + fileName,
-                    data: base64,
-                    directory: Directory.ExternalStorage,
-                    recursive: true
-                });
-                this.showToast(`저장 완료: ${fileName}`);
+                const dataUri = 'data:image/png;base64,' + base64;
+
+                // Ensure album exists
+                const albumName = 'Photo Frame Maker';
+                const { albums } = await Media.getAlbums();
+                let album = albums.find(a => a.name === albumName);
+                if (!album) {
+                    await Media.createAlbum({ name: albumName });
+                    const result = await Media.getAlbums();
+                    album = result.albums.find(a => a.name === albumName);
+                }
+
+                const saveOpts = {
+                    path: dataUri,
+                    fileName: fileName.replace(/\.[^.]+$/, '')
+                };
+                if (album) {
+                    saveOpts.albumIdentifier = album.identifier;
+                }
+
+                await Media.savePhoto(saveOpts);
+                this.showToast(`갤러리에 저장 완료: ${fileName}`);
                 return;
             } catch (e) {
-                console.error('Filesystem save failed:', e);
+                console.error('Media save failed:', e);
+                // Fall through to <a download> fallback
             }
         }
 
