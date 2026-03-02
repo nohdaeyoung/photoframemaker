@@ -390,7 +390,12 @@
                 </section>
 
                 <section class="control-section split-section" id="split-section" style="display:none">
-                    <h2>분할 수</h2>
+                    <h2>분할 방향</h2>
+                    <div class="split-buttons" id="split-direction-buttons">
+                        <button class="split-btn active" data-direction="horizontal">가로</button>
+                        <button class="split-btn" data-direction="vertical">세로</button>
+                    </div>
+                    <h2 style="margin-top:0.75rem">분할 수</h2>
                     <div class="split-buttons" id="split-buttons">
                         <button class="split-btn active" data-split="2">2분할</button>
                         <button class="split-btn" data-split="3">3분할</button>
@@ -544,7 +549,12 @@
                             </button>
                         </div>
                         <div class="mobile-split-section" id="mobile-split-section" style="display:none">
-                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem">분할 수</div>
+                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem">분할 방향</div>
+                            <div class="split-buttons" id="mobile-split-direction-buttons">
+                                <button class="split-btn active" data-direction="horizontal">가로</button>
+                                <button class="split-btn" data-direction="vertical">세로</button>
+                            </div>
+                            <div class="tab-panel-sub-label" style="margin-bottom:0.5rem;margin-top:0.75rem">분할 수</div>
                             <div class="split-buttons" id="mobile-split-buttons">
                                 <button class="split-btn active" data-split="2">2분할</button>
                                 <button class="split-btn" data-split="3">3분할</button>

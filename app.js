@@ -28,6 +28,7 @@ class PhotoFrameMaker {
         // Split mode
         this.appMode = 'frame'; // 'frame' | 'split'
         this.splitCount = 2;
+        this.splitDirection = 'horizontal'; // 'horizontal' | 'vertical'
         this.splitCurrentPanel = 0;
         this.savedRatioBeforeSplit = null;
 
@@ -163,6 +164,8 @@ class PhotoFrameMaker {
         this.splitButtons = document.getElementById('split-buttons');
         this.mobileSplitSection = document.getElementById('mobile-split-section');
         this.mobileSplitButtons = document.getElementById('mobile-split-buttons');
+        this.splitDirectionButtons = document.getElementById('split-direction-buttons');
+        this.mobileSplitDirectionButtons = document.getElementById('mobile-split-direction-buttons');
     }
 
     setupEventListeners() {
@@ -480,6 +483,13 @@ class PhotoFrameMaker {
             this.switchAppMode(btn.dataset.mode);
         });
 
+        // Split direction buttons (desktop)
+        this.splitDirectionButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.split-btn');
+            if (!btn) return;
+            this.setSplitDirection(btn.dataset.direction);
+        });
+
         // Split count buttons (desktop)
         this.splitButtons.addEventListener('click', (e) => {
             const btn = e.target.closest('.split-btn');
@@ -566,10 +576,10 @@ class PhotoFrameMaker {
         this.splitSection.style.display = isSplit ? '' : 'none';
         this.mobileSplitSection.style.display = isSplit ? '' : 'none';
 
-        // In split mode, force 3:4 ratio and hide ratio selection
+        // In split mode, force ratio based on direction and hide ratio selection
         if (isSplit) {
             this.savedRatioBeforeSplit = [...this.canvasRatio];
-            this.canvasRatio = [3, 4];
+            this.canvasRatio = this.splitDirection === 'horizontal' ? [3, 4] : [4, 3];
             this.ratioSection.style.display = 'none';
             this.mobileRatioHeader.style.display = 'none';
             this.mobileRatioButtons.style.display = 'none';
@@ -629,14 +639,52 @@ class PhotoFrameMaker {
         this.updateInfo();
     }
 
+    setSplitDirection(direction) {
+        if (direction === this.splitDirection) return;
+        this.splitDirection = direction;
+        this.splitCurrentPanel = 0;
+
+        // Update buttons (desktop + mobile)
+        [this.splitDirectionButtons, this.mobileSplitDirectionButtons].forEach(container => {
+            container.querySelectorAll('.split-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.direction === direction)
+            );
+        });
+
+        // Update forced ratio based on direction
+        this.canvasRatio = direction === 'horizontal' ? [3, 4] : [4, 3];
+
+        this.resetAllOffsets();
+        this.updateCanvasSize();
+        this.syncFramePxInputs();
+        this.render();
+        this.updateNavArrows();
+        this.updateThumbnailStrip();
+        this.updateDownloadButton();
+        this.updateInfo();
+    }
+
     // --- Split rendering helpers ---
 
     getSplitStripDimensions(img) {
+        if (this.splitDirection === 'vertical') {
+            const stripHeight = img.naturalHeight / this.splitCount;
+            return { width: img.naturalWidth, height: stripHeight };
+        }
         const stripWidth = img.naturalWidth / this.splitCount;
         return { width: stripWidth, height: img.naturalHeight };
     }
 
     getSplitSourceRect(img, panelIndex) {
+        if (this.splitDirection === 'vertical') {
+            const stripHeight = img.naturalHeight / this.splitCount;
+            return {
+                sx: 0,
+                sy: stripHeight * panelIndex,
+                sw: img.naturalWidth,
+                sh: stripHeight
+            };
+        }
         const stripWidth = img.naturalWidth / this.splitCount;
         return {
             sx: stripWidth * panelIndex,
@@ -1320,7 +1368,7 @@ class PhotoFrameMaker {
         this.thumbnailAddBtn.style.display = 'none';
 
         const img = cur.image;
-        const stripWidth = img.naturalWidth / this.splitCount;
+        const strip = this.getSplitStripDimensions(img);
 
         this.thumbnailList.innerHTML = '';
 
@@ -1335,7 +1383,8 @@ class PhotoFrameMaker {
             const ctx = canvas.getContext('2d');
 
             // Draw strip fitted in thumbnail
-            const stripAspect = stripWidth / img.naturalHeight;
+            const src = this.getSplitSourceRect(img, i);
+            const stripAspect = strip.width / strip.height;
             let dx, dy, dw, dh;
             if (stripAspect > 1) {
                 dw = 130;
@@ -1349,7 +1398,7 @@ class PhotoFrameMaker {
                 dy = 0;
             }
 
-            ctx.drawImage(img, stripWidth * i, 0, stripWidth, img.naturalHeight, dx, dy, dw, dh);
+            ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, dx, dy, dw, dh);
             div.appendChild(canvas);
             this.thumbnailList.appendChild(div);
         }
@@ -1535,11 +1584,17 @@ class PhotoFrameMaker {
             const draw = this.appMode === 'split'
                 ? this.getSplitDrawDimensions(cur.image)
                 : this.getDrawDimensions(cur.image);
-            const sourceWidth = this.appMode === 'split'
-                ? cur.image.naturalWidth / this.splitCount
-                : cur.image.naturalWidth;
+            let sourceWidth, sourceHeight;
+            if (this.appMode === 'split') {
+                const strip = this.getSplitStripDimensions(cur.image);
+                sourceWidth = strip.width;
+                sourceHeight = strip.height;
+            } else {
+                sourceWidth = cur.image.naturalWidth;
+                sourceHeight = cur.image.naturalHeight;
+            }
             const scaleX = draw.width / sourceWidth;
-            const scaleY = draw.height / cur.image.naturalHeight;
+            const scaleY = draw.height / sourceHeight;
             const scale = Math.min(scaleX, scaleY);
 
             const showWarn = scale > 1.5 ? '' : 'none';
@@ -1850,6 +1905,13 @@ class PhotoFrameMaker {
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.render();
+        });
+
+        // Mobile split direction buttons
+        this.mobileSplitDirectionButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.split-btn');
+            if (!btn) return;
+            this.setSplitDirection(btn.dataset.direction);
         });
 
         // Mobile split buttons
