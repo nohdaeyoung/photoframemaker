@@ -2003,17 +2003,100 @@ class PhotoFrameMaker {
         }
 
         if (this.hasMultipleImages) {
-            await this.downloadAsZip();
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                await this.downloadMultipleAsImages();
+            } else {
+                await this.downloadAsZip();
+            }
         } else {
             await this.downloadSingle();
         }
+    }
+
+    async downloadMultipleAsImages() {
+        const total = this.images.length;
+        const dims = this.getCanvasDimensions();
+        const photoArea = this.getPhotoArea();
+
+        this.showProgress(0, total);
+
+        const nameCount = {};
+        const files = [];
+
+        for (let i = 0; i < total; i++) {
+            const item = this.images[i];
+            this.showProgress(i + 1, total);
+
+            const blob = this.renderItemToBlob(item, dims, photoArea);
+
+            const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : 'photo';
+            let fileName = `${baseName}_pfm.png`;
+            if (nameCount[fileName]) {
+                nameCount[fileName]++;
+                fileName = `${baseName}_pfm(${nameCount[fileName]}).png`;
+            } else {
+                nameCount[fileName] = 1;
+            }
+
+            files.push(new File([blob], fileName, { type: 'image/png' }));
+        }
+
+        try {
+            if (navigator.canShare?.({ files })) {
+                this.hideProgress();
+                await navigator.share({ files });
+                return;
+            }
+        } catch (e) {
+            if (e.name === 'AbortError') {
+                this.hideProgress();
+                return;
+            }
+        }
+
+        // Fallback to ZIP if share not supported
+        await this.downloadAsZip();
     }
 
     async downloadSplit() {
         const cur = this.currentImage;
         if (!cur) return;
 
+        const dims = this.getCanvasDimensions();
+        const photoArea = this.getPhotoArea();
+        const total = this.splitCount;
+        const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        this.showProgress(0, total);
+
+        const files = [];
+        for (let i = 0; i < total; i++) {
+            this.showProgress(i + 1, total);
+            const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
+            files.push(new File([blob], `${baseName}_split_${i + 1}.png`, { type: 'image/png' }));
+        }
+
+        // Mobile: share as individual image files
+        if (isMobile) {
+            try {
+                if (navigator.canShare?.({ files })) {
+                    this.hideProgress();
+                    await navigator.share({ files });
+                    return;
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    this.hideProgress();
+                    return;
+                }
+            }
+        }
+
+        // Desktop / fallback: ZIP download
         if (typeof JSZip === 'undefined') {
+            this.hideProgress();
             this.showToast('ZIP 라이브러리 로딩 중... 잠시 후 다시 시도해주세요.');
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -2022,18 +2105,8 @@ class PhotoFrameMaker {
         }
 
         const zip = new JSZip();
-        const dims = this.getCanvasDimensions();
-        const photoArea = this.getPhotoArea();
-        const total = this.splitCount;
-
-        this.showProgress(0, total);
-
-        const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
-
-        for (let i = 0; i < total; i++) {
-            this.showProgress(i + 1, total);
-            const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
-            zip.file(`${baseName}_split_${i + 1}.png`, blob);
+        for (let i = 0; i < files.length; i++) {
+            zip.file(files[i].name, files[i]);
         }
 
         this.showProgress(total, total, '압축 중...');
@@ -2045,23 +2118,6 @@ class PhotoFrameMaker {
         });
 
         const fileName = `${baseName}_split_${total}장.zip`;
-
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            try {
-                const file = new File([zipBlob], fileName, { type: 'application/zip' });
-                if (navigator.canShare?.({ files: [file] })) {
-                    this.hideProgress();
-                    await navigator.share({ files: [file] });
-                    return;
-                }
-            } catch (e) {
-                if (e.name === 'AbortError') {
-                    this.hideProgress();
-                    return;
-                }
-            }
-        }
-
         const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
         a.href = url;
