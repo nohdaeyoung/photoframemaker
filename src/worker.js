@@ -417,7 +417,7 @@ function renderLayout(title, description, content, settings, extra = {}) {
             <nav>
                 <a href="/">도구</a>
                 <a href="/blog/" class="${extra.navActive === 'blog' ? 'active' : ''}">블로그</a>
-                <a href="/about/">소개</a>
+                <a href="/about.html">소개</a>
             </nav>
         </div>
         <div class="blog-container">
