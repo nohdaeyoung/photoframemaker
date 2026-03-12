@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "Photo Frame Maker by DY",
   "scripts": {
-    "build": "mkdir -p www && cp index.html app.js style.css sitemap.xml robots.txt about.html _headers www/ && cp -r devnote.html prompt.html www/ 2>/dev/null || true",
+    "build": "mkdir -p www/admin && cp index.html app.js style.css robots.txt about.html _headers www/ && cp -r devnote.html prompt.html www/ 2>/dev/null || true && cp admin/*.html admin/admin.css www/admin/",
+    "db:create": "wrangler d1 create photoframemaker-blog",
+    "db:migrate": "wrangler d1 execute photoframemaker-blog --file=./migrations/0001_init.sql",
+    "db:migrate:local": "wrangler d1 execute photoframemaker-blog --local --file=./migrations/0001_init.sql",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
     "cap:sync": "npm run build && npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
@@ -18,7 +23,8 @@
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@capacitor/filesystem": "^8.1.2",
-    "@capacitor/share": "^8.0.1"
+    "@capacitor/share": "^8.0.1",
+    "hono": "^4.12.7"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
