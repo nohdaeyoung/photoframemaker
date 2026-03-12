@@ -412,12 +412,12 @@ function renderLayout(title, description, content, settings, extra = {}) {
 <body>
     <div class="blog-page">
         <div class="blog-header">
-            <h1><a href="/">Photo Frame Maker</a></h1>
+            <h1><a href="/">${escapeHtml(settings.site_title || 'Photo Frame Maker')}</a></h1>
             <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">DY</a></p>
             <nav>
-                <a href="/">도구</a>
+                <a href="/">사진 프레임 만들기</a>
                 <a href="/blog/" class="${extra.navActive === 'blog' ? 'active' : ''}">블로그</a>
-                <a href="/about/">소개</a>
+                <a href="/about.html">소개</a>
             </nav>
         </div>
         <div class="blog-container">

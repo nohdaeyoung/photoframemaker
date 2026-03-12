@@ -22,7 +22,8 @@
         }
         .about-header {
             text-align: center;
-            padding: 2rem 1.5rem 0.5rem;
+            padding: 2rem 1.5rem 1rem;
+            border-bottom: 1px solid var(--border);
         }
         .about-header h1 {
             font-size: 1.5rem;
@@ -38,9 +39,23 @@
             color: var(--accent);
         }
         .about-header p {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
             margin: 0;
+        }
+        .about-header nav {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+        .about-header nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .about-header nav a:hover, .about-header nav a.active {
+            color: var(--accent);
         }
         .seo-content {
             border-top: none;
@@ -53,6 +68,11 @@
         <div class="about-header">
             <h1><a href="/">Photo Frame Maker</a></h1>
             <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">DY</a></p>
+            <nav>
+                <a href="/">사진 프레임 만들기</a>
+                <a href="/blog/">블로그</a>
+                <a href="/about.html" class="active">소개</a>
+            </nav>
         </div>
 
         <section class="seo-content">
