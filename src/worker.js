@@ -317,9 +317,7 @@ app.post('/api/admin/upload', authMiddleware, async (c) => {
         httpMetadata: { contentType: file.type }
     });
 
-    const settings = await getSettings(c.env.DB);
-    const siteUrl = settings.site_url || 'https://f.324.ing';
-    const url = `${siteUrl}/uploads/${key}`;
+    const url = `/uploads/${key}`;
 
     return c.json({ url, key });
 });
