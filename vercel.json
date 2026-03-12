@@ -1,15 +1,13 @@
 {
   "buildCommand": null,
   "outputDirectory": ".",
-  "trailingSlash": true,
-  "rewrites": [
-    { "source": "/blog/", "destination": "https://photoframemaker.dynoworld.workers.dev/blog/" },
-    { "source": "/blog/:path*/", "destination": "https://photoframemaker.dynoworld.workers.dev/blog/:path*/" },
-    { "source": "/api/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/api/:path*" },
-    { "source": "/admin/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/admin/:path*" },
-    { "source": "/uploads/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/uploads/:path*" },
-    { "source": "/feed.xml", "destination": "https://photoframemaker.dynoworld.workers.dev/feed.xml" },
-    { "source": "/sitemap.xml", "destination": "https://photoframemaker.dynoworld.workers.dev/sitemap.xml" }
+  "routes": [
+    { "src": "/blog$", "dest": "https://photoframemaker.dynoworld.workers.dev/blog" },
+    { "src": "/blog/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/blog/$1" },
+    { "src": "/api/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/api/$1" },
+    { "src": "/uploads/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/uploads/$1" },
+    { "src": "/feed\\.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/feed.xml" },
+    { "src": "/sitemap\\.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/sitemap.xml" }
   ],
   "headers": [
     {
