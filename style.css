@@ -42,6 +42,7 @@ body::before {
     height: env(safe-area-inset-top, 0px);
     background: var(--bg);
     z-index: 9999;
+    pointer-events: none;
 }
 
 .app {

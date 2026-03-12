@@ -6,7 +6,7 @@
     "enabled": true
   },
   "assets": {
-    "directory": ".",
+    "directory": "./www",
     "html_handling": "force-trailing-slash",
     "not_found_handling": "single-page-application"
   },

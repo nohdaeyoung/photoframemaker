@@ -145,3 +145,20 @@
 
 ### 모바일 사진 탭 UX 개선
 - 사진 없을 때 사진 탭 클릭 시 바로 파일 선택 다이얼로그 실행
+
+---
+
+## 2026-03-02
+
+### iOS Safari 다운로드 개선 (Web Share API)
+- iOS Safari 웹 브라우저에서 저장 시 `navigator.share()` 사용하여 공유 시트 표시
+- 기존 `<a download>` 방식은 파일앱으로만 저장되던 문제 해결
+- 공유 시트에서 "사진에 저장" 선택 시 사진앱에 직접 저장 가능
+- 유저 취소(AbortError) 시 조용히 종료, 미지원 환경에서는 기존 방식 폴백
+
+### 여러 장 일괄 공유 (Batch Share)
+- `tryBatchShare()` 메서드 추가: 여러 파일을 한 번의 공유 시트로 처리
+- 기존에는 여러 장/분할 다운로드 시 `triggerDownload()`를 매번 호출하여 공유 시트가 반복 표시되던 문제 해결
+- `navigator.share({ files: [...] })`로 전체 파일을 한 번에 공유
+- `downloadMultipleAsImages()`, `downloadSplit()` 양쪽에 적용
+- 데스크톱은 기존대로 ZIP, Android 네이티브는 갤러리 직접 저장 유지
