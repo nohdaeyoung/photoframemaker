@@ -1,6 +1,16 @@
 {
   "buildCommand": null,
   "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/blog", "destination": "https://photoframemaker.dynoworld.workers.dev/blog" },
+    { "source": "/blog/", "destination": "https://photoframemaker.dynoworld.workers.dev/blog/" },
+    { "source": "/blog/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/blog/:path*" },
+    { "source": "/api/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/api/:path*" },
+    { "source": "/admin/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/admin/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://photoframemaker.dynoworld.workers.dev/uploads/:path*" },
+    { "source": "/feed.xml", "destination": "https://photoframemaker.dynoworld.workers.dev/feed.xml" },
+    { "source": "/sitemap.xml", "destination": "https://photoframemaker.dynoworld.workers.dev/sitemap.xml" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
