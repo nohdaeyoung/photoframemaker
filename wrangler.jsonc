@@ -1,15 +1,26 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "photoframemaker",
+  "main": "src/worker.js",
   "compatibility_date": "2025-09-27",
   "observability": {
     "enabled": true
   },
   "assets": {
     "directory": "./www",
+    "binding": "ASSETS",
     "html_handling": "force-trailing-slash",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "none"
   },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "photoframemaker-blog",
+    "database_id": "TO_BE_CREATED"
+  }],
+  "r2_buckets": [{
+    "binding": "BUCKET",
+    "bucket_name": "photoframemaker-uploads"
+  }],
   "compatibility_flags": [
     "nodejs_compat"
   ]

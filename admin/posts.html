@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>글 관리 — Admin</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="logo">Photo Frame Maker<small>Admin</small></div>
+            <nav>
+                <a href="/admin/dashboard.html">대시보드</a>
+                <a href="/admin/posts.html" class="active">글 관리</a>
+                <a href="/admin/editor.html">새 글 작성</a>
+                <a href="/admin/settings.html">사이트 설정</a>
+                <a href="/blog/" target="_blank">블로그 보기</a>
+                <a href="/" target="_blank">사이트 보기</a>
+                <a href="#" id="logout-btn">로그아웃</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="toolbar">
+                <h1 style="margin:0">글 관리</h1>
+                <div class="toolbar-actions">
+                    <select id="status-filter" class="form-input" style="padding:0.4rem 0.6rem;font-size:0.8rem;">
+                        <option value="">전체</option>
+                        <option value="published">발행됨</option>
+                        <option value="draft">임시저장</option>
+                    </select>
+                    <a href="/admin/editor.html" class="btn btn-primary">+ 새 글</a>
+                </div>
+            </div>
+            <table class="post-table">
+                <thead><tr><th>제목</th><th>상태</th><th>카테고리</th><th>조회수</th><th>날짜</th><th>작업</th></tr></thead>
+                <tbody id="posts-tbody"></tbody>
+            </table>
+            <div class="pagination" id="pagination" style="margin-top:1rem;"></div>
+        </main>
+    </div>
+    <script>
+        let currentPage = 1;
+        const statusFilter = document.getElementById('status-filter');
+
+        async function loadPosts(page = 1) {
+            const status = statusFilter.value;
+            let url = `/api/posts?page=${page}`;
+            if (status) url += `&status=${status}`;
+
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            const tbody = document.getElementById('posts-tbody');
+            if (data.posts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:2rem;">글이 없습니다</td></tr>';
+            } else {
+                tbody.innerHTML = data.posts.map(p => `
+                    <tr>
+                        <td><a href="/admin/editor.html?id=${p.id}" style="color:var(--text);text-decoration:none;font-weight:500;">${p.title || '(제목 없음)'}</a></td>
+                        <td><span class="status-badge ${p.status}">${p.status === 'published' ? '발행' : '임시저장'}</span></td>
+                        <td style="color:var(--text-secondary)">${p.category || '-'}</td>
+                        <td>${p.view_count || 0}</td>
+                        <td style="color:var(--text-secondary)">${(p.published_at || p.created_at || '').slice(0, 10)}</td>
+                        <td><button class="btn btn-sm btn-danger" onclick="deletePost(${p.id})">삭제</button></td>
+                    </tr>`).join('');
+            }
+
+            // Pagination
+            const pag = document.getElementById('pagination');
+            if (data.totalPages > 1) {
+                let html = '';
+                if (page > 1) html += `<a href="#" onclick="loadPosts(${page-1});return false">&laquo;</a>`;
+                for (let i = 1; i <= data.totalPages; i++) {
+                    html += i === page ? `<span class="current">${i}</span>` : `<a href="#" onclick="loadPosts(${i});return false">${i}</a>`;
+                }
+                if (page < data.totalPages) html += `<a href="#" onclick="loadPosts(${page+1});return false">&raquo;</a>`;
+                pag.innerHTML = html;
+            } else {
+                pag.innerHTML = '';
+            }
+            currentPage = page;
+        }
+
+        async function deletePost(id) {
+            if (!confirm('이 글을 삭제하시겠습니까?')) return;
+            await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' });
+            loadPosts(currentPage);
+        }
+
+        statusFilter.addEventListener('change', () => loadPosts(1));
+
+        (async () => {
+            const check = await fetch('/api/auth/check');
+            const { authenticated } = await check.json();
+            if (!authenticated) { window.location.href = '/admin/login.html'; return; }
+            loadPosts();
+
+            document.getElementById('logout-btn').addEventListener('click', async (e) => {
+                e.preventDefault();
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/admin/login.html';
+            });
+        })();
+    </script>
+</body>
+</html>

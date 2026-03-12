@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>글 작성 — Admin</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="logo">Photo Frame Maker<small>Admin</small></div>
+            <nav>
+                <a href="/admin/dashboard.html">대시보드</a>
+                <a href="/admin/posts.html">글 관리</a>
+                <a href="/admin/editor.html" class="active">새 글 작성</a>
+                <a href="/admin/settings.html">사이트 설정</a>
+                <a href="/blog/" target="_blank">블로그 보기</a>
+                <a href="/" target="_blank">사이트 보기</a>
+                <a href="#" id="logout-btn">로그아웃</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="editor-header">
+                <h1 id="page-title">새 글 작성</h1>
+                <div class="toolbar-actions">
+                    <button class="btn" id="btn-draft" onclick="savePost('draft')">임시저장</button>
+                    <button class="btn btn-primary" id="btn-publish" onclick="savePost('published')">발행</button>
+                </div>
+            </div>
+            <div class="editor-form">
+                <div class="form-group">
+                    <label>제목</label>
+                    <input type="text" id="title" class="form-input" placeholder="글 제목을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>슬러그 (URL)</label>
+                    <input type="text" id="slug" class="form-input" placeholder="자동 생성됩니다">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>카테고리</label>
+                        <input type="text" id="category" class="form-input" placeholder="예: tips, guide, update">
+                    </div>
+                    <div class="form-group">
+                        <label>태그 (쉼표 구분)</label>
+                        <input type="text" id="tags" class="form-input" placeholder="사진, 프레임, 인스타그램">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>요약 (목록/SEO용)</label>
+                    <input type="text" id="excerpt" class="form-input" placeholder="글 요약을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>커버 이미지 URL</label>
+                    <div style="display:flex;gap:0.5rem;">
+                        <input type="text" id="cover_image" class="form-input" style="flex:1" placeholder="이미지 URL">
+                        <button class="btn" onclick="uploadCover()">업로드</button>
+                        <input type="file" id="cover-file" accept="image/*" style="display:none">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>본문</label>
+                    <div id="editor" style="min-height:500px;"></div>
+                </div>
+                <details style="margin-top:0.5rem;">
+                    <summary style="cursor:pointer;font-size:0.85rem;color:var(--text-secondary);font-weight:600;">SEO 설정</summary>
+                    <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.75rem;">
+                        <div class="form-group">
+                            <label>메타 타이틀</label>
+                            <input type="text" id="meta_title" class="form-input" placeholder="비워두면 글 제목 사용">
+                        </div>
+                        <div class="form-group">
+                            <label>메타 설명</label>
+                            <input type="text" id="meta_description" class="form-input" placeholder="비워두면 요약 사용">
+                        </div>
+                        <div class="form-group">
+                            <label>OG 이미지 URL</label>
+                            <input type="text" id="og_image" class="form-input" placeholder="비워두면 커버 이미지 사용">
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <script>
+        let editor;
+        let postId = null;
+
+        function slugify(text) {
+            return text.toLowerCase().trim()
+                .replace(/[^\w\s가-힣-]/g, '')
+                .replace(/[\s_]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .substring(0, 100);
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'admin-toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('show'));
+            setTimeout(() => {
+                t.classList.remove('show');
+                setTimeout(() => t.remove(), 300);
+            }, 2000);
+        }
+
+        async function uploadImage(file) {
+            const form = new FormData();
+            form.append('file', file);
+            const res = await fetch('/api/admin/upload', { method: 'POST', body: form });
+            if (!res.ok) throw new Error('Upload failed');
+            const data = await res.json();
+            return data.url;
+        }
+
+        function uploadCover() {
+            const fileInput = document.getElementById('cover-file');
+            fileInput.click();
+            fileInput.onchange = async () => {
+                const file = fileInput.files[0];
+                if (!file) return;
+                try {
+                    const url = await uploadImage(file);
+                    document.getElementById('cover_image').value = url;
+                    showToast('커버 이미지 업로드 완료');
+                } catch {
+                    showToast('업로드 실패');
+                }
+            };
+        }
+
+        async function savePost(status) {
+            const data = {
+                title: document.getElementById('title').value,
+                slug: document.getElementById('slug').value || slugify(document.getElementById('title').value),
+                content: editor.getHTML(),
+                excerpt: document.getElementById('excerpt').value,
+                cover_image: document.getElementById('cover_image').value,
+                category: document.getElementById('category').value,
+                tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean),
+                status,
+                meta_title: document.getElementById('meta_title').value,
+                meta_description: document.getElementById('meta_description').value,
+                og_image: document.getElementById('og_image').value
+            };
+
+            if (!data.title) { showToast('제목을 입력하세요'); return; }
+
+            try {
+                let res;
+                if (postId) {
+                    res = await fetch(`/api/admin/posts/${postId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch('/api/admin/posts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    showToast(err.error || '저장 실패');
+                    return;
+                }
+
+                const result = await res.json();
+                if (!postId && result.id) {
+                    postId = result.id;
+                    history.replaceState(null, '', `/admin/editor.html?id=${postId}`);
+                }
+                showToast(status === 'published' ? '발행 완료' : '임시저장 완료');
+                document.getElementById('page-title').textContent = '글 수정';
+            } catch {
+                showToast('저장에 실패했습니다');
+            }
+        }
+
+        (async () => {
+            const check = await fetch('/api/auth/check');
+            const { authenticated } = await check.json();
+            if (!authenticated) { window.location.href = '/admin/login.html'; return; }
+
+            editor = new toastui.Editor({
+                el: document.getElementById('editor'),
+                height: '500px',
+                initialEditType: 'wysiwyg',
+                previewStyle: 'vertical',
+                hooks: {
+                    addImageBlobHook: async (blob, callback) => {
+                        try {
+                            const url = await uploadImage(blob);
+                            callback(url, blob.name || 'image');
+                        } catch {
+                            showToast('이미지 업로드 실패');
+                        }
+                    }
+                }
+            });
+
+            // Auto-generate slug from title
+            document.getElementById('title').addEventListener('input', (e) => {
+                if (!postId) {
+                    document.getElementById('slug').value = slugify(e.target.value);
+                }
+            });
+
+            // Load existing post if editing
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (id) {
+                postId = id;
+                document.getElementById('page-title').textContent = '글 수정';
+
+                // Fetch post by id via list API
+                const res = await fetch(`/api/posts?status=draft`);
+                const draftData = await res.json();
+                const res2 = await fetch(`/api/posts?status=published`);
+                const pubData = await res2.json();
+                const allPosts = [...draftData.posts, ...pubData.posts];
+                const post = allPosts.find(p => String(p.id) === String(id));
+
+                if (post) {
+                    // Get full content
+                    const detailRes = await fetch(`/api/posts/${post.slug}`);
+                    if (detailRes.ok) {
+                        const full = await detailRes.json();
+                        document.getElementById('title').value = full.title || '';
+                        document.getElementById('slug').value = full.slug || '';
+                        document.getElementById('excerpt').value = full.excerpt || '';
+                        document.getElementById('cover_image').value = full.cover_image || '';
+                        document.getElementById('category').value = full.category || '';
+                        document.getElementById('tags').value = JSON.parse(full.tags || '[]').join(', ');
+                        document.getElementById('meta_title').value = full.meta_title || '';
+                        document.getElementById('meta_description').value = full.meta_description || '';
+                        document.getElementById('og_image').value = full.og_image || '';
+                        editor.setHTML(full.content || '');
+                    }
+                }
+            }
+
+            document.getElementById('logout-btn').addEventListener('click', async (e) => {
+                e.preventDefault();
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/admin/login.html';
+            });
+        })();
+    </script>
+</body>
+</html>
