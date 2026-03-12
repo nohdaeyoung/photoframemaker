@@ -10,7 +10,7 @@
     "directory": "./www",
     "binding": "ASSETS",
     "html_handling": "force-trailing-slash",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "none"
   },
   "d1_databases": [{
     "binding": "DB",

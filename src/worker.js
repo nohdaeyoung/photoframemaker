@@ -440,11 +440,8 @@ function formatDate(dateStr) {
 }
 
 // Blog list page
-app.get('/blog', async (c) => {
-    const url = new URL(c.req.url);
-    // Redirect to trailing slash
-    if (!url.pathname.endsWith('/')) return c.redirect(url.pathname + '/' + url.search);
-
+app.get('/blog', (c) => c.redirect('/blog/'));
+app.get('/blog/', async (c) => {
     const settings = await getSettings(c.env.DB);
     const page = parseInt(c.req.query('page') || '1');
     const category = c.req.query('category') || '';
@@ -518,10 +515,9 @@ app.get('/blog', async (c) => {
 });
 
 // Blog post detail page
-app.get('/blog/:slug', async (c) => {
+app.get('/blog/:slug', (c) => c.redirect(`/blog/${c.req.param('slug')}/`));
+app.get('/blog/:slug/', async (c) => {
     const slug = c.req.param('slug');
-    const url = new URL(c.req.url);
-    if (!url.pathname.endsWith('/')) return c.redirect(url.pathname + '/');
 
     const post = await c.env.DB.prepare(
         "SELECT * FROM posts WHERE slug = ? AND status = 'published'"
