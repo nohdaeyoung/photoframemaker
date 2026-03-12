@@ -1,3 +1,8 @@
+function escapeHtml(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 class PhotoFrameMaker {
     constructor() {
         // Multi-image array (max 10)
@@ -756,7 +761,7 @@ class PhotoFrameMaker {
         this.ctx.restore();
     }
 
-    renderSplitPanelToBlob(item, dims, photoArea, panelIndex) {
+    async renderSplitPanelToBlob(item, dims, photoArea, panelIndex) {
         const offscreen = document.createElement('canvas');
         offscreen.width = dims.width;
         offscreen.height = dims.height;
@@ -780,13 +785,13 @@ class PhotoFrameMaker {
         ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, x, y, draw.width, draw.height);
         ctx.restore();
 
-        const dataURL = offscreen.toDataURL('image/png');
-        const binary = atob(dataURL.split(',')[1]);
-        const array = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-            array[i] = binary.charCodeAt(i);
-        }
-        return new Blob([array], { type: 'image/png' });
+        return await new Promise((resolve, reject) => {
+            offscreen.toBlob(blob => {
+                offscreen.width = 0;
+                offscreen.height = 0;
+                blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'));
+            }, 'image/png');
+        });
     }
 
     // --- Canvas size update ---
@@ -946,6 +951,7 @@ class PhotoFrameMaker {
 
     updateMockupImages() {
         if (this.previewMode === 'default') return;
+        if (this.isDragging) return;
         const dataUrl = this.canvas.toDataURL('image/jpeg', 0.85);
         if (this.previewMode === 'feed') {
             this.feedImage.src = dataUrl;
@@ -1235,7 +1241,7 @@ class PhotoFrameMaker {
         if (index < 0 || index >= this.images.length) return;
 
         const removed = this.images.splice(index, 1)[0];
-        URL.revokeObjectURL(removed.imageUrl);
+        if (removed && removed.imageUrl) URL.revokeObjectURL(removed.imageUrl);
 
         // Adjust current index
         if (this.images.length === 0) {
@@ -1326,8 +1332,8 @@ class PhotoFrameMaker {
             if (!item) return '';
             return `
             <div class="thumbnail-item ${i === this.currentIndex ? 'active' : ''}" data-index="${i}">
-                <img src="${item.imageUrl}" alt="${item.fileName}">
-                <button class="thumbnail-remove" data-index="${i}" type="button">&times;</button>
+                <img src="${item.imageUrl}" alt="${escapeHtml(item.fileName)}">
+                <button class="thumbnail-remove" data-index="${i}" type="button" aria-label="사진 ${i + 1} 삭제">&times;</button>
             </div>`;
         }).join('');
 
@@ -1451,7 +1457,7 @@ class PhotoFrameMaker {
         this.uploadContent.innerHTML = `
             <img class="upload-thumb" src="${cur.imageUrl}" alt="미리보기">
             <div class="upload-info">
-                <div class="upload-filename">${cur.fileName}${countLabel}</div>
+                <div class="upload-filename">${escapeHtml(cur.fileName)}${countLabel}</div>
                 <div class="upload-filesize">${cur.image.naturalWidth} × ${cur.image.naturalHeight} px · ${sizeStr}</div>
                 <div class="upload-hint" style="display:block; margin-top:2px;">클릭하여 추가</div>
             </div>
@@ -1543,13 +1549,20 @@ class PhotoFrameMaker {
         };
 
         this.clampOffset();
-        this.render();
+        if (!this._dragRafPending) {
+            this._dragRafPending = true;
+            requestAnimationFrame(() => {
+                this._dragRafPending = false;
+                this.render();
+            });
+        }
     }
 
     onDragEnd() {
         if (this.isDragging) {
             this.isDragging = false;
             this.canvas.style.cursor = 'grab';
+            this.render(); // Final render with mockup update
         }
     }
 
@@ -1763,7 +1776,7 @@ class PhotoFrameMaker {
         }
 
         const html = items.map(([label, value]) =>
-            `<span class="info-label">${label}</span><span class="info-value">${value}</span>`
+            `<span class="info-label">${escapeHtml(label)}</span><span class="info-value">${escapeHtml(value)}</span>`
         ).join('');
         this.exifGrid.innerHTML = html;
         this.exifSection.style.display = '';
@@ -1996,20 +2009,29 @@ class PhotoFrameMaker {
     async download() {
         if (!this.hasImage) return;
 
-        if (this.appMode === 'split') {
-            await this.downloadSplit();
-            return;
-        }
-
-        if (this.hasMultipleImages) {
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                await this.downloadMultipleAsImages();
-            } else {
-                await this.downloadAsZip();
+        try {
+            if (this.appMode === 'split') {
+                await this.downloadSplit();
+                return;
             }
-        } else {
-            await this.downloadSingle();
+
+            if (this.hasMultipleImages) {
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                if (isMobile) {
+                    await this.downloadMultipleAsImages();
+                } else {
+                    await this.downloadAsZip();
+                }
+            } else {
+                await this.downloadSingle();
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Download failed:', err);
+                this.showToast('다운로드에 실패했습니다');
+            }
+        } finally {
+            this.hideProgress();
         }
     }
 
@@ -2027,7 +2049,7 @@ class PhotoFrameMaker {
             const item = this.images[i];
             this.showProgress(i + 1, total);
 
-            const blob = this.renderItemToBlob(item, dims, photoArea);
+            const blob = await this.renderItemToBlob(item, dims, photoArea);
 
             const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : 'photo';
             let fileName = `${baseName}_pfm.png`;
@@ -2072,7 +2094,7 @@ class PhotoFrameMaker {
             const files = [];
             for (let i = 0; i < total; i++) {
                 this.showProgress(i + 1, total);
-                const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
+                const blob = await this.renderSplitPanelToBlob(cur, dims, photoArea, i);
                 files.push({ blob, fileName: `${baseName}_split_${i + 1}.png` });
             }
 
@@ -2152,13 +2174,13 @@ class PhotoFrameMaker {
         ctx.drawImage(cur.image, x, y, draw.width, draw.height);
         ctx.restore();
 
-        const dataURL = offscreen.toDataURL('image/png');
-        const binary = atob(dataURL.split(',')[1]);
-        const array = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-            array[i] = binary.charCodeAt(i);
-        }
-        const blob = new Blob([array], { type: 'image/png' });
+        const blob = await new Promise((resolve, reject) => {
+            offscreen.toBlob(b => {
+                offscreen.width = 0;
+                offscreen.height = 0;
+                b ? resolve(b) : reject(new Error('Canvas toBlob failed'));
+            }, 'image/png');
+        });
 
         const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
         const fileName = `${baseName}_pfm.png`;
@@ -2190,7 +2212,7 @@ class PhotoFrameMaker {
             const item = this.images[i];
             this.showProgress(i + 1, total);
 
-            const blob = this.renderItemToBlob(item, dims, photoArea);
+            const blob = await this.renderItemToBlob(item, dims, photoArea);
 
             // Generate unique filename
             const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : 'photo';
@@ -2344,7 +2366,7 @@ class PhotoFrameMaker {
         });
     }
 
-    renderItemToBlob(item, dims, photoArea) {
+    async renderItemToBlob(item, dims, photoArea) {
         const offscreen = document.createElement('canvas');
         offscreen.width = dims.width;
         offscreen.height = dims.height;
@@ -2368,13 +2390,13 @@ class PhotoFrameMaker {
         ctx.drawImage(item.image, x, y, draw.width, draw.height);
         ctx.restore();
 
-        const dataURL = offscreen.toDataURL('image/png');
-        const binary = atob(dataURL.split(',')[1]);
-        const array = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-            array[i] = binary.charCodeAt(i);
-        }
-        return new Blob([array], { type: 'image/png' });
+        return await new Promise((resolve, reject) => {
+            offscreen.toBlob(blob => {
+                offscreen.width = 0;
+                offscreen.height = 0;
+                blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'));
+            }, 'image/png');
+        });
     }
 
     // --- Progress bar ---
@@ -2421,6 +2443,7 @@ class PhotoFrameMaker {
         setTimeout(() => {
             toast.classList.remove('show');
             toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 500);
         }, duration);
     }
 
@@ -2450,6 +2473,12 @@ class PhotoFrameMaker {
                 overlay.remove();
                 URL.revokeObjectURL(url);
             }, { once: true });
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.remove();
+                    URL.revokeObjectURL(url);
+                }
+            }, 1000);
         };
 
         overlay.querySelector('.save-overlay-close').addEventListener('click', close);
