@@ -7,16 +7,16 @@
     { "src": "/api/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/api/$1" },
     { "src": "/uploads/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/uploads/$1" },
     { "src": "/feed\\.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/feed.xml" },
-    { "src": "/sitemap\\.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/sitemap.xml" }
-  ],
-  "headers": [
+    { "src": "/sitemap\\.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/sitemap.xml" },
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "Pragma", "value": "no-cache" },
-        { "key": "Expires", "value": "0" }
-      ]
-    }
+      "src": "/(.*)",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      },
+      "continue": true
+    },
+    { "handle": "filesystem" }
   ]
 }
