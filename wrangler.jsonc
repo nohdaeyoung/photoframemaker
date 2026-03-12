@@ -15,7 +15,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "photoframemaker-blog",
-    "database_id": "TO_BE_CREATED"
+    "database_id": "1516098c-cc66-4781-bd4b-425ea5057ca8"
   }],
   "r2_buckets": [{
     "binding": "BUCKET",
