@@ -762,28 +762,18 @@ class PhotoFrameMaker {
     }
 
     async renderSplitPanelToBlob(item, dims, photoArea, panelIndex) {
+        const img = item.image;
+        const src = this.getSplitSourceRect(img, panelIndex);
+
+        // Split mode: save only the photo content, no frame
         const offscreen = document.createElement('canvas');
-        offscreen.width = dims.width;
-        offscreen.height = dims.height;
+        offscreen.width = Math.round(src.sw);
+        offscreen.height = Math.round(src.sh);
         const ctx = offscreen.getContext('2d');
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.clearRect(0, 0, dims.width, dims.height);
-
-        const img = item.image;
-        const src = this.getSplitSourceRect(img, panelIndex);
-        const draw = this.getSplitDrawDimensions(img);
-
-        const x = photoArea.x + (photoArea.width - draw.width) / 2;
-        const y = photoArea.y + (photoArea.height - draw.height) / 2;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
-        ctx.clip();
-        ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, x, y, draw.width, draw.height);
-        ctx.restore();
+        ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, 0, 0, offscreen.width, offscreen.height);
 
         return await new Promise((resolve, reject) => {
             offscreen.toBlob(blob => {
