@@ -218,6 +218,13 @@ app.post('/api/admin/posts', authMiddleware, async (c) => {
     return c.json({ id: result.meta.last_row_id, slug }, 201);
 });
 
+app.get('/api/admin/posts/:id', authMiddleware, async (c) => {
+    const id = c.req.param('id');
+    const post = await c.env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
+    if (!post) return c.json({ error: 'Not found' }, 404);
+    return c.json(post);
+});
+
 app.put('/api/admin/posts/:id', authMiddleware, async (c) => {
     const id = c.req.param('id');
     const data = await c.req.json();
@@ -306,7 +313,7 @@ app.post('/api/admin/upload', authMiddleware, async (c) => {
     const file = formData.get('file');
     if (!file) return c.json({ error: 'No file' }, 400);
 
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'];
     if (!allowed.includes(file.type)) return c.json({ error: 'Invalid file type' }, 400);
     if (file.size > 5 * 1024 * 1024) return c.json({ error: 'File too large (max 5MB)' }, 400);
 
@@ -335,13 +342,30 @@ app.get('/uploads/*', async (c) => {
     return new Response(obj.body, { headers });
 });
 
+// --- Favicon ---
+
+app.get('/favicon.ico', async (c) => {
+    const settings = await getSettings(c.env.DB);
+    if (!settings.favicon_url) return c.env.ASSETS.fetch(c.req.raw);
+    const key = settings.favicon_url.replace('/uploads/', '');
+    const obj = await c.env.BUCKET.get(key);
+    if (!obj) return c.env.ASSETS.fetch(c.req.raw);
+    const headers = new Headers();
+    headers.set('Content-Type', obj.httpMetadata?.contentType || 'image/x-icon');
+    headers.set('Cache-Control', 'public, max-age=86400');
+    return new Response(obj.body, { headers });
+});
+
 // --- SSR Blog pages ---
 
 function renderLayout(title, description, content, settings, extra = {}) {
     const gtmId = settings.gtm_id || '';
-    const ogImage = extra.ogImage || settings.og_default_image || '';
+    const siteUrl = settings.site_url || 'https://f.324.ing';
+    let ogImage = extra.ogImage || settings.og_default_image || '';
+    if (ogImage && ogImage.startsWith('/')) ogImage = siteUrl + ogImage;
     const canonical = extra.canonical || '';
     const jsonLd = extra.jsonLd || '';
+    const ogType = (extra.ogType === 'article') ? 'article' : 'website';
 
     return `<!DOCTYPE html>
 <html lang="ko">
@@ -352,13 +376,21 @@ function renderLayout(title, description, content, settings, extra = {}) {
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}">
     <meta name="author" content="${escapeHtml(settings.site_author || 'DY')}">
+    ${settings.site_keywords ? `<meta name="keywords" content="${escapeHtml(settings.site_keywords)}">` : ''}
     ${canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ''}
+    <meta property="og:type" content="${ogType}">
     <meta property="og:title" content="${escapeHtml(title)}">
     <meta property="og:description" content="${escapeHtml(description)}">
-    <meta property="og:image" content="${escapeHtml(ogImage)}">
-    ${extra.ogType ? `<meta property="og:type" content="${extra.ogType}">` : ''}
+    ${ogImage ? `<meta property="og:image" content="${escapeHtml(ogImage)}">` : ''}
     ${canonical ? `<meta property="og:url" content="${escapeHtml(canonical)}">` : ''}
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="${escapeHtml(settings.site_title || 'Photo Frame Maker')}">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${escapeHtml(title)}">
+    <meta name="twitter:description" content="${escapeHtml(description)}">
+    ${ogImage ? `<meta name="twitter:image" content="${escapeHtml(ogImage)}">` : ''}
+    <link rel="icon" type="image/x-icon" href="${escapeHtml(settings.favicon_url || '/favicon.ico')}">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon_180x180.png">
     <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
     <link rel="stylesheet" href="/style.css">
     <style>
@@ -368,7 +400,7 @@ function renderLayout(title, description, content, settings, extra = {}) {
         .blog-header h1 a { color: var(--text); text-decoration: none; }
         .blog-header h1 a:hover { color: var(--accent); }
         .blog-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
-        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; }
+        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; flex-wrap: wrap; }
         .blog-header nav a { color: var(--text-secondary); text-decoration: none; }
         .blog-header nav a:hover, .blog-header nav a.active { color: var(--accent); }
         .blog-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; width: 100%; }
@@ -413,18 +445,19 @@ function renderLayout(title, description, content, settings, extra = {}) {
     <div class="blog-page">
         <div class="blog-header">
             <h1><a href="/">${escapeHtml(settings.site_title || 'Photo Frame Maker')}</a></h1>
-            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">DY</a></p>
+            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">${escapeHtml(settings.site_author || 'DY')}</a></p>
             <nav>
                 <a href="/">사진 프레임 만들기</a>
                 <a href="/blog/" class="${extra.navActive === 'blog' ? 'active' : ''}">블로그</a>
                 <a href="/about.html">소개</a>
+                <a href="/devnote.html">Dev Note</a>
             </nav>
         </div>
         <div class="blog-container">
             ${content}
         </div>
         <footer class="footer">
-            <p>&copy; 2026 <a href="https://324.ing" target="_blank" rel="noopener noreferrer">324.ing</a> &middot; Built by photographer <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a></p>
+            <p>&copy; 2026 <a href="https://324.ing" target="_blank" rel="noopener noreferrer">324.ing</a> &middot; Built by photographer <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/about.html">About</a> &middot; <a href="/devnote.html">Dev Note</a></p>
         </footer>
     </div>
 </body>
@@ -554,14 +587,16 @@ app.get('/blog/:slug/', async (c) => {
             ${tagsHtml}
         </article>`;
 
+    const makeAbsolute = (url) => (url && url.startsWith('/')) ? siteUrl + url : url;
+    const postImage = makeAbsolute(post.og_image || post.cover_image || settings.og_default_image || '');
     const jsonLd = JSON.stringify({
         "@context": "https://schema.org",
         "@type": "BlogPosting",
         "headline": post.title,
         "description": description,
-        "image": post.og_image || post.cover_image || settings.og_default_image || '',
+        ...(postImage ? { "image": postImage } : {}),
         "datePublished": post.published_at,
-        "dateModified": post.updated_at,
+        "dateModified": post.updated_at || post.published_at,
         "author": { "@type": "Person", "name": settings.site_author || 'DY', "url": "https://www.instagram.com/dyno/" },
         "publisher": { "@type": "Organization", "name": "324.ing", "url": "https://324.ing" },
         "mainEntityOfPage": `${siteUrl}/blog/${post.slug}/`
@@ -624,11 +659,12 @@ app.get('/sitemap.xml', async (c) => {
     let urls = `
     <url><loc>${siteUrl}/</loc><priority>1.0</priority></url>
     <url><loc>${siteUrl}/blog/</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
-    <url><loc>${siteUrl}/about/</loc><priority>0.5</priority></url>`;
+    <url><loc>${siteUrl}/about.html</loc><priority>0.5</priority></url>`;
 
     for (const p of posts) {
+        const lastmod = p.updated_at ? p.updated_at.replace(' ', 'T') + 'Z' : '';
         urls += `
-    <url><loc>${siteUrl}/blog/${p.slug}/</loc><lastmod>${p.updated_at}</lastmod><priority>0.7</priority></url>`;
+    <url><loc>${siteUrl}/blog/${p.slug}/</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}<priority>0.7</priority></url>`;
     }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -129,3 +129,128 @@ npm run cap:run:android    # 빌드 + Android 실행
 6. **Blob URL 해제** — 이미지 제거 시 `URL.revokeObjectURL()` 호출
 7. **EXIF 파서** — 자체 구현, 태그 오프셋과 엔디안 주의
 8. **UI 이중 구조** — 데스크톱 사이드바 + 모바일 탭바, 기능 동등성 유지
+
+---
+
+## 블로그 시스템 (Blog + Admin)
+
+### 호스팅 아키텍처 (중요!)
+
+```
+f.324.ing  →  Vercel (정적 파일 서빙, outputDirectory: ".")
+               ↓ 프록시 (vercel.json rewrites)
+/blog/*    →  Cloudflare Workers (photoframemaker.dynoworld.workers.dev)
+/api/*     →  Cloudflare Workers
+/admin/*   →  Cloudflare Workers
+/uploads/* →  Cloudflare Workers
+/feed.xml  →  Cloudflare Workers
+/sitemap.xml → Cloudflare Workers
+```
+
+**핵심**: 정적 파일(favicon, og-image 등)은 **프로젝트 루트**에 있어야 Vercel에서 서빙됨. `www/`는 Cloudflare Workers용.
+
+### 배포 방법
+
+```bash
+# Vercel 배포 (f.324.ing 정적 파일 반영)
+cd /Users/dyno/photoframemaker && vercel --prod --yes
+
+# Cloudflare Workers 배포 (blog/api/admin 반영)
+cd /Users/dyno/photoframemaker && npx wrangler deploy
+```
+
+### Cloudflare 리소스
+
+- **Workers**: `photoframemaker.dynoworld.workers.dev` (`src/worker.js`, Hono 프레임워크)
+- **D1 DB**: `photoframemaker-blog` (id: `1516098c-cc66-4781-bd4b-425ea5057ca8`)
+- **R2 Bucket**: `photoframemaker-uploads` (업로드 파일 저장)
+
+### D1 테이블 구조
+
+```sql
+posts       -- id, title, slug, content(Markdown), excerpt, cover_image, og_image,
+            --  status('draft'|'published'), published_at, created_at, updated_at
+settings    -- key, value (KV 형태)
+sessions    -- token, expires_at (쿠키 기반 인증)
+users       -- id, password_hash (SHA-256, Web Crypto API)
+rate_limits -- ip, endpoint, count, window_start
+```
+
+### 설정 키 (settings 테이블)
+
+```
+site_title, site_description, site_keywords, site_author, site_url
+blog_title, blog_description, posts_per_page
+og_default_image, favicon_url   ← R2 URL 또는 정적 경로
+ga_id, gtm_id
+```
+
+### 어드민
+
+- **URL**: `https://f.324.ing/admin/login.html`
+- **비밀번호 저장 위치**: Cloudflare Workers 시크릿 `ADMIN_PASSWORD_HASH` (D1 users 테이블 아님!)
+- **비밀번호 변경 방법** (zsh에서 `!` 포함 비밀번호 주의):
+  ```bash
+  # 1. 해시 생성 (shasum 대신 node 사용 — zsh에서 ! 문자 확장 문제 방지)
+  node -e "require('crypto').createHash('sha256').update('NEW_PASSWORD').digest('hex')"
+
+  # 2. Cloudflare Workers 시크릿 업데이트
+  npx wrangler secret put ADMIN_PASSWORD_HASH
+  # 프롬프트에 해시값 붙여넣기
+  ```
+
+### worker.js 주요 라우트 (src/worker.js)
+
+```
+POST /api/auth/login          로그인 (쿠키 세션)
+POST /api/auth/logout         로그아웃
+GET  /api/auth/check          인증 상태 확인
+
+GET  /api/posts               공개 글 목록
+GET  /api/posts/:slug         공개 글 상세
+GET  /api/settings/public     공개 설정 (사이트 정보)
+
+GET  /api/admin/posts         관리자 글 목록
+POST /api/admin/posts         글 생성
+PUT  /api/admin/posts/:id     글 수정
+DEL  /api/admin/posts/:id     글 삭제
+GET  /api/admin/settings      설정 조회
+PUT  /api/admin/settings      설정 저장
+POST /api/admin/upload        R2 업로드 (이미지/파일)
+GET  /api/admin/stats         통계
+
+GET  /favicon.ico             settings.favicon_url(R2) 또는 정적 fallback
+GET  /blog/                   SSR 블로그 목록
+GET  /blog/:slug/             SSR 블로그 글 상세
+GET  /feed.xml                RSS
+GET  /sitemap.xml             사이트맵
+```
+
+### 파일 구조 (블로그 관련)
+
+```
+src/worker.js           Hono 기반 Workers 엔트리
+admin/
+  login.html            로그인 페이지
+  dashboard.html        대시보드
+  posts.html            글 목록 관리
+  editor.html           글 작성/수정 (Markdown)
+  settings.html         사이트 설정 (favicon, og image 업로드 포함)
+  admin.css             어드민 전용 스타일
+migrations/             D1 마이그레이션 SQL
+schema.sql              전체 스키마
+vercel.json             Vercel 설정 (rewrites, headers)
+wrangler.jsonc          Cloudflare Workers 설정
+favicon.ico             ← 루트에 있어야 Vercel 서빙됨
+og-image.png            ← 루트에 있어야 Vercel 서빙됨
+favicon_*.png           ← 루트에 있어야 Vercel 서빙됨
+images/                 원본 이미지 소스 (favicon, og-image)
+www/                    Cloudflare Workers 정적 파일 (빌드 출력)
+```
+
+### 알려진 이슈 & 해결책
+
+1. **파비콘/이미지 Vercel 미반영**: 파일이 루트에 없으면 HTML 반환. `images/`에서 루트로 복사 후 `vercel --prod --yes`
+2. **비밀번호 해시 오류**: zsh에서 `!` 포함 비밀번호는 `shasum` 대신 `node` 사용
+3. **블로그 nav `/about/` 깨짐**: worker.js SSR에서 `/about.html`로 링크해야 함 (Vercel 정적 파일)
+4. **블로그 헤더 하드코딩 주의**: worker.js `renderLayout()`의 settings 변수 사용 확인

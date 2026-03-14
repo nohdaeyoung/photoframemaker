@@ -63,8 +63,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>본문</label>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                        <label style="margin:0">본문</label>
+                        <button type="button" class="btn" id="btn-html-toggle" onclick="toggleHtmlMode()" style="font-size:0.75rem;padding:0.25rem 0.75rem;">HTML 편집</button>
+                    </div>
                     <div id="editor" style="min-height:500px;"></div>
+                    <textarea id="html-editor" style="display:none;width:100%;min-height:500px;font-family:'Fira Code',monospace;font-size:0.85rem;padding:1rem;border:1px solid var(--border);border-radius:var(--radius);resize:vertical;box-sizing:border-box;background:var(--bg);color:var(--text);line-height:1.6;" placeholder="HTML 직접 입력..."></textarea>
                 </div>
                 <details style="margin-top:0.5rem;">
                     <summary style="cursor:pointer;font-size:0.85rem;color:var(--text-secondary);font-weight:600;">SEO 설정</summary>
@@ -91,6 +95,26 @@
     <script>
         let editor;
         let postId = null;
+        let htmlMode = false;
+
+        function toggleHtmlMode() {
+            const editorEl = document.getElementById('editor');
+            const htmlEl = document.getElementById('html-editor');
+            const btn = document.getElementById('btn-html-toggle');
+            if (!htmlMode) {
+                htmlEl.value = editor.getHTML();
+                editorEl.style.display = 'none';
+                htmlEl.style.display = 'block';
+                btn.textContent = 'WYSIWYG 편집';
+                htmlMode = true;
+            } else {
+                editor.setHTML(htmlEl.value);
+                htmlEl.style.display = 'none';
+                editorEl.style.display = 'block';
+                btn.textContent = 'HTML 편집';
+                htmlMode = false;
+            }
+        }
 
         function slugify(text) {
             return text.toLowerCase().trim()
@@ -141,7 +165,7 @@
             const data = {
                 title: document.getElementById('title').value,
                 slug: document.getElementById('slug').value || slugify(document.getElementById('title').value),
-                content: editor.getHTML(),
+                content: htmlMode ? document.getElementById('html-editor').value : editor.getHTML(),
                 excerpt: document.getElementById('excerpt').value,
                 cover_image: document.getElementById('cover_image').value,
                 category: document.getElementById('category').value,
@@ -224,30 +248,20 @@
                 postId = id;
                 document.getElementById('page-title').textContent = '글 수정';
 
-                // Fetch post by id via list API
-                const res = await fetch(`/api/posts?status=draft`);
-                const draftData = await res.json();
-                const res2 = await fetch(`/api/posts?status=published`);
-                const pubData = await res2.json();
-                const allPosts = [...draftData.posts, ...pubData.posts];
-                const post = allPosts.find(p => String(p.id) === String(id));
-
-                if (post) {
-                    // Get full content
-                    const detailRes = await fetch(`/api/posts/${post.slug}`);
-                    if (detailRes.ok) {
-                        const full = await detailRes.json();
-                        document.getElementById('title').value = full.title || '';
-                        document.getElementById('slug').value = full.slug || '';
-                        document.getElementById('excerpt').value = full.excerpt || '';
-                        document.getElementById('cover_image').value = full.cover_image || '';
-                        document.getElementById('category').value = full.category || '';
-                        document.getElementById('tags').value = JSON.parse(full.tags || '[]').join(', ');
-                        document.getElementById('meta_title').value = full.meta_title || '';
-                        document.getElementById('meta_description').value = full.meta_description || '';
-                        document.getElementById('og_image').value = full.og_image || '';
-                        editor.setHTML(full.content || '');
-                    }
+                // Fetch post by id via admin API
+                const detailRes = await fetch(`/api/admin/posts/${id}`);
+                if (detailRes.ok) {
+                    const full = await detailRes.json();
+                    document.getElementById('title').value = full.title || '';
+                    document.getElementById('slug').value = full.slug || '';
+                    document.getElementById('excerpt').value = full.excerpt || '';
+                    document.getElementById('cover_image').value = full.cover_image || '';
+                    document.getElementById('category').value = full.category || '';
+                    document.getElementById('tags').value = JSON.parse(full.tags || '[]').join(', ');
+                    document.getElementById('meta_title').value = full.meta_title || '';
+                    document.getElementById('meta_description').value = full.meta_description || '';
+                    document.getElementById('og_image').value = full.og_image || '';
+                    editor.setHTML(full.content || '');
                 }
             }
 

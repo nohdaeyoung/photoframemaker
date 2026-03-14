@@ -3,75 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About — Photo Frame Maker by DY | 324.ing</title>
+    <title>소개 — Photo Frame Maker by DY</title>
     <meta name="description" content="Photo Frame Maker by DY 소개 — 무료 온라인 사진 프레임 도구. 인스타그램 피드/프로필 프레임, 7가지 캔버스 비율, PNG 무손실 저장.">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://f.324.ing/about">
-    <link rel="stylesheet" href="style.css">
+    <link rel="canonical" href="https://f.324.ing/about.html">
+    <meta property="og:title" content="소개 — Photo Frame Maker by DY">
+    <meta property="og:description" content="사진작가 DY가 만든 무료 온라인 사진 프레임 도구 소개">
+    <meta property="og:url" content="https://f.324.ing/about.html">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
     <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
-        .about-page {
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
-        .about-header {
-            text-align: center;
-            padding: 2rem 1.5rem 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-        .about-header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text);
-            margin: 0 0 0.25rem;
-        }
-        .about-header h1 a {
-            color: var(--text);
-            text-decoration: none;
-        }
-        .about-header h1 a:hover {
-            color: var(--accent);
-        }
-        .about-header p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-        .about-header nav {
-            margin-top: 0.75rem;
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            font-size: 0.85rem;
-        }
-        .about-header nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
-        .about-header nav a:hover, .about-header nav a.active {
-            color: var(--accent);
-        }
-        .seo-content {
-            border-top: none;
-            flex: 1;
-        }
+        .blog-page { min-height: 100dvh; display: flex; flex-direction: column; }
+        .blog-header { text-align: center; padding: 2rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
+        .blog-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
+        .blog-header h1 a { color: var(--text); text-decoration: none; }
+        .blog-header h1 a:hover { color: var(--accent); }
+        .blog-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; flex-wrap: wrap; }
+        .blog-header nav a { color: var(--text-secondary); text-decoration: none; }
+        .blog-header nav a:hover, .blog-header nav a.active { color: var(--accent); }
+        .blog-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; width: 100%; }
     </style>
 </head>
 <body>
-    <div class="about-page">
-        <div class="about-header">
+    <div class="blog-page">
+        <div class="blog-header">
             <h1><a href="/">Photo Frame Maker</a></h1>
-            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">DY</a></p>
+            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">DY</a></p>
             <nav>
                 <a href="/">사진 프레임 만들기</a>
                 <a href="/blog/">블로그</a>
                 <a href="/about.html" class="active">소개</a>
+                <a href="/devnote.html">Dev Note</a>
             </nav>
         </div>
 
@@ -79,10 +43,10 @@
             <div class="seo-inner">
 
                 <h2>Photo Frame Maker란?</h2>
-                <p>사진작가 <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a>가 만든 무료 온라인 프레임 도구입니다. 항상 포토샵을 이용해 프레이밍 작업을 해왔습니다. 더 이상 포토샵을 이용하는 건 귀찮고, 남의 것 쓰기에는 또 알량한 자존심 때문에 만든 사이트입니다. 
+                <p>사진작가 <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a>가 만든 무료 온라인 프레임 도구입니다. 항상 포토샵을 이용해 프레이밍 작업을 해왔습니다. 더 이상 포토샵을 이용하는 건 귀찮고, 남의 것 쓰기에는 또 알량한 자존심 때문에 만든 사이트입니다.
                     <br />
                     이 사이트에서는 사진에 깔끔한 프레임을 추가하고, 인스타그램 피드/프로필 스타일로 프레이밍할 수 있습니다. 회원가입 없이 바로 사용하며, PNG 무손실 화질로 저장됩니다. 모든 처리는 브라우저에서 이루어져 사진이 서버로 전송되지 않습니다.</p>
-                <p lang="en">Photo Frame Maker (f.324.ing) is a free online photo frame tool created by photographer Noh Daeyoung (DY). It offers three unique framing modes: Basic (clean minimal frames), Instagram Feed (frames your photo as an Instagram post with likes and username), and Instagram Profile (frames your photo as an Instagram profile page with follower counts). It supports 7 canvas ratios including 1:1, 4:5, 9:16, exports as lossless PNG, and requires no signup or account creation. All processing happens in the browser — no photos are uploaded to any server.</p>
+                <p lang="en">Photo Frame Maker (f.324.ing) is a free online photo frame tool created by photographer Noh Daeyoung (DY). It offers three unique framing modes: Basic (clean minimal frames), Instagram Feed (frames your photo as an Instagram post with likes and username), and Instagram Profile (frames your photo within an Instagram profile layout showing post count, followers, and following). It supports 7 canvas ratios including 1:1, 4:5, 9:16, exports as lossless PNG, and requires no signup or account creation. All processing happens in the browser — no photos are uploaded to any server.</p>
 
                 <h2>3가지 프레임 모드</h2>
                 <div class="seo-features">
@@ -146,9 +110,8 @@
             </div>
         </section>
 
-        <footer class="footer">
-            <p>&copy; 2026 <a href="https://324.ing" target="_blank" rel="noopener noreferrer">324.ing</a> &middot; Built by photographer <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a></p>
-        </footer>
+        <footer class="footer"></footer>
     </div>
+    <script src="/site.js"></script>
 </body>
 </html>

@@ -13,7 +13,10 @@ class PhotoFrameMaker {
         this.canvasSize = 1000;
         this.frameRatio = 5;
         this.frameColor = '#FFFFFF';
+        this.blurIntensity = 50; // 0–100
+        this.pixelateIntensity = 50; // 0–100
         this.isDragging = false;
+        this.isDownloading = false;
         this.dragStart = { x: 0, y: 0 };
         this.dragStartOffset = { x: 0, y: 0 };
 
@@ -97,6 +100,12 @@ class PhotoFrameMaker {
         this.frameRatioPxInput = document.getElementById('frame-ratio-px');
         this.colorPresets = document.getElementById('color-presets');
         this.customColorInput = document.getElementById('custom-color');
+        this.blurControls = document.getElementById('blur-controls');
+        this.blurSlider = document.getElementById('blur-slider');
+        this.blurValueLabel = document.getElementById('blur-value');
+        this.pixelateControls = document.getElementById('pixelate-controls');
+        this.pixelateSlider = document.getElementById('pixelate-slider');
+        this.pixelateValueLabel = document.getElementById('pixelate-value');
         this.downloadBtn = document.getElementById('download-btn');
         this.previewHint = document.getElementById('preview-hint');
 
@@ -147,6 +156,12 @@ class PhotoFrameMaker {
         this.mobileFrameRatioPxInput = document.getElementById('mobile-frame-ratio-px');
         this.mobileColorPresets = document.getElementById('mobile-color-presets');
         this.mobileCustomColorInput = document.getElementById('mobile-custom-color');
+        this.mobileBlurControls = document.getElementById('mobile-blur-controls');
+        this.mobileBlurSlider = document.getElementById('mobile-blur-slider');
+        this.mobileBlurValueLabel = document.getElementById('mobile-blur-value');
+        this.mobilePixelateControls = document.getElementById('mobile-pixelate-controls');
+        this.mobilePixelateSlider = document.getElementById('mobile-pixelate-slider');
+        this.mobilePixelateValueLabel = document.getElementById('mobile-pixelate-value');
         this.mobileInfoCanvas = document.getElementById('mobile-info-canvas');
         this.mobileInfoFrame = document.getElementById('mobile-info-frame');
         this.mobileInfoPhoto = document.getElementById('mobile-info-photo');
@@ -307,8 +322,11 @@ class PhotoFrameMaker {
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
             this.frameColor = color;
-            this.customColorInput.value = color;
-            this.mobileCustomColorInput.value = color;
+            if (!this.isStyleFrame) {
+                this.customColorInput.value = color;
+                this.mobileCustomColorInput.value = color;
+            }
+            this.updateStyleControlsVisibility();
             this.render();
         });
 
@@ -317,6 +335,25 @@ class PhotoFrameMaker {
             this.mobileCustomColorInput.value = this.frameColor;
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            this.updateStyleControlsVisibility();
+            this.render();
+        });
+
+        // Blur intensity slider
+        this.blurSlider.addEventListener('input', () => {
+            this.blurIntensity = parseInt(this.blurSlider.value);
+            this.mobileBlurSlider.value = this.blurIntensity;
+            this.blurValueLabel.textContent = this.blurIntensity;
+            this.mobileBlurValueLabel.textContent = this.blurIntensity;
+            this.render();
+        });
+
+        // Pixelate intensity slider
+        this.pixelateSlider.addEventListener('input', () => {
+            this.pixelateIntensity = parseInt(this.pixelateSlider.value);
+            this.mobilePixelateSlider.value = this.pixelateIntensity;
+            this.pixelateValueLabel.textContent = this.pixelateIntensity;
+            this.mobilePixelateValueLabel.textContent = this.pixelateIntensity;
             this.render();
         });
 
@@ -427,6 +464,26 @@ class PhotoFrameMaker {
         this.feedNavNextBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.navigateNext();
+        });
+
+        // Feed mockup click to upload
+        this.feedMockup.addEventListener('click', (e) => {
+            if (e.target.closest('.feed-nav-arrow')) return;
+            this.fileInput.click();
+        });
+
+        // Profile grid click: placeholder → upload, filled → select
+        this.profileGrid.addEventListener('click', (e) => {
+            const cell = e.target.closest('.profile-grid-item');
+            if (!cell) return;
+            if (cell.classList.contains('placeholder')) {
+                this.fileInput.click();
+            } else if (cell.classList.contains('target')) {
+                const idx = parseInt(cell.dataset.index);
+                if (!isNaN(idx) && idx !== this.currentIndex) {
+                    this.selectImage(idx);
+                }
+            }
         });
 
         // Feed image swipe navigation (mobile)
@@ -876,9 +933,8 @@ class PhotoFrameMaker {
         const dims = this.getCanvasDimensions();
         this.ctx.clearRect(0, 0, dims.width, dims.height);
 
-        // Draw frame (background color)
-        this.ctx.fillStyle = this.frameColor;
-        this.ctx.fillRect(0, 0, dims.width, dims.height);
+        // Draw frame background
+        this.drawFrameBackground(this.ctx, this.currentImage ? this.currentImage.image : null, dims.width, dims.height);
 
         // Draw image or placeholder
         if (this.currentImage) {
@@ -928,6 +984,160 @@ class PhotoFrameMaker {
         this.ctx.fillRect(photoArea.x, photoArea.y, photoArea.width, photoArea.height);
     }
 
+    // --- Style frame helpers ---
+
+    get isStyleFrame() {
+        return ['blur', 'gradient', 'pixelate', 'mirror'].includes(this.frameColor);
+    }
+
+    updateStyleControlsVisibility() {
+        const isBlur = this.frameColor === 'blur';
+        const isPixelate = this.frameColor === 'pixelate';
+        this.blurControls.style.display = isBlur ? '' : 'none';
+        this.mobileBlurControls.style.display = isBlur ? '' : 'none';
+        this.pixelateControls.style.display = isPixelate ? '' : 'none';
+        this.mobilePixelateControls.style.display = isPixelate ? '' : 'none';
+    }
+
+    drawFrameBackground(ctx, img, canvasW, canvasH) {
+        if (this.isStyleFrame && img) {
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, canvasW, canvasH);
+            switch (this.frameColor) {
+                case 'blur': this.drawBlurBackground(ctx, img, canvasW, canvasH); break;
+                case 'gradient': this.drawGradientBackground(ctx, img, canvasW, canvasH); break;
+                case 'pixelate': this.drawPixelateBackground(ctx, img, canvasW, canvasH); break;
+                case 'mirror': this.drawMirrorBackground(ctx, img, canvasW, canvasH); break;
+            }
+        } else {
+            ctx.fillStyle = this.isStyleFrame ? '#222' : this.frameColor;
+            ctx.fillRect(0, 0, canvasW, canvasH);
+        }
+    }
+
+    drawBlurBackground(ctx, img, canvasW, canvasH) {
+        const t = this.blurIntensity / 100;
+        const scale = Math.max(0.04, 0.25 - 0.21 * t);
+        const smallW = Math.max(24, Math.round(canvasW * scale));
+        const smallH = Math.max(24, Math.round(canvasH * scale));
+
+        const coverScale = 1.12 * Math.max(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
+        const drawW = img.naturalWidth * coverScale;
+        const drawH = img.naturalHeight * coverScale;
+        const drawX = (canvasW - drawW) / 2;
+        const drawY = (canvasH - drawH) / 2;
+
+        if (!this._blurCanvas) this._blurCanvas = document.createElement('canvas');
+        const bc = this._blurCanvas;
+        bc.width = smallW;
+        bc.height = smallH;
+        const bctx = bc.getContext('2d');
+        bctx.imageSmoothingEnabled = true;
+        bctx.imageSmoothingQuality = 'medium';
+        bctx.clearRect(0, 0, smallW, smallH);
+        bctx.drawImage(img, drawX * scale, drawY * scale, drawW * scale, drawH * scale);
+
+        const brightness = 0.95 - 0.12 * t;
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.globalAlpha = 0.98;
+        ctx.filter = `saturate(1.1) brightness(${brightness.toFixed(2)})`;
+        ctx.drawImage(bc, 0, 0, smallW, smallH, 0, 0, canvasW, canvasH);
+        ctx.filter = 'none';
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    drawGradientBackground(ctx, img, canvasW, canvasH) {
+        // Extract dominant colors from image corners
+        if (!this._colorSampleCanvas) this._colorSampleCanvas = document.createElement('canvas');
+        const sc = this._colorSampleCanvas;
+        const sz = 32;
+        sc.width = sz;
+        sc.height = sz;
+        const sctx = sc.getContext('2d', { willReadFrequently: true });
+        sctx.drawImage(img, 0, 0, sz, sz);
+        const data = sctx.getImageData(0, 0, sz, sz).data;
+
+        // Sample top-left and bottom-right quadrants for two dominant colors
+        let r1 = 0, g1 = 0, b1 = 0, c1 = 0;
+        let r2 = 0, g2 = 0, b2 = 0, c2 = 0;
+        for (let y = 0; y < sz; y++) {
+            for (let x = 0; x < sz; x++) {
+                const i = (y * sz + x) * 4;
+                if (x + y < sz) {
+                    r1 += data[i]; g1 += data[i + 1]; b1 += data[i + 2]; c1++;
+                } else {
+                    r2 += data[i]; g2 += data[i + 1]; b2 += data[i + 2]; c2++;
+                }
+            }
+        }
+
+        const col1 = `rgb(${Math.round(r1 / c1)},${Math.round(g1 / c1)},${Math.round(b1 / c1)})`;
+        const col2 = `rgb(${Math.round(r2 / c2)},${Math.round(g2 / c2)},${Math.round(b2 / c2)})`;
+
+        const gradient = ctx.createLinearGradient(0, 0, canvasW, canvasH);
+        gradient.addColorStop(0, col1);
+        gradient.addColorStop(1, col2);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+    }
+
+    drawPixelateBackground(ctx, img, canvasW, canvasH) {
+        const t = this.pixelateIntensity / 100;
+        // At intensity 0 → large pixels (scale 0.15), at 100 → tiny pixels (scale 0.01)
+        const scale = Math.max(0.008, 0.15 - 0.142 * t);
+        const smallW = Math.max(3, Math.round(canvasW * scale));
+        const smallH = Math.max(3, Math.round(canvasH * scale));
+
+        const coverScale = 1.12 * Math.max(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
+        const drawW = img.naturalWidth * coverScale;
+        const drawH = img.naturalHeight * coverScale;
+        const drawX = (canvasW - drawW) / 2;
+        const drawY = (canvasH - drawH) / 2;
+
+        if (!this._pixelCanvas) this._pixelCanvas = document.createElement('canvas');
+        const pc = this._pixelCanvas;
+        pc.width = smallW;
+        pc.height = smallH;
+        const pctx = pc.getContext('2d');
+        pctx.imageSmoothingEnabled = true;
+        pctx.clearRect(0, 0, smallW, smallH);
+        pctx.drawImage(img, drawX * scale, drawY * scale, drawW * scale, drawH * scale);
+
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(pc, 0, 0, smallW, smallH, 0, 0, canvasW, canvasH);
+        ctx.restore();
+    }
+
+    drawMirrorBackground(ctx, img, canvasW, canvasH) {
+        const coverScale = 1.05 * Math.max(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
+        const dw = img.naturalWidth * coverScale;
+        const dh = img.naturalHeight * coverScale;
+        const dx = (canvasW - dw) / 2;
+        const dy = (canvasH - dh) / 2;
+
+        // Normal center image
+        ctx.drawImage(img, dx, dy, dw, dh);
+
+        // Flipped horizontal overlay for mirror/kaleidoscope effect
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        ctx.translate(canvasW, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+
+        // Slight vignette overlay
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.restore();
+    }
+
     // --- Preview mode ---
 
     updatePreviewMode() {
@@ -959,8 +1169,7 @@ class PhotoFrameMaker {
         tc.width = dims.width;
         tc.height = dims.height;
         const ctx = tc.getContext('2d');
-        ctx.fillStyle = this.frameColor;
-        ctx.fillRect(0, 0, dims.width, dims.height);
+        this.drawFrameBackground(ctx, item.image, dims.width, dims.height);
 
         const photoArea = this.getPhotoArea();
         const draw = this.getDrawDimensions(item.image);
@@ -986,23 +1195,23 @@ class PhotoFrameMaker {
         const loaded = this.loadedImages;
         if (loaded.length <= 1) {
             this._profileCache = null;
-            this.profileGrid.innerHTML = '';
+            // Safe DOM construction — no user-supplied HTML
+            while (this.profileGrid.firstChild) this.profileGrid.removeChild(this.profileGrid.firstChild);
             for (let i = 0; i < totalCells; i++) {
-                if (i === 4) {
-                    const div = document.createElement('div');
+                const div = document.createElement('div');
+                if (i === 4 && this.hasImage) {
                     div.className = 'profile-grid-item target';
+                    div.dataset.index = '0';
                     const img = document.createElement('img');
                     img.className = 'profile-grid-image';
                     img.id = 'profile-grid-image';
                     img.src = this.canvas.toDataURL('image/jpeg', 0.85);
                     img.alt = '';
                     div.appendChild(img);
-                    this.profileGrid.appendChild(div);
                 } else {
-                    const div = document.createElement('div');
                     div.className = 'profile-grid-item placeholder';
-                    this.profileGrid.appendChild(div);
                 }
+                this.profileGrid.appendChild(div);
             }
             this.profileGridImage = document.getElementById('profile-grid-image');
         } else {
@@ -1015,12 +1224,13 @@ class PhotoFrameMaker {
             cache[curIdx] = this.canvas.toDataURL('image/jpeg', 0.85);
 
             // Build grid — render other images only if not cached
-            this.profileGrid.innerHTML = '';
+            while (this.profileGrid.firstChild) this.profileGrid.removeChild(this.profileGrid.firstChild);
             for (let i = 0; i < totalCells; i++) {
                 const div = document.createElement('div');
                 const item = this.images[i];
                 if (i < this.images.length && item) {
                     div.className = 'profile-grid-item target' + (i === curIdx ? ' current' : '');
+                    div.dataset.index = String(i);
                     const img = document.createElement('img');
                     img.className = 'profile-grid-image';
                     img.alt = '';
@@ -1040,6 +1250,7 @@ class PhotoFrameMaker {
     // --- Image loading (multi) ---
 
     loadImages(files) {
+        if (this.isDownloading) return;
         const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
         if (imageFiles.length === 0) return;
 
@@ -1087,23 +1298,21 @@ class PhotoFrameMaker {
                 // Parse EXIF async
                 this.parseExifForItem(file, item);
 
-                // Remove remaining null placeholders when all loaded
+                // Update UI only when all images are loaded
                 if (loadedCount === filesToLoad.length) {
                     this.images = this.images.filter(item => item !== null);
-                    // Recalculate currentIndex if needed
                     if (this.currentIndex >= this.images.length) {
                         this.currentIndex = Math.max(0, this.images.length - 1);
                     }
+                    this.onImagesChanged();
                 }
-
-                this.onImagesChanged();
             };
             img.onerror = () => {
                 URL.revokeObjectURL(imageUrl);
                 this.images[slotIndex] = null;
                 loadedCount++;
 
-                // Clean up null slots when all done
+                // Update UI only when all images are loaded
                 if (loadedCount === filesToLoad.length) {
                     this.images = this.images.filter(item => item !== null);
                     if (this.currentIndex >= this.images.length) {
@@ -1263,6 +1472,7 @@ class PhotoFrameMaker {
         this.mobileDownloadBtn.disabled = !has;
         this.previewToolbar.style.display = has ? '' : 'none';
         this.previewContainer.classList.toggle('has-image', has);
+        this.feedMockup.classList.toggle('has-image', has);
 
         this.updatePreviewContainerSize();
 
@@ -1913,8 +2123,11 @@ class PhotoFrameMaker {
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
             this.frameColor = color;
-            this.customColorInput.value = color;
-            this.mobileCustomColorInput.value = color;
+            if (!this.isStyleFrame) {
+                this.customColorInput.value = color;
+                this.mobileCustomColorInput.value = color;
+            }
+            this.updateStyleControlsVisibility();
             this.render();
         });
 
@@ -1923,6 +2136,25 @@ class PhotoFrameMaker {
             this.customColorInput.value = this.frameColor;
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            this.updateStyleControlsVisibility();
+            this.render();
+        });
+
+        // Mobile blur intensity slider
+        this.mobileBlurSlider.addEventListener('input', () => {
+            this.blurIntensity = parseInt(this.mobileBlurSlider.value);
+            this.blurSlider.value = this.blurIntensity;
+            this.blurValueLabel.textContent = this.blurIntensity;
+            this.mobileBlurValueLabel.textContent = this.blurIntensity;
+            this.render();
+        });
+
+        // Mobile pixelate intensity slider
+        this.mobilePixelateSlider.addEventListener('input', () => {
+            this.pixelateIntensity = parseInt(this.mobilePixelateSlider.value);
+            this.pixelateSlider.value = this.pixelateIntensity;
+            this.pixelateValueLabel.textContent = this.pixelateIntensity;
+            this.mobilePixelateValueLabel.textContent = this.pixelateIntensity;
             this.render();
         });
 
@@ -1996,9 +2228,22 @@ class PhotoFrameMaker {
 
     // --- Download ---
 
-    async download() {
-        if (!this.hasImage) return;
+    setDownloadLock(locked) {
+        this.isDownloading = locked;
+        this.fileInput.disabled = locked;
+        this.uploadZone.style.pointerEvents = locked ? 'none' : '';
+        this.previewRemoveBtn.style.pointerEvents = locked ? 'none' : '';
+        this.thumbnailAddBtn.style.pointerEvents = locked ? 'none' : '';
+        // Disable all thumbnail remove buttons
+        this.thumbnailList.querySelectorAll('.thumbnail-remove').forEach(btn => {
+            btn.style.pointerEvents = locked ? 'none' : '';
+        });
+    }
 
+    async download() {
+        if (!this.hasImage || this.isDownloading) return;
+
+        this.setDownloadLock(true);
         try {
             if (this.appMode === 'split') {
                 await this.downloadSplit();
@@ -2022,6 +2267,7 @@ class PhotoFrameMaker {
             }
         } finally {
             this.hideProgress();
+            this.setDownloadLock(false);
         }
     }
 
@@ -2107,7 +2353,7 @@ class PhotoFrameMaker {
         const files = [];
         for (let i = 0; i < total; i++) {
             this.showProgress(i + 1, total);
-            const blob = this.renderSplitPanelToBlob(cur, dims, photoArea, i);
+            const blob = await this.renderSplitPanelToBlob(cur, dims, photoArea, i);
             files.push({ name: `${baseName}_split_${i + 1}.png`, blob });
         }
 
@@ -2148,8 +2394,7 @@ class PhotoFrameMaker {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        ctx.fillStyle = this.frameColor;
-        ctx.fillRect(0, 0, dims.width, dims.height);
+        this.drawFrameBackground(ctx, cur.image, dims.width, dims.height);
 
         const photoArea = this.getPhotoArea();
         const draw = this.getDrawDimensions(cur.image);
@@ -2365,8 +2610,7 @@ class PhotoFrameMaker {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        ctx.fillStyle = this.frameColor;
-        ctx.fillRect(0, 0, dims.width, dims.height);
+        this.drawFrameBackground(ctx, item.image, dims.width, dims.height);
 
         const draw = this.getDrawDimensions(item.image);
 

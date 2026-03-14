@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Note — Photo Frame Maker by DY | 324.ing</title>
+    <title>Dev Note — Photo Frame Maker by DY</title>
     <meta name="description" content="Photo Frame Maker의 개발 과정을 기록한 노트입니다. 사진작가 DY가 Claude Code를 활용하여 프레임 도구를 만든 과정을 공유합니다.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://f.324.ing/devnote.html">
@@ -11,277 +11,223 @@
     <meta property="og:description" content="사진작가 DY가 Claude Code를 활용하여 Photo Frame Maker를 만든 개발 과정 기록">
     <meta property="og:url" content="https://f.324.ing/devnote.html">
     <meta property="og:type" content="article">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; background: #fafafa; line-height: 1.7; }
-        .container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
-        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-        h2 { font-size: 1.2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; color: #2563eb; }
-        h3 { font-size: 1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.4rem; }
-        hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
+        .blog-page { min-height: 100dvh; display: flex; flex-direction: column; }
+        .blog-header { text-align: center; padding: 2rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
+        .blog-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
+        .blog-header h1 a { color: var(--text); text-decoration: none; }
+        .blog-header h1 a:hover { color: var(--accent); }
+        .blog-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; flex-wrap: wrap; }
+        .blog-header nav a { color: var(--text-secondary); text-decoration: none; }
+        .blog-header nav a:hover, .blog-header nav a.active { color: var(--accent); }
+        .blog-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; width: 100%; }
+        .devnote-back { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+        .devnote-back:hover { text-decoration: underline; }
+        .devnote-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .devnote-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .devnote-date { font-size: 1.2rem; font-weight: 700; margin: 2rem 0 0.75rem; color: var(--accent); }
+        .devnote-section { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; }
+        hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
         ul { padding-left: 1.25rem; margin-bottom: 0.5rem; }
-        li { margin-bottom: 0.25rem; font-size: 0.95rem; }
-        code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 0.88rem; }
+        li { margin-bottom: 0.25rem; font-size: 0.95rem; line-height: 1.6; }
+        code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 0.88rem; font-family: 'Fira Code', monospace; border: 1px solid var(--border); }
         strong { font-weight: 600; }
-        .back { display: inline-block; margin-bottom: 1rem; color: #6b7280; text-decoration: none; font-size: 0.9rem; }
-        .back:hover { color: #2563eb; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a class="back" href="/">&larr; Photo Frame Maker</a>
-        <h1>Dev Note</h1>
+    <div class="blog-page">
+        <div class="blog-header">
+            <h1><a href="/">Photo Frame Maker</a></h1>
+            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">DY</a></p>
+            <nav>
+                <a href="/">사진 프레임 만들기</a>
+                <a href="/blog/">블로그</a>
+                <a href="/about.html">소개</a>
+                <a href="/devnote.html" class="active">Dev Note</a>
+            </nav>
+        </div>
+        <div class="blog-container">
+            <h1 class="devnote-title">Dev Note</h1>
+            <p class="devnote-subtitle">Claude Code를 활용한 개발 과정 기록 — 사진작가 DY가 직접 만드는 사진 프레임 도구</p>
 
-        <hr>
-        <h2>2026-02-27</h2>
+            <h2 class="devnote-date">2026-03-13</h2>
 
-        <h3>프로젝트 초기 구현</h3>
-        <ul>
-            <li>HTML/CSS/JS 기반 사진 프레임 메이커 웹앱 구현</li>
-            <li>캔버스 비율 선택 (1:1, 3:4, 4:3, 3:2, 2:3)</li>
-            <li>프레임 두께 조절 (슬라이더 0~25%)</li>
-            <li>프레임 색상 프리셋 8종 + 커스텀 컬러 피커</li>
-            <li>캔버스 크기 설정 (긴 쪽 기준, px)</li>
-            <li>PNG 무손실 다운로드</li>
-        </ul>
+            <h3 class="devnote-section">블로그 시스템 구축</h3>
+            <ul>
+                <li>Cloudflare Workers (Hono) + D1 SQLite + R2 기반 블로그 시스템 구축</li>
+                <li>SSR 블로그 목록/상세 페이지 (<code>/blog/</code>, <code>/blog/:slug/</code>)</li>
+                <li>Toast UI Editor 기반 WYSIWYG 어드민 에디터 (<code>/admin/editor.html</code>)</li>
+                <li>글 임시저장/발행/수정/삭제 기능, 카테고리·태그·커버 이미지 지원</li>
+                <li>RSS Feed (<code>/feed.xml</code>), 동적 사이트맵 (<code>/sitemap.xml</code>)</li>
+                <li>어드민 대시보드, 글 목록, 사이트 설정 페이지 구현</li>
+            </ul>
 
-        <h3>이미지 표시 모드 변경</h3>
-        <ul>
-            <li>Cover → Contain 모드로 변경 (원본 비율 유지, 크롭 없음)</li>
-        </ul>
+            <h3 class="devnote-section">호스팅 아키텍처</h3>
+            <ul>
+                <li><strong>Vercel</strong>: 메인 사이트 정적 파일 서빙 (<code>f.324.ing</code>)</li>
+                <li><strong>Cloudflare Workers</strong>: 블로그/API/어드민 (<code>photoframemaker.dynoworld.workers.dev</code>)</li>
+                <li>Vercel <code>vercel.json</code> rewrites로 <code>/blog/*</code>, <code>/api/*</code>, <code>/admin/*</code>를 Workers로 프록시</li>
+                <li>정적 파일(파비콘, OG 이미지)은 Vercel 프로젝트 루트에 위치해야 서빙됨 — <code>www/</code>는 Cloudflare용</li>
+            </ul>
 
-        <h3>UI 레이아웃 조정</h3>
-        <ul>
-            <li>사이드바를 우측 패널로 배치</li>
-            <li>사진 업로드 섹션 순서 조정</li>
-            <li>프리뷰 영역 클릭 시 업로드 가능</li>
-            <li>사진 삭제 버튼 추가 (업로드 영역 + 프리뷰 영역)</li>
-            <li>프리뷰 영역에 업로드 프롬프트 오버레이 추가</li>
-        </ul>
+            <h3 class="devnote-section">파비콘 / OG 이미지 적용</h3>
+            <ul>
+                <li><code>images/</code> 폴더의 favicon.ico, favicon_*.png, og-image.png를 프로젝트 루트에 복사 후 Vercel 배포</li>
+                <li>어드민 사이트 설정에서 파비콘·OG 이미지를 R2에 업로드하고 적용하는 기능 추가</li>
+                <li>블로그 SSR 페이지에 파비콘 link 태그 자동 삽입 (<code>settings.favicon_url</code> 또는 정적 fallback)</li>
+            </ul>
 
-        <h3>타이틀 변경</h3>
-        <ul>
-            <li>헤더 및 페이지 타이틀을 "Photo Frame Maker by 324.ing"으로 변경</li>
-        </ul>
+            <h3 class="devnote-section">블로그 SEO 개선</h3>
+            <ul>
+                <li><code>og:type</code> 'blog' → 유효한 값 'website'/'article'로 수정</li>
+                <li><code>og:image</code> 상대 URL → 절대 URL 자동 변환 (소셜 크롤러 호환)</li>
+                <li>이미지 없을 때 <code>og:image</code> 태그 자체 생략 (빈 content 방지)</li>
+                <li>Twitter 카드 완성: <code>twitter:title</code>, <code>twitter:description</code>, <code>twitter:image</code> 추가</li>
+                <li><code>og:locale: ko_KR</code>, <code>og:site_name</code> 추가</li>
+                <li><code>settings.site_keywords</code>로 <code>meta keywords</code> 자동 출력</li>
+                <li>JSON-LD BlogPosting: 이미지 절대 URL 변환, <code>dateModified</code> null 폴백 처리</li>
+                <li>사이트맵 <code>lastmod</code> 형식 W3C Datetime 표준으로 수정 (<code>2026-03-13T10:30:00Z</code>)</li>
+                <li>사이트맵 <code>/about/</code> → <code>/about.html</code> 수정</li>
+            </ul>
 
-        <h3>Cloudflare Workers 배포 설정</h3>
-        <ul>
-            <li><code>wrangler.toml</code> 설정 추가</li>
-        </ul>
+            <h3 class="devnote-section">어드민 에디터 개선</h3>
+            <ul>
+                <li>글 수정 시 ID로 직접 조회하는 <code>GET /api/admin/posts/:id</code> 라우트 추가</li>
+                <li>기존 목록 API 검색 방식(10개 제한으로 누락 가능) → ID 직접 조회로 수정</li>
+                <li>HTML 소스 직접 편집 모드 추가 (WYSIWYG ↔ HTML 토글)</li>
+            </ul>
 
-        <h3>모바일 UX</h3>
-        <ul>
-            <li>모바일 하단 시트 UX 추가</li>
-            <li>캔버스 터치 이벤트 충돌 해결</li>
-            <li>모바일 레이아웃 상단 정렬, 파일 피커 위치 보정</li>
-            <li>하단 시트 → 탭 바 + 패널 UI로 전면 교체</li>
-            <li>모바일 사진 탭 추가 (썸네일 + 파일 정보 + 삭제)</li>
-        </ul>
+            <h3 class="devnote-section">블로그 기타 버그 수정</h3>
+            <ul>
+                <li>블로그 nav <code>/about/</code> → <code>/about.html</code> (Vercel 정적 파일 경로 맞춤)</li>
+                <li>블로그 헤더/타이틀이 어드민 설정값 반영하도록 수정 (하드코딩 제거)</li>
+                <li>어드민 비밀번호: Cloudflare Workers 시크릿 <code>ADMIN_PASSWORD_HASH</code>로 관리</li>
+            </ul>
 
-        <h3>EXIF 메타데이터</h3>
-        <ul>
-            <li>JPEG EXIF 파싱 구현 (카메라, 렌즈, 초점거리, 조리개, 셔터속도, ISO, 촬영일, 소프트웨어)</li>
-            <li>정보 섹션에 EXIF 데이터 표시</li>
-        </ul>
+            <hr>
+            <h2 class="devnote-date">2026-03-02</h2>
 
-        <h3>다운로드 개선</h3>
-        <ul>
-            <li>파일명을 <code>{원본이름}_pfm.png</code> 형식으로 변경</li>
-            <li>iOS Web Share API 연동 (사진 앱에 저장)</li>
-            <li>Web Share 미지원 시 길게 눌러 저장 오버레이 폴백</li>
-            <li>User gesture 보존 처리</li>
-        </ul>
+            <h3 class="devnote-section">iOS Safari 다운로드 개선 (Web Share API)</h3>
+            <ul>
+                <li>iOS Safari 웹 브라우저에서 저장 시 <code>navigator.share()</code> 사용하여 공유 시트 표시</li>
+                <li>기존 <code>&lt;a download&gt;</code> 방식은 파일앱으로만 저장되던 문제 해결</li>
+                <li>공유 시트에서 "사진에 저장" 선택 시 사진앱에 직접 저장 가능</li>
+                <li>유저 취소(AbortError) 시 조용히 종료, 미지원 환경에서는 기존 방식 폴백</li>
+            </ul>
 
-        <h3>프리뷰 영역 개선</h3>
-        <ul>
-            <li>체크무늬 배경을 캔버스 비율에 맞게 표시</li>
-            <li>JS 기반 프리뷰 컨테이너 크기 계산</li>
-        </ul>
+            <h3 class="devnote-section">여러 장 일괄 공유 (Batch Share)</h3>
+            <ul>
+                <li><code>tryBatchShare()</code> 메서드 추가: 여러 파일을 한 번의 공유 시트로 처리</li>
+                <li>기존에는 여러 장/분할 다운로드 시 공유 시트가 반복 표시되던 문제 해결</li>
+                <li><code>navigator.share({ files: [...] })</code>로 전체 파일을 한 번에 공유</li>
+                <li>데스크톱은 기존대로 ZIP, Android 네이티브는 갤러리 직접 저장 유지</li>
+            </ul>
 
-        <hr>
-        <h2>2026-02-28</h2>
+            <hr>
+            <h2 class="devnote-date">2026-03-01</h2>
 
-        <h3>인스타그램 비율 추가</h3>
-        <ul>
-            <li>4:5 (인스타 게시물), 9:16 (스토리/릴스) 비율 버튼 추가</li>
-            <li>비율 버튼에 용도 설명 라벨 표시</li>
-            <li>비율 버튼 레이아웃을 그리드로 변경 (데스크톱 4열, 모바일 3열)</li>
-            <li>모바일 비율 버튼에도 인스타 라벨 적용</li>
-        </ul>
+            <h3 class="devnote-section">SEO/GEO 전략 적용</h3>
+            <ul>
+                <li>메타 태그 최적화 (title, description, keywords, canonical URL)</li>
+                <li>Open Graph / Twitter Card 메타태그 추가</li>
+                <li>구조화된 SEO 콘텐츠 섹션 추가 (소개, 기능, 사용법, FAQ)</li>
+                <li>한국어/영어 이중 콘텐츠 제공</li>
+            </ul>
 
-        <h3>인스타그램 미리보기 모드</h3>
-        <ul>
-            <li><strong>피드 모드</strong>: 인스타 게시물 형태 목업 (프로필 헤더 + 이미지 + 좋아요/댓글/공유 아이콘 + 캡션)</li>
-            <li><strong>프로필 모드</strong>: 인스타 계정 페이지 목업 (프로필 헤더 + 통계 + 3×3 그리드)</li>
-            <li>기본/피드/프로필 3가지 프리뷰 모드 토글</li>
-        </ul>
+            <h3 class="devnote-section">애널리틱스/서치콘솔 연동</h3>
+            <ul>
+                <li>Google Tag Manager (GTM-5F5CWSJX) 추가</li>
+                <li>Google Analytics 4 (G-ZE7EBPTLFG) 추가</li>
+                <li>네이버 서치어드바이저 사이트 인증 태그 추가</li>
+            </ul>
 
-        <h3>여러 장 작업 기능 기획</h3>
-        <ul>
-            <li>최대 10장 멀티 이미지 기획안 작성 (<code>PLAN.md</code>)</li>
-            <li>이미지 배열 데이터 모델, 썸네일 스트립 UI, 다운로드 로직 설계</li>
-        </ul>
+            <h3 class="devnote-section">이미지 드래그 위치 조정 수정</h3>
+            <ul>
+                <li>이미지 표시 모드를 contain → cover로 변경 (프레임 내 꽉 채움)</li>
+                <li>드래그로 이미지 위치 미세조정 시 offset clamping 적용</li>
+            </ul>
 
-        <h3>다중 이미지 처리 구현</h3>
-        <ul>
-            <li>최대 10장까지 이미지 업로드 지원</li>
-            <li>이미지 배열 데이터 모델 (<code>images[]</code>, <code>currentIndex</code>)</li>
-            <li>썸네일 스트립 UI (하단 가로 스크롤, 현재 인덱스 표시, 개별 삭제)</li>
-            <li>캔버스 좌우 화살표 네비게이션 (2장 이상일 때 표시)</li>
-            <li>모바일 스와이프 네비게이션 (<300ms, >50px 수평)</li>
-            <li>다중 이미지 ZIP 다운로드 (JSZip)</li>
-            <li>단일 이미지일 때 PNG 직접 다운로드</li>
-        </ul>
+            <h3 class="devnote-section">썸네일 스트립 개선</h3>
+            <ul>
+                <li>썸네일 크기 25% 확대 (52→65px, 모바일 48→60px)</li>
+                <li>썸네일 스트립 가운데 정렬 수정</li>
+            </ul>
 
-        <h3>타이틀/브랜딩 변경</h3>
-        <ul>
-            <li>타이틀 'by 324.ing' → 'by DY'로 변경</li>
-            <li>인스타그램 프로필 링크 추가</li>
-        </ul>
+            <h3 class="devnote-section">인스타그램 다크모드 지원</h3>
+            <ul>
+                <li><code>prefers-color-scheme: dark</code>로 피드/프로필 목업 다크모드 자동 전환</li>
+            </ul>
 
-        <h3>Capacitor 프로젝트 셋업</h3>
-        <ul>
-            <li>Capacitor 8.1.0 기반 Android 네이티브 앱 구조 추가</li>
-            <li><code>capacitor.config.ts</code> 설정 (appId: com.dy.photoframemaker)</li>
-        </ul>
+            <h3 class="devnote-section">About 페이지 분리</h3>
+            <ul>
+                <li>메인 페이지 하단 SEO 콘텐츠를 <code>about.html</code>로 분리</li>
+                <li>Vercel 배포 설정 (<code>vercel.json</code>) 추가</li>
+            </ul>
 
-        <h3>문서화</h3>
-        <ul>
-            <li>Dev Note, Prompt Log 페이지 생성</li>
-            <li>메인 페이지 하단 푸터에 카피라이트 및 문서 링크 추가</li>
-            <li><code>CLAUDE.md</code> 프로젝트 컨텍스트 문서 추가</li>
-        </ul>
+            <h3 class="devnote-section">모바일 썸네일 UX 전면 개편</h3>
+            <ul>
+                <li>썸네일 목록을 하단 '사진' 탭 패널 안으로 이동, 5열 그리드 레이아웃</li>
+                <li>피드/프로필 모드에서 썸네일이 목업을 가리는 문제 수정</li>
+            </ul>
 
-        <hr>
-        <h2>2026-03-01</h2>
+            <hr>
+            <h2 class="devnote-date">2026-02-28</h2>
 
-        <h3>SEO/GEO 전략 적용</h3>
-        <ul>
-            <li>메타 태그 최적화 (title, description, keywords, canonical URL)</li>
-            <li>Open Graph / Twitter Card 메타태그 추가</li>
-            <li>구조화된 SEO 콘텐츠 섹션 추가 (소개, 기능, 사용법, FAQ)</li>
-            <li>한국어/영어 이중 콘텐츠 제공</li>
-        </ul>
+            <h3 class="devnote-section">인스타그램 비율 추가</h3>
+            <ul>
+                <li>4:5 (인스타 게시물), 9:16 (스토리/릴스) 비율 버튼 추가</li>
+                <li>비율 버튼 레이아웃을 그리드로 변경 (데스크톱 4열, 모바일 3열)</li>
+            </ul>
 
-        <h3>애널리틱스/서치콘솔 연동</h3>
-        <ul>
-            <li>Google Tag Manager (GTM-5F5CWSJX) 추가</li>
-            <li>Google Analytics 4 (G-ZE7EBPTLFG) 추가</li>
-            <li>네이버 서치어드바이저 사이트 인증 태그 추가</li>
-        </ul>
+            <h3 class="devnote-section">인스타그램 미리보기 모드</h3>
+            <ul>
+                <li><strong>피드 모드</strong>: 인스타 게시물 형태 목업 (프로필 헤더 + 이미지 + 아이콘 + 캡션)</li>
+                <li><strong>프로필 모드</strong>: 인스타 계정 페이지 목업 (프로필 헤더 + 통계 + 3×3 그리드)</li>
+                <li>기본/피드/프로필 3가지 프리뷰 모드 토글</li>
+            </ul>
 
-        <h3>다운로드 기능 수정</h3>
-        <ul>
-            <li>데스크톱에서 다운로드 시 Share Sheet 대신 파일 직접 다운로드되도록 수정</li>
-        </ul>
+            <h3 class="devnote-section">다중 이미지 처리 구현</h3>
+            <ul>
+                <li>최대 10장까지 이미지 업로드 지원</li>
+                <li>이미지 배열 데이터 모델 (<code>images[]</code>, <code>currentIndex</code>)</li>
+                <li>썸네일 스트립 UI, 캔버스 화살표/스와이프 네비게이션</li>
+                <li>다중 이미지 ZIP 다운로드 (JSZip)</li>
+            </ul>
 
-        <h3>이미지 드래그 위치 조정 수정</h3>
-        <ul>
-            <li>이미지 표시 모드를 contain → cover로 변경 (프레임 내 꽉 채움)</li>
-            <li>드래그로 이미지 위치 미세조정 시 offset clamping 적용</li>
-        </ul>
+            <h3 class="devnote-section">Capacitor 프로젝트 셋업</h3>
+            <ul>
+                <li>Capacitor 8.1.0 기반 Android 네이티브 앱 구조 추가</li>
+                <li><code>capacitor.config.ts</code> 설정 (appId: com.dy.photoframemaker)</li>
+            </ul>
 
-        <h3>썸네일 스트립 개선</h3>
-        <ul>
-            <li>썸네일 크기 25% 확대 (52→65px, 모바일 48→60px)</li>
-            <li>썸네일 스트립 가운데 정렬 수정 (카운터를 absolute로 분리)</li>
-        </ul>
+            <hr>
+            <h2 class="devnote-date">2026-02-27</h2>
 
-        <h3>인스타그램 다크모드 지원</h3>
-        <ul>
-            <li><code>prefers-color-scheme: dark</code> 미디어 쿼리로 피드/프로필 목업 다크모드 자동 전환</li>
-            <li>피드: 배경 #000, 텍스트 #f5f5f5, 아이콘 반전</li>
-            <li>프로필: 카드/그리드/탭바 등 전체 다크 테마 적용</li>
-        </ul>
+            <h3 class="devnote-section">프로젝트 초기 구현</h3>
+            <ul>
+                <li>HTML/CSS/JS 기반 사진 프레임 메이커 웹앱 구현</li>
+                <li>캔버스 비율 선택 (1:1, 3:4, 4:3, 3:2, 2:3)</li>
+                <li>프레임 두께 조절 (슬라이더 0~25%), 색상 프리셋 8종 + 커스텀 컬러 피커</li>
+                <li>PNG 무손실 다운로드</li>
+            </ul>
 
-        <h3>About 페이지 분리</h3>
-        <ul>
-            <li>메인 페이지 하단 SEO 콘텐츠를 <code>about.html</code>로 분리</li>
-            <li>푸터에 About 링크 추가</li>
-        </ul>
+            <h3 class="devnote-section">EXIF 메타데이터</h3>
+            <ul>
+                <li>JPEG EXIF 파싱 구현 (카메라, 렌즈, 초점거리, 조리개, 셔터속도, ISO, 촬영일)</li>
+                <li>자체 파서 구현 (외부 라이브러리 없음)</li>
+            </ul>
 
-        <h3>피드 모드 네비게이션 추가</h3>
-        <ul>
-            <li>2장 이상일 때 피드 이미지 위에 좌우 화살표 버튼 표시</li>
-            <li>모바일에서 피드 이미지 스와이프로 이전/다음 사진 이동</li>
-            <li>인스타그램 스타일 도트 인디케이터 추가</li>
-        </ul>
-
-        <h3>프로필 모드 다중 이미지 배치</h3>
-        <ul>
-            <li>1장일 때: 3×3 그리드 중앙(5번째 칸)에 표시 (기존 유지)</li>
-            <li>2장 이상일 때: 좌상단(1번째 칸)부터 순서대로 사진 채움</li>
-            <li>각 이미지에 현재 프레임 설정(비율, 두께, 색상) 적용하여 렌더링</li>
-            <li>현재 선택 사진에 파란 아웃라인 표시</li>
-        </ul>
-
-        <h3>Vercel 배포 설정</h3>
-        <ul>
-            <li><code>vercel.json</code> 추가 (정적 사이트 배포)</li>
-        </ul>
-
-        <h3>다중 이미지 업로드 안정화</h3>
-        <ul>
-            <li>다중 이미지 로딩 시 파일 순서 보존 (Promise.all → 순차 처리)</li>
-            <li>모바일 다중 이미지 업로드 시 레이아웃 깨짐 수정</li>
-        </ul>
-
-        <h3>모바일 썸네일 UX 전면 개편</h3>
-        <ul>
-            <li>썸네일 목록을 하단 '사진' 탭 패널 안으로 이동</li>
-            <li>5열 그리드 레이아웃으로 변경</li>
-            <li>사진 탭 토글 버튼으로 접기/펼치기 기능</li>
-            <li>피드/프로필 모드에서 썸네일이 목업을 가리는 문제 수정 (flexbox 전환)</li>
-            <li>프리뷰 영역의 썸네일 중복 노출 제거</li>
-        </ul>
-
-        <h3>이미지 렌더링 모드 변경</h3>
-        <ul>
-            <li>이미지 렌더링을 contain 모드로 변경 (사진 전체 표시, 크롭 없음)</li>
-        </ul>
-
-        <h3>네비게이션 속도 최적화</h3>
-        <ul>
-            <li>이미지 슬라이드 네비게이션 속도 개선 (불필요한 리렌더링 제거)</li>
-        </ul>
-
-        <h3>인스타 비율 라벨 수정</h3>
-        <ul>
-            <li>인스타 게시물 라벨을 4:5에서 3:4로 이동</li>
-            <li>프로필 피드 썸네일 비율을 1:1에서 3:4로 변경</li>
-        </ul>
-
-        <h3>프리뷰 컨테이너 중앙 정렬 수정</h3>
-        <ul>
-            <li>세로 비율(9:16, 2:3) 선택 시 프리뷰 컨테이너 중앙 정렬 수정</li>
-            <li>CSS <code>margin: 0 auto</code> 추가로 중앙 정렬 보장</li>
-            <li>모바일에서 세로 비율 선택 시 왼쪽 정렬 문제 수정</li>
-        </ul>
-
-        <h3>모바일 사진 탭 UX 개선</h3>
-        <ul>
-            <li>사진 없을 때 사진 탭 클릭 시 바로 파일 선택 다이얼로그 실행</li>
-        </ul>
-
-        <hr>
-        <h2>2026-03-02</h2>
-
-        <h3>iOS Safari 다운로드 개선 (Web Share API)</h3>
-        <ul>
-            <li>iOS Safari 웹 브라우저에서 저장 시 <code>navigator.share()</code> 사용하여 공유 시트 표시</li>
-            <li>기존 <code>&lt;a download&gt;</code> 방식은 파일앱으로만 저장되던 문제 해결</li>
-            <li>공유 시트에서 "사진에 저장" 선택 시 사진앱에 직접 저장 가능</li>
-            <li>유저 취소(AbortError) 시 조용히 종료, 미지원 환경에서는 기존 방식 폴백</li>
-        </ul>
-
-        <h3>여러 장 일괄 공유 (Batch Share)</h3>
-        <ul>
-            <li><code>tryBatchShare()</code> 메서드 추가: 여러 파일을 한 번의 공유 시트로 처리</li>
-            <li>기존에는 여러 장/분할 다운로드 시 <code>triggerDownload()</code>를 매번 호출하여 공유 시트가 반복 표시되던 문제 해결</li>
-            <li><code>navigator.share({ files: [...] })</code>로 전체 파일을 한 번에 공유</li>
-            <li><code>downloadMultipleAsImages()</code>, <code>downloadSplit()</code> 양쪽에 적용</li>
-            <li>데스크톱은 기존대로 ZIP, Android 네이티브는 갤러리 직접 저장 유지</li>
-        </ul>
+            <h3 class="devnote-section">Cloudflare Workers 배포 설정</h3>
+            <ul>
+                <li><code>wrangler.jsonc</code> 설정 추가, Cloudflare 배포 구성</li>
+                <li>Dev Note, Prompt Log 페이지 생성, <code>CLAUDE.md</code> 프로젝트 컨텍스트 문서 추가</li>
+            </ul>
+        </div>
+        <footer class="footer"></footer>
     </div>
+    <script src="/site.js"></script>
 </body>
 </html>

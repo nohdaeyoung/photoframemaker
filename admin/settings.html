@@ -79,9 +79,29 @@
             <div class="settings-section">
                 <h2>SEO / 소셜</h2>
                 <div class="editor-form">
-                    <div class="form-group">
-                        <label>기본 OG 이미지 URL</label>
-                        <input type="text" id="og_default_image" class="form-input">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>파비콘 <small style="color:var(--text-secondary)">(ICO·PNG·SVG)</small></label>
+                            <div class="setting-upload-group">
+                                <input type="hidden" id="favicon_url">
+                                <div class="setting-upload-preview favicon-preview" id="favicon_preview"></div>
+                                <label class="btn btn-secondary" style="cursor:pointer;font-size:0.8rem">
+                                    파일 업로드
+                                    <input type="file" accept=".ico,.png,.svg,image/x-icon,image/png,image/svg+xml" style="display:none" onchange="uploadSettingFile(this,'favicon_url','favicon_preview')">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>기본 OG 이미지 <small style="color:var(--text-secondary)">(1200×630 권장)</small></label>
+                            <div class="setting-upload-group">
+                                <input type="hidden" id="og_default_image">
+                                <div class="setting-upload-preview og-preview" id="og_image_preview"></div>
+                                <label class="btn btn-secondary" style="cursor:pointer;font-size:0.8rem">
+                                    파일 업로드
+                                    <input type="file" accept="image/*" style="display:none" onchange="uploadSettingFile(this,'og_default_image','og_image_preview')">
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -104,7 +124,7 @@
         </main>
     </div>
     <script>
-        const settingKeys = ['site_title', 'site_description', 'site_keywords', 'site_author', 'site_url', 'blog_title', 'blog_description', 'posts_per_page', 'og_default_image', 'ga_id', 'gtm_id'];
+        const settingKeys = ['site_title', 'site_description', 'site_keywords', 'site_author', 'site_url', 'blog_title', 'blog_description', 'posts_per_page', 'og_default_image', 'favicon_url', 'ga_id', 'gtm_id'];
 
         function showToast(msg) {
             const t = document.createElement('div');
@@ -118,6 +138,21 @@
             }, 2000);
         }
 
+        async function uploadSettingFile(input, settingKey, previewId) {
+            const file = input.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            showToast('업로드 중...');
+            const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+            if (!res.ok) { showToast('업로드 실패'); return; }
+            const { url } = await res.json();
+            document.getElementById(settingKey).value = url;
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = `<img src="${url}" alt="preview" style="max-width:100%;max-height:60px;border-radius:4px;">`;
+            showToast('업로드 완료 — 저장 버튼을 눌러 적용하세요');
+        }
+
         async function loadSettings() {
             const res = await fetch('/api/admin/settings');
             if (!res.ok) return;
@@ -125,6 +160,12 @@
             for (const key of settingKeys) {
                 const el = document.getElementById(key);
                 if (el && data[key] !== undefined) el.value = data[key];
+            }
+            if (data.favicon_url) {
+                document.getElementById('favicon_preview').innerHTML = `<img src="${data.favicon_url}" alt="favicon" style="max-width:100%;max-height:60px;border-radius:4px;">`;
+            }
+            if (data.og_default_image) {
+                document.getElementById('og_image_preview').innerHTML = `<img src="${data.og_default_image}" alt="og image" style="max-width:100%;max-height:60px;border-radius:4px;">`;
             }
         }
 

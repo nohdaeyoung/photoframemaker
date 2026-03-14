@@ -10,3 +10,4 @@ node_modules/
 
 # Capacitor build output
 www/
+.vercel
