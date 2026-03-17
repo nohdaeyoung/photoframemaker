@@ -27,6 +27,15 @@ export async function download(app) {
     if (!app.hasImage || app.isDownloading) return;
 
     app.setDownloadLock(true);
+
+    // 안전장치: 15초 후 lock 강제 해제 (toBlob 무응답 등 대비)
+    const safetyTimer = setTimeout(() => {
+        if (app.isDownloading) {
+            app.hideProgress();
+            app.setDownloadLock(false);
+        }
+    }, 15000);
+
     try {
         if (app.appMode === 'convert') {
             await downloadConverted(app);
@@ -53,6 +62,7 @@ export async function download(app) {
             app.showToast('다운로드에 실패했습니다');
         }
     } finally {
+        clearTimeout(safetyTimer);
         app.hideProgress();
         app.setDownloadLock(false);
     }
@@ -475,15 +485,21 @@ export async function triggerDownload(blob, fileName) {
         }
     }
 
-    // Web: <a download>
+    // Web: <a download> — GTM linkClick 트리거 방지
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
+    a.setAttribute('data-gtm-ignore', 'true');
+    a.style.display = 'none';
     document.body.appendChild(a);
+
+    // GTM이 click 이벤트를 가로채지 못하도록 stopPropagation
+    a.addEventListener('click', e => e.stopPropagation(), { once: true });
     a.click();
+
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 /**
