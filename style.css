@@ -1755,7 +1755,6 @@ body::after {
 
 /* Download loading spinner */
 .download-btn.is-loading {
-    pointer-events: none;
     opacity: 0.7;
 }
 .download-btn.is-loading .btn-label {

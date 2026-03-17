@@ -485,21 +485,23 @@ export async function triggerDownload(blob, fileName) {
         }
     }
 
-    // Web: <a download> — GTM linkClick 트리거 방지
+    // Web: 숨겨진 iframe 내 <a> 클릭 — GTM이 메인 document만 감시하므로 우회
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:none;';
+    document.body.appendChild(iframe);
+
+    const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+    const a = iDoc.createElement('a');
     a.href = url;
     a.download = fileName;
-    a.setAttribute('data-gtm-ignore', 'true');
-    a.style.display = 'none';
-    document.body.appendChild(a);
-
-    // GTM이 click 이벤트를 가로채지 못하도록 stopPropagation
-    a.addEventListener('click', e => e.stopPropagation(), { once: true });
+    iDoc.body.appendChild(a);
     a.click();
 
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => {
+        document.body.removeChild(iframe);
+        URL.revokeObjectURL(url);
+    }, 3000);
 }
 
 /**
