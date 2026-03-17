@@ -1427,6 +1427,10 @@ export class AppBase {
         this.downloadBtn.disabled = locked || !this.hasImage;
         if (this.mobileDownloadBtn) this.mobileDownloadBtn.disabled = locked || !this.hasImage;
         if (this.thumbnailStrip) this.thumbnailStrip.querySelectorAll('.thumbnail-remove').forEach(btn => { btn.style.pointerEvents = locked ? 'none' : ''; });
+
+        // 로딩 스피너 표시
+        this.downloadBtn.classList.toggle('is-loading', locked);
+        if (this.mobileDownloadBtn) this.mobileDownloadBtn.classList.toggle('is-loading', locked);
     }
 
     showProgress(current, total, text) {

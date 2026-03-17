@@ -1716,6 +1716,7 @@ body::after {
 
 /* Download button */
 .download-btn {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1750,6 +1751,45 @@ body::after {
 .download-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+}
+
+/* Download loading spinner */
+.download-btn.is-loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+.download-btn.is-loading .btn-label {
+    visibility: hidden;
+}
+.download-btn.is-loading svg {
+    display: none;
+}
+.download-btn.is-loading::after {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: dl-spin 0.6s linear infinite;
+    position: absolute;
+}
+@keyframes dl-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile tab download loading */
+.tab-btn-download.is-loading svg {
+    display: none;
+}
+.tab-btn-download.is-loading::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: dl-spin 0.6s linear infinite;
 }
 
 /* Download progress */
