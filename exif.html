@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5F5CWSJX');</script>
+    <!-- End Google Tag Manager -->
+    <meta name="naver-site-verification" content="b4f3d846c16519dab27310ad2d3e28e56f1085ed" />
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZE7EBPTLFG"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-ZE7EBPTLFG');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>EXIF 프레임 — 촬영 정보를 아름다운 프레임으로 | Photo Frame Maker</title>
+    <meta name="description" content="사진의 EXIF 촬영 정보(카메라, 렌즈, 조리개, ISO)를 아름다운 프레임으로 표현하세요. 다양한 디자인 스타일, 고화질 JPEG 다운로드. 무료, 서버 업로드 없음.">
+    <meta name="keywords" content="EXIF 프레임, 촬영 정보 프레임, 카메라 정보 오버레이, exif frame, camera info overlay, photo metadata">
+    <meta name="author" content="Noh Daeyoung (DY)">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://f.324.ing/exif">
+    <link rel="alternate" hreflang="ko" href="https://f.324.ing/exif">
+    <!-- Open Graph -->
+    <meta property="og:title" content="EXIF 프레임 — 촬영 정보를 아름다운 프레임으로">
+    <meta property="og:description" content="사진의 EXIF 촬영 정보를 아름다운 프레임으로 표현. 무료, 서버 업로드 없음.">
+    <meta property="og:url" content="https://f.324.ing/exif">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://f.324.ing/og-image.png">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:site_name" content="Photo Frame Maker by DY">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="EXIF 프레임 — 촬영 정보를 아름다운 프레임으로">
+    <meta name="twitter:description" content="사진의 EXIF 촬영 정보를 아름다운 프레임으로 표현. 무료, 서버 업로드 없음.">
+    <meta name="twitter:image" content="https://f.324.ing/og-image.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "EXIF 프레임",
+          "url": "https://f.324.ing/exif",
+          "description": "사진의 EXIF 촬영 정보를 아름다운 프레임으로 표현하세요.",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "Web Browser",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+          "author": { "@type": "Person", "name": "Noh Daeyoung (DY)" }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "홈", "item": "https://f.324.ing/" },
+            { "@type": "ListItem", "position": 2, "name": "EXIF 프레임", "item": "https://f.324.ing/exif" }
+          ]
+        }
+      ]
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Caveat:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Caveat:wght@400;500&display=swap" media="print" onload="this.media='all'">
+    <script>
+    (function(){var t=localStorage.getItem('pfm-theme');if(t)document.documentElement.setAttribute('data-theme',t)})();
+    </script>
+    <style>.no-fouc{opacity:0}.no-fouc.ready{opacity:1;transition:opacity .1s}</style>
+    <link rel="stylesheet" href="/style.css">
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body class="no-fouc">
+    <div id="site-nav"></div>
+    <div class="app">
+
+        <header class="header" style="position:relative">
+            <h1>EXIF 프레임 만들기</h1>
+            <p class="subtitle">촬영 정보가 담긴 나만의 사진 프레임을 만들고 고화질로 저장하세요</p>
+            <nav class="app-mode-toggle" id="app-mode-toggle" aria-label="모드 선택" style="display:none">
+                <a class="app-mode-btn" href="/frame.html" data-mode="frame">프레임</a>
+                <a class="app-mode-btn" href="/split.html" data-mode="split">분할</a>
+                <a class="app-mode-btn" href="/convert.html" data-mode="convert">변환</a>
+                <a class="app-mode-btn active" href="/exif.html" data-mode="exif">EXIF 프레임</a>
+            </nav>
+        </header>
+
+        <main class="main">
+            <div class="preview-area">
+                <div class="preview-container" id="preview-container">
+                    <canvas id="preview-canvas" role="img" aria-label="EXIF 프레임 미리보기"></canvas>
+                    <button class="canvas-nav-arrow canvas-nav-prev" id="canvas-nav-prev" type="button" aria-label="이전 사진">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button class="canvas-nav-arrow canvas-nav-next" id="canvas-nav-next" type="button" aria-label="다음 사진">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                    </button>
+                    <div class="preview-upload-prompt" id="preview-upload-prompt">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <p class="prompt-desktop">EXIF 데이터가 있는 사진을 드래그하세요</p>
+                        <p class="prompt-mobile">터치하여 사진을 추가하세요</p>
+                        <span class="prompt-desktop">또는 Ctrl+V로 붙여넣기</span>
+                    </div>
+                </div>
+
+                <div class="thumbnail-strip" id="thumbnail-strip">
+                    <div class="thumbnail-list" id="thumbnail-list"></div>
+                    <button class="thumbnail-add-btn" id="thumbnail-add-btn" type="button" title="사진 추가">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <span class="thumbnail-counter" id="thumbnail-counter"></span>
+                </div>
+
+                <div class="preview-toolbar" id="preview-toolbar">
+                    <p class="preview-hint" id="preview-hint">&nbsp;</p>
+                    <button class="preview-remove-btn" id="preview-remove-btn" type="button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        사진 삭제
+                    </button>
+                </div>
+            </div>
+
+            <aside class="sidebar" id="sidebar">
+                <div class="sheet-handle" id="sheet-handle"><div class="sheet-handle-bar"></div></div>
+
+                <section class="control-section upload-section">
+                    <h2>사진 업로드</h2>
+                    <div class="upload-zone" id="upload-zone">
+                        <input type="file" id="file-input" accept="image/*" multiple aria-label="사진 업로드" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;">
+                        <div class="upload-content" id="upload-content">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <p>클릭하거나 파일을 드래그하세요</p>
+                            <span class="upload-hint">또는 Ctrl+V로 붙여넣기</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section" id="exif-style-section">
+                    <h2>EXIF 스타일</h2>
+                    <div class="exif-style-selector" id="exif-style-buttons">
+                        <button class="exif-style-btn active" data-style="filmstrip"><span class="style-icon">▬</span><span class="style-label">Film Strip</span></button>
+                        <button class="exif-style-btn" data-style="minimal"><span class="style-icon">◢</span><span class="style-label">Minimal</span></button>
+                        <button class="exif-style-btn" data-style="magazine"><span class="style-icon">▐</span><span class="style-label">Magazine</span></button>
+                        <button class="exif-style-btn" data-style="signature"><span class="style-icon">✦</span><span class="style-label">Signature</span></button>
+                        <button class="exif-style-btn" data-style="letterbox"><span class="style-icon">▄</span><span class="style-label">Letterbox</span></button>
+                        <button class="exif-style-btn" data-style="polaroid"><span class="style-icon">□</span><span class="style-label">Polaroid</span></button>
+                        <button class="exif-style-btn" data-style="leica"><span class="style-icon">●</span><span class="style-label">Leica</span></button>
+                        <button class="exif-style-btn" data-style="fujistyle"><span class="style-icon">◈</span><span class="style-label">FujiStyle</span></button>
+                        <button class="exif-style-btn" data-style="fujirecipe"><span class="style-icon">▤</span><span class="style-label">Recipe</span></button>
+                        <button class="exif-style-btn" data-style="glass"><span class="style-icon">◻</span><span class="style-label">Glass</span></button>
+                        <button class="exif-style-btn" data-style="leicalux"><span class="style-icon">⬤</span><span class="style-label">Leica LUX</span></button>
+                        <button class="exif-style-btn" data-style="instax"><span class="style-icon">▭</span><span class="style-label">Instax</span></button>
+                        <button class="exif-style-btn" data-style="filmstock"><span class="style-icon">⬛</span><span class="style-label">Film Stock</span></button>
+                        <button class="exif-style-btn" data-style="shoton"><span class="style-icon">◑</span><span class="style-label">Shot On</span></button>
+                        <button class="exif-style-btn" data-style="editorial"><span class="style-icon">≡</span><span class="style-label">Editorial</span></button>
+                        <button class="exif-style-btn" data-style="hud"><span class="style-icon">⊹</span><span class="style-label">HUD</span></button>
+                        <button class="exif-style-btn" data-style="minimalbar"><span class="style-icon">—</span><span class="style-label">Minimal Bar</span></button>
+                        <button class="exif-style-btn" data-style="cardgrid"><span class="style-icon">⊞</span><span class="style-label">Card Grid</span></button>
+                    </div>
+                    <h3 class="section-subtitle">표시 항목</h3>
+                    <div class="exif-field-toggles" id="exif-field-toggles">
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="camera"> 카메라</label>
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="lens"> 렌즈</label>
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="focalLength" checked> 초점거리</label>
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="aperture" checked> 조리개</label>
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="shutter" checked> 셔터속도</label>
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="iso" checked> ISO</label>
+                        <label class="exif-field-toggle"><input type="checkbox" data-field="date"> 촬영일</label>
+                    </div>
+                    <h3 class="section-subtitle">텍스트 설정</h3>
+                    <div class="exif-text-controls">
+                        <div class="control-row"><span class="control-label">글자 크기</span><div class="exif-size-buttons" id="exif-font-size-buttons"><button class="size-btn" data-size="small">S</button><button class="size-btn active" data-size="medium">M</button><button class="size-btn" data-size="large">L</button></div></div>
+                        <div class="control-row"><span class="control-label">글자 색상</span><div class="exif-color-buttons" id="exif-text-color-buttons"><button class="color-opt active" data-color="white">밝게</button><button class="color-opt" data-color="black">어둡게</button><button class="color-opt" data-color="auto">자동</button></div></div>
+                        <div class="control-row"><span class="control-label">배경 색상</span><div class="exif-bar-color-buttons" id="exif-bar-color-buttons"><button class="color-opt active" data-color="black">검정</button><button class="color-opt" data-color="white">흰색</button><button class="color-opt" data-color="auto">자동</button><button class="color-opt" data-color="transparent">없음</button></div></div>
+                        <div class="control-row"><span class="control-label">구분자</span><div class="exif-separator-buttons" id="exif-separator-buttons"><button class="sep-btn active" data-sep="│">│</button><button class="sep-btn" data-sep="·">·</button><button class="sep-btn" data-sep="-">-</button><button class="sep-btn" data-sep=" ">공백</button></div></div>
+                    </div>
+                    <!-- 스타일별 전용 설정 (JS에서 show/hide) -->
+                    <div class="style-opt-section" id="exif-opts-film">
+                        <h3 class="section-subtitle">필름 브랜드</h3>
+                        <div class="opt-btn-row" id="exif-film-brand-buttons">
+                            <button class="color-opt active" data-brand="auto">자동</button>
+                            <button class="color-opt" data-brand="kodak">Kodak</button>
+                            <button class="color-opt" data-brand="fujifilm">Fujifilm</button>
+                            <button class="color-opt" data-brand="ilford">Ilford</button>
+                            <button class="color-opt" data-brand="cinestill">CineStill</button>
+                            <button class="color-opt" data-brand="agfa">Agfa</button>
+                        </div>
+                    </div>
+                    <div class="style-opt-section" id="exif-opts-font">
+                        <h3 class="section-subtitle">폰트 스타일</h3>
+                        <div class="opt-btn-row" id="exif-polaroid-font-buttons">
+                            <button class="color-opt active" data-font="clean">깔끔</button>
+                            <button class="color-opt" data-font="handwriting">손글씨</button>
+                        </div>
+                    </div>
+                    <div class="style-opt-section" id="exif-opts-glass">
+                        <h3 class="section-subtitle">테마</h3>
+                        <div class="opt-btn-row" id="exif-glass-theme-buttons">
+                            <button class="color-opt active" data-theme="light">라이트</button>
+                            <button class="color-opt" data-theme="dark">다크</button>
+                        </div>
+                        <h3 class="section-subtitle">위치</h3>
+                        <div class="opt-btn-row" id="exif-glass-position-buttons">
+                            <button class="color-opt active" data-pos="bottom-left">좌하단</button>
+                            <button class="color-opt" data-pos="bottom-right">우하단</button>
+                            <button class="color-opt" data-pos="top-left">좌상단</button>
+                            <button class="color-opt" data-pos="top-right">우상단</button>
+                        </div>
+                    </div>
+                    <div class="style-opt-section" id="exif-opts-hud">
+                        <h3 class="section-subtitle">강조 색상</h3>
+                        <div class="opt-btn-row" id="exif-hud-accent-buttons">
+                            <button class="color-opt active" data-accent="default">기본</button>
+                            <button class="color-opt" data-accent="green">그린</button>
+                            <button class="color-opt" data-accent="red">레드</button>
+                            <button class="color-opt" data-accent="amber">앰버</button>
+                            <button class="color-opt" data-accent="cyan">시안</button>
+                        </div>
+                    </div>
+                    <div class="style-opt-section" id="exif-opts-cardgrid">
+                        <h3 class="section-subtitle">카드 레이아웃</h3>
+                        <div class="opt-btn-row" id="exif-card-variant-buttons">
+                            <button class="color-opt" data-cards="2">2칸</button>
+                            <button class="color-opt" data-cards="3">3칸</button>
+                            <button class="color-opt" data-cards="4">4칸</button>
+                            <button class="color-opt active" data-cards="6">6칸</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section" id="frame-ratio-section" style="display:none">
+                    <h2>프레임 비율</h2>
+                    <div class="frame-ratio-control">
+                        <input type="range" id="frame-ratio-slider" min="0" max="25" step="0.5" value="5">
+                        <div class="frame-ratio-inputs">
+                            <div class="input-with-suffix input-small"><input type="number" id="frame-ratio" inputmode="decimal" value="5" min="0" max="25" step="0.5"><span class="suffix">%</span></div>
+                            <div class="input-with-suffix input-small"><input type="number" id="frame-ratio-px" inputmode="numeric" value="50" min="0" step="1"><span class="suffix">px</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section" id="frame-color-section" style="display:none">
+                    <h2>프레임 색상</h2>
+                    <div id="color-presets">
+                        <div class="frame-type-row">
+                            <button class="color-swatch active" data-color="#FFFFFF" title="흰색"><span style="background:#FFFFFF"></span></button>
+                            <button class="color-swatch" data-color="#F5F0E8" title="아이보리"><span style="background:#F5F0E8"></span></button>
+                            <button class="color-swatch" data-color="#E8E8E8" title="밝은 회색"><span style="background:#E8E8E8"></span></button>
+                            <button class="color-swatch" data-color="#333333" title="어두운 회색"><span style="background:#333333"></span></button>
+                            <button class="color-swatch" data-color="#000000" title="검정"><span style="background:#000000"></span></button>
+                            <div class="color-picker-wrap"><input type="color" id="custom-color" value="#FFFFFF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                        </div>
+                    </div>
+                    <div id="blur-controls"><input type="range" id="blur-slider" value="50"><span id="blur-value">50</span></div>
+                    <div id="pixelate-controls"><input type="range" id="pixelate-slider" value="50"><span id="pixelate-value">50</span></div>
+                </section>
+
+                <section class="control-section info-section">
+                    <h2>정보</h2>
+                    <div class="info-grid">
+                        <span class="info-label">캔버스</span><span class="info-value" id="info-canvas"></span>
+                        <span class="info-label">프레임 두께</span><span class="info-value" id="info-frame"></span>
+                        <span class="info-label">사진 영역</span><span class="info-value" id="info-photo"></span>
+                        <span class="info-label" id="info-original-label">원본 이미지</span>
+                        <span class="info-value" id="info-original"></span>
+                    </div>
+                    <div class="warning" id="upscale-warning">원본 이미지가 작아 화질이 저하될 수 있습니다.</div>
+                    <div class="exif-section" id="exif-section">
+                        <div class="exif-divider"></div>
+                        <h3 class="exif-title">EXIF</h3>
+                        <div class="info-grid" id="exif-grid"></div>
+                    </div>
+                </section>
+
+                <!-- Stub elements AppBase bindElements() expects but not used in EXIF mode -->
+                <div style="display:none">
+                    <div id="ratio-section"><div id="ratio-buttons"></div><div id="mobile-ratio-header"></div><div id="mobile-ratio-buttons"></div></div>
+                    <div id="canvas-size-section"><input id="canvas-size"><input id="mobile-canvas-size"></div>
+                    <div id="split-section"><div id="split-buttons"></div><div id="split-direction-buttons"></div></div>
+                    <div id="mobile-split-section"><div id="mobile-split-buttons"></div><div id="mobile-split-direction-buttons"></div></div>
+                    <div id="favorites-section"><div id="favorites-list"></div><div id="favorites-empty"></div><button id="favorite-save-btn"></button><div id="mobile-favorites-list"></div><button id="mobile-favorite-save-btn"></button></div>
+                    <div id="convert-section"><div id="format-buttons"></div><div id="quality-control"><input id="quality-slider"><span id="quality-value"></span></div></div>
+                    <div id="mobile-format-buttons"></div><div id="mobile-quality-control"><input id="mobile-quality-slider"><span id="mobile-quality-value"></span></div>
+                    <button id="mobile-tab-btn-convert"></button><div id="tab-panel-convert" class="tab-panel" data-tab="convert"></div>
+                    <button id="mobile-tab-btn-exif"></button><div id="tab-panel-exif" class="tab-panel" data-tab="exif"></div>
+                    <div class="tab-panel" id="tab-panel-frame" data-tab="frame"></div>
+                    <div class="tab-panel" id="tab-panel-color" data-tab="color"></div>
+                    <input id="mobile-frame-ratio-slider" style="display:none"><input id="mobile-frame-ratio" style="display:none"><input id="mobile-frame-ratio-px" style="display:none">
+                </div>
+
+                <button class="download-btn" id="download-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span class="btn-label">EXIF 프레임 다운로드</span>
+                </button>
+            </aside>
+
+            <!-- Mobile tab bar + panels -->
+            <div class="mobile-tab-panels" id="mobile-tab-panels">
+                <div class="tab-panel" id="tab-panel-ratio" data-tab="ratio">
+                    <div class="tab-panel-content">
+                        <div class="tab-panel-header">EXIF 스타일</div>
+                        <div class="exif-style-selector" id="mobile-exif-style-buttons">
+                            <button class="exif-style-btn active" data-style="filmstrip"><span class="style-icon">▬</span><span class="style-label">Film Strip</span></button>
+                            <button class="exif-style-btn" data-style="minimal"><span class="style-icon">◢</span><span class="style-label">Minimal</span></button>
+                            <button class="exif-style-btn" data-style="magazine"><span class="style-icon">▐</span><span class="style-label">Magazine</span></button>
+                            <button class="exif-style-btn" data-style="signature"><span class="style-icon">✦</span><span class="style-label">Signature</span></button>
+                            <button class="exif-style-btn" data-style="letterbox"><span class="style-icon">▄</span><span class="style-label">Letterbox</span></button>
+                            <button class="exif-style-btn" data-style="polaroid"><span class="style-icon">□</span><span class="style-label">Polaroid</span></button>
+                            <button class="exif-style-btn" data-style="leica"><span class="style-icon">●</span><span class="style-label">Leica</span></button>
+                            <button class="exif-style-btn" data-style="fujistyle"><span class="style-icon">◈</span><span class="style-label">FujiStyle</span></button>
+                            <button class="exif-style-btn" data-style="fujirecipe"><span class="style-icon">▤</span><span class="style-label">Recipe</span></button>
+                            <button class="exif-style-btn" data-style="glass"><span class="style-icon">◻</span><span class="style-label">Glass</span></button>
+                            <button class="exif-style-btn" data-style="leicalux"><span class="style-icon">⬤</span><span class="style-label">Leica LUX</span></button>
+                            <button class="exif-style-btn" data-style="instax"><span class="style-icon">▭</span><span class="style-label">Instax</span></button>
+                            <button class="exif-style-btn" data-style="filmstock"><span class="style-icon">⬛</span><span class="style-label">Film Stock</span></button>
+                            <button class="exif-style-btn" data-style="shoton"><span class="style-icon">◑</span><span class="style-label">Shot On</span></button>
+                            <button class="exif-style-btn" data-style="editorial"><span class="style-icon">≡</span><span class="style-label">Editorial</span></button>
+                            <button class="exif-style-btn" data-style="hud"><span class="style-icon">⊹</span><span class="style-label">HUD</span></button>
+                            <button class="exif-style-btn" data-style="minimalbar"><span class="style-icon">—</span><span class="style-label">Minimal Bar</span></button>
+                            <button class="exif-style-btn" data-style="cardgrid"><span class="style-icon">⊞</span><span class="style-label">Card Grid</span></button>
+                        </div>
+                        <h3 class="section-subtitle">표시 항목</h3>
+                        <div class="exif-field-toggles" id="mobile-exif-field-toggles">
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="camera"> 카메라</label>
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="lens"> 렌즈</label>
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="focalLength" checked> 초점거리</label>
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="aperture" checked> 조리개</label>
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="shutter" checked> 셔터속도</label>
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="iso" checked> ISO</label>
+                            <label class="exif-field-toggle"><input type="checkbox" data-field="date"> 촬영일</label>
+                        </div>
+                        <!-- 스타일별 전용 설정 (모바일) -->
+                        <div class="style-opt-section" id="mobile-exif-opts-film">
+                            <h3 class="section-subtitle">필름 브랜드</h3>
+                            <div class="opt-btn-row" id="mobile-exif-film-brand-buttons">
+                                <button class="color-opt active" data-brand="auto">자동</button>
+                                <button class="color-opt" data-brand="kodak">Kodak</button>
+                                <button class="color-opt" data-brand="fujifilm">Fujifilm</button>
+                                <button class="color-opt" data-brand="ilford">Ilford</button>
+                                <button class="color-opt" data-brand="cinestill">CineStill</button>
+                                <button class="color-opt" data-brand="agfa">Agfa</button>
+                            </div>
+                        </div>
+                        <div class="style-opt-section" id="mobile-exif-opts-font">
+                            <h3 class="section-subtitle">폰트 스타일</h3>
+                            <div class="opt-btn-row" id="mobile-exif-polaroid-font-buttons">
+                                <button class="color-opt active" data-font="clean">깔끔</button>
+                                <button class="color-opt" data-font="handwriting">손글씨</button>
+                            </div>
+                        </div>
+                        <div class="style-opt-section" id="mobile-exif-opts-glass">
+                            <h3 class="section-subtitle">테마</h3>
+                            <div class="opt-btn-row" id="mobile-exif-glass-theme-buttons">
+                                <button class="color-opt active" data-theme="light">라이트</button>
+                                <button class="color-opt" data-theme="dark">다크</button>
+                            </div>
+                            <h3 class="section-subtitle">위치</h3>
+                            <div class="opt-btn-row" id="mobile-exif-glass-position-buttons">
+                                <button class="color-opt active" data-pos="bottom-left">좌하단</button>
+                                <button class="color-opt" data-pos="bottom-right">우하단</button>
+                                <button class="color-opt" data-pos="top-left">좌상단</button>
+                                <button class="color-opt" data-pos="top-right">우상단</button>
+                            </div>
+                        </div>
+                        <div class="style-opt-section" id="mobile-exif-opts-hud">
+                            <h3 class="section-subtitle">강조 색상</h3>
+                            <div class="opt-btn-row" id="mobile-exif-hud-accent-buttons">
+                                <button class="color-opt active" data-accent="default">기본</button>
+                                <button class="color-opt" data-accent="green">그린</button>
+                                <button class="color-opt" data-accent="red">레드</button>
+                                <button class="color-opt" data-accent="amber">앰버</button>
+                                <button class="color-opt" data-accent="cyan">시안</button>
+                            </div>
+                        </div>
+                        <div class="style-opt-section" id="mobile-exif-opts-cardgrid">
+                            <h3 class="section-subtitle">카드 레이아웃</h3>
+                            <div class="opt-btn-row" id="mobile-exif-card-variant-buttons">
+                                <button class="color-opt" data-cards="2">2칸</button>
+                                <button class="color-opt" data-cards="3">3칸</button>
+                                <button class="color-opt" data-cards="4">4칸</button>
+                                <button class="color-opt active" data-cards="6">6칸</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-panel" id="tab-panel-photo" data-tab="photo">
+                    <div class="tab-panel-content">
+                        <div class="tab-panel-header">사진</div>
+                        <div class="mobile-photo-info" id="mobile-photo-info">
+                            <img class="mobile-photo-thumb" id="mobile-photo-thumb" alt="">
+                            <div class="mobile-photo-meta">
+                                <div class="mobile-photo-name" id="mobile-photo-name"></div>
+                                <div class="mobile-photo-size" id="mobile-photo-size"></div>
+                            </div>
+                        </div>
+                        <div id="mobile-thumbnail-slot"></div>
+                        <div class="mobile-photo-actions">
+                            <button class="btn-ghost" id="mobile-photo-upload-btn" type="button"><span id="mobile-photo-upload-label">사진 추가</span></button>
+                            <button class="btn-danger" id="mobile-photo-delete-btn" type="button">삭제</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-panel" id="tab-panel-info" data-tab="info">
+                    <div class="tab-panel-content">
+                        <div class="tab-panel-header">정보</div>
+                        <div class="info-grid">
+                            <span class="info-label">캔버스</span><span class="info-value" id="mobile-info-canvas"></span>
+                            <span class="info-label">프레임 두께</span><span class="info-value" id="mobile-info-frame"></span>
+                            <span class="info-label">사진 영역</span><span class="info-value" id="mobile-info-photo"></span>
+                            <span class="info-label" id="mobile-info-original-label">원본 이미지</span>
+                            <span class="info-value" id="mobile-info-original"></span>
+                        </div>
+                        <div class="warning" id="mobile-upscale-warning">원본 이미지가 작아 화질이 저하될 수 있습니다.</div>
+                        <div class="exif-section" id="mobile-exif-section">
+                            <div class="exif-divider"></div>
+                            <div class="info-grid" id="mobile-exif-grid"></div>
+                        </div>
+                        <h3 class="section-subtitle">텍스트</h3>
+                        <div class="exif-text-controls">
+                            <div class="control-row"><span class="control-label">글자 크기</span><div class="exif-size-buttons" id="mobile-exif-font-size-buttons"><button class="size-btn" data-size="small">S</button><button class="size-btn active" data-size="medium">M</button><button class="size-btn" data-size="large">L</button></div></div>
+                            <div class="control-row"><span class="control-label">글자 색상</span><div class="exif-color-buttons" id="mobile-exif-text-color-buttons"><button class="color-opt active" data-color="white">밝게</button><button class="color-opt" data-color="black">어둡게</button><button class="color-opt" data-color="auto">자동</button></div></div>
+                            <div class="control-row"><span class="control-label">배경 색상</span><div class="exif-bar-color-buttons" id="mobile-exif-bar-color-buttons"><button class="color-opt active" data-color="black">검정</button><button class="color-opt" data-color="white">흰색</button><button class="color-opt" data-color="auto">자동</button><button class="color-opt" data-color="transparent">없음</button></div></div>
+                            <div class="control-row"><span class="control-label">구분자</span><div class="exif-separator-buttons" id="mobile-exif-separator-buttons"><button class="sep-btn active" data-sep="│">│</button><button class="sep-btn" data-sep="·">·</button><button class="sep-btn" data-sep="-">-</button><button class="sep-btn" data-sep=" ">공백</button></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="mobile-tab-bar" id="mobile-tab-bar" aria-label="모바일 탭">
+                <button class="tab-btn" data-tab="ratio">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="17" x2="22" y2="17"/><line x1="6" y1="20" x2="18" y2="20"/></svg>
+                    <span>스타일</span>
+                </button>
+                <button class="tab-btn" data-tab="photo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>사진</span>
+                </button>
+                <button class="tab-btn tab-btn-download" data-tab="download" id="mobile-download-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>저장</span>
+                </button>
+                <button class="tab-btn" data-tab="info">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span>정보</span>
+                </button>
+            </nav>
+        </main>
+        <div class="sheet-backdrop" id="sheet-backdrop"></div>
+        <footer class="footer"></footer>
+    </div>
+
+    <script src="/site.js" defer></script>
+    <script type="module" src="/js/pages/exif-page.js?v=3"></script>
+</body>
+</html>

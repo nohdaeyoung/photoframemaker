@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Photo Frame Maker by DY",
   "scripts": {
-    "build": "mkdir -p www/admin && cp index.html app.js style.css robots.txt about.html _headers www/ && cp -r devnote.html prompt.html www/ 2>/dev/null || true && cp admin/*.html admin/admin.css www/admin/ && cp images/favicon.ico images/favicon_*.png images/og-image.png www/",
+    "build": "rm -rf www && node build.js",
     "db:create": "npx wrangler d1 create photoframemaker-blog",
     "db:migrate": "npx wrangler d1 execute photoframemaker-blog --file=./migrations/0001_init.sql",
     "db:migrate:local": "npx wrangler d1 execute photoframemaker-blog --local --file=./migrations/0001_init.sql",
@@ -27,6 +27,10 @@
     "hono": "^4.12.7"
   },
   "devDependencies": {
+    "cssnano": "^7.1.3",
+    "html-minifier-terser": "^7.2.0",
+    "postcss-cli": "^11.0.1",
+    "terser": "^5.46.1",
     "typescript": "^5.9.3"
   }
 }

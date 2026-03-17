@@ -1,13 +1,48 @@
+function _roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+}
+
 function escapeHtml(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+const BRAND_THEMES = {
+    'sony':     { primary: '#000000', accent: '#F58220', name: 'SONY' },
+    'fujifilm': { primary: '#1A1A1A', accent: '#86B817', name: 'FUJIFILM' },
+    'canon':    { primary: '#FFFFFF', accent: '#CC0000', name: 'Canon' },
+    'nikon':    { primary: '#000000', accent: '#FFD700', name: 'Nikon' },
+    'apple':    { primary: '#1D1D1F', accent: '#FFFFFF', name: 'Apple' },
+    'leica':    { primary: '#FFFFFF', accent: '#E2001A', name: 'Leica' },
+    'ricoh':    { primary: '#1A1A1A', accent: '#DA291C', name: 'RICOH' },
+};
+
+const EXIF_FONT_SIZES = {
+    small:  0.015,
+    medium: 0.020,
+    large:  0.028,
+};
 
 class PhotoFrameMaker {
     constructor() {
         // Multi-image array (max 10)
         this.images = [];
         this.currentIndex = 0;
+
+        // Per-mode independent image state
+        this._modeState = {
+            frame:   { images: [], currentIndex: 0 },
+            split:   { images: [], currentIndex: 0 },
+            convert: { images: [], currentIndex: 0 },
+            exif:    { images: [], currentIndex: 0 },
+        };
 
         this.canvasRatio = [1, 1];
         this.canvasSize = 1000;
@@ -34,11 +69,27 @@ class PhotoFrameMaker {
         this.previewMode = 'default';
 
         // Split mode
-        this.appMode = 'frame'; // 'frame' | 'split'
+        this.appMode = 'frame'; // 'frame' | 'split' | 'convert'
         this.splitCount = 2;
         this.splitDirection = 'horizontal'; // 'horizontal' | 'vertical'
         this.splitCurrentPanel = 0;
         this.savedRatioBeforeSplit = null;
+
+        // Convert mode
+        this.outputFormat = 'jpeg';    // 'png' | 'jpeg' | 'webp'
+        this.outputQuality = 92;       // 1~100
+        this.supportsWebP = false;
+
+        // EXIF frame mode
+        this.exifStyle = 'filmstrip'; // 'filmstrip' | 'minimal' | 'magazine' | 'signature'
+        this.exifFields = {
+            camera: false, lens: false, focalLength: true,
+            aperture: true, shutter: true, iso: true, date: false
+        };
+        this.exifFontSize = 'medium'; // 'small' | 'medium' | 'large'
+        this.exifTextColor = 'white'; // 'white' | 'black' | 'auto'
+        this.exifSeparator = '│';
+        this.exifBarColor = 'black';  // 'black' | 'white' | 'auto' | 'transparent'
 
         this.canvas = document.getElementById('preview-canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -72,11 +123,15 @@ class PhotoFrameMaker {
     init() {
         this.bindElements();
         this.setupEventListeners();
+        this.checkWebPSupport();
+        this.setupExifEventListeners();
+        this.loadLastSettings();
         this.syncFramePxInputs();
         this.updateCanvasSize();
         this.render();
         this.updateInfo();
         this.setupBottomSheet();
+        this.renderFavoritesUI();
 
         // Ensure correct initial state
         this.previewToolbar.style.display = 'none';
@@ -84,6 +139,9 @@ class PhotoFrameMaker {
         this.downloadBtn.disabled = true;
         this.mobileDownloadBtn.disabled = true;
         this.previewContainer.classList.remove('has-image');
+
+        // Reveal page after init
+        document.body.classList.add('ready');
     }
 
     bindElements() {
@@ -192,6 +250,45 @@ class PhotoFrameMaker {
         this.mobileTabBtnColor = document.querySelector('.tab-btn[data-tab="color"]');
         this.tabPanelFrame = document.getElementById('tab-panel-frame');
         this.tabPanelColor = document.getElementById('tab-panel-color');
+
+        // Favorites
+        this.favoritesList = document.getElementById('favorites-list');
+        this.favoritesEmpty = document.getElementById('favorites-empty');
+        this.favoriteSaveBtn = document.getElementById('favorite-save-btn');
+        this.mobileFavoritesList = document.getElementById('mobile-favorites-list');
+        this.mobileFavoriteSaveBtn = document.getElementById('mobile-favorite-save-btn');
+        this.favoritesSection = document.getElementById('favorites-section');
+
+        // Convert mode
+        this.convertSection = document.getElementById('convert-section');
+        this.formatButtons = document.getElementById('format-buttons');
+        this.qualitySlider = document.getElementById('quality-slider');
+        this.qualityValue = document.getElementById('quality-value');
+        this.qualityControl = document.getElementById('quality-control');
+        this.mobileFormatButtons = document.getElementById('mobile-format-buttons');
+        this.mobileQualitySlider = document.getElementById('mobile-quality-slider');
+        this.mobileQualityValue = document.getElementById('mobile-quality-value');
+        this.mobileQualityControl = document.getElementById('mobile-quality-control');
+        this.mobileTabBtnConvert = document.getElementById('mobile-tab-btn-convert');
+        this.tabPanelConvert = document.getElementById('tab-panel-convert');
+
+        // EXIF frame mode
+        this.exifPanel = document.getElementById('exif-style-section');
+        this.exifStyleSection = this.exifPanel;
+        this.exifStyleButtons = document.getElementById('exif-style-buttons');
+        this.exifFieldToggles = document.getElementById('exif-field-toggles');
+        this.exifFontSizeButtons = document.getElementById('exif-font-size-buttons');
+        this.exifTextColorButtons = document.getElementById('exif-text-color-buttons');
+        this.exifBarColorButtons = document.getElementById('exif-bar-color-buttons');
+        this.exifSeparatorButtons = document.getElementById('exif-separator-buttons');
+        this.mobileExifStyleButtons = document.getElementById('mobile-exif-style-buttons');
+        this.mobileExifFieldToggles = document.getElementById('mobile-exif-field-toggles');
+        this.mobileExifFontSizeButtons = document.getElementById('mobile-exif-font-size-buttons');
+        this.mobileExifTextColorButtons = document.getElementById('mobile-exif-text-color-buttons');
+        this.mobileExifBarColorButtons = document.getElementById('mobile-exif-bar-color-buttons');
+        this.mobileExifSeparatorButtons = document.getElementById('mobile-exif-separator-buttons');
+        this.mobileTabBtnExif = document.getElementById('mobile-tab-btn-exif');
+        this.tabPanelExif = document.getElementById('tab-panel-exif');
     }
 
     setupEventListeners() {
@@ -245,6 +342,7 @@ class PhotoFrameMaker {
             document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
+
             this.syncFramePxInputs();
             this.resetAllOffsets();
             this.updateCanvasSize();
@@ -272,6 +370,7 @@ class PhotoFrameMaker {
             this.frameRatioInput.value = this.frameRatio;
             this.mobileFrameRatioSlider.value = this.frameRatio;
             this.mobileFrameRatioInput.value = this.frameRatio;
+
             this.syncFramePxInputs();
             this.resetAllOffsets();
             this.render();
@@ -326,6 +425,7 @@ class PhotoFrameMaker {
                 this.customColorInput.value = color;
                 this.mobileCustomColorInput.value = color;
             }
+
             this.updateStyleControlsVisibility();
             this.render();
         });
@@ -335,6 +435,7 @@ class PhotoFrameMaker {
             this.mobileCustomColorInput.value = this.frameColor;
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+
             this.updateStyleControlsVisibility();
             this.render();
         });
@@ -356,6 +457,18 @@ class PhotoFrameMaker {
             this.mobilePixelateValueLabel.textContent = this.pixelateIntensity;
             this.render();
         });
+
+        // Favorites
+        this.favoriteSaveBtn.addEventListener('click', () => this.saveFavorite());
+        this.mobileFavoriteSaveBtn.addEventListener('click', () => this.saveFavorite());
+        const handleFavClick = (e) => {
+            const removeBtn = e.target.closest('.favorite-remove');
+            if (removeBtn) { this.removeFavorite(parseInt(removeBtn.dataset.index)); return; }
+            const item = e.target.closest('.favorite-item');
+            if (item) { this.applyPreset(this.getFavorites()[parseInt(item.dataset.index)]); }
+        };
+        this.favoritesList.addEventListener('click', handleFavClick);
+        this.mobileFavoritesList.addEventListener('click', handleFavClick);
 
         // Canvas drag (image repositioning)
         this.canvas.addEventListener('mousedown', (e) => this.onDragStart(e));
@@ -544,7 +657,12 @@ class PhotoFrameMaker {
         // Resize: recalculate preview container size
         window.addEventListener('resize', () => this.updatePreviewContainerSize());
 
-        // App mode toggle (프레임 / 분할)
+        // App mode toggle (프레임 / 분할) — sliding indicator
+        this.modeSlider = document.createElement('div');
+        this.modeSlider.className = 'slider';
+        this.appModeToggle.appendChild(this.modeSlider);
+        this.updateModeSlider();
+
         this.appModeToggle.addEventListener('click', (e) => {
             const btn = e.target.closest('.app-mode-btn');
             if (!btn) return;
@@ -564,24 +682,44 @@ class PhotoFrameMaker {
             if (!btn) return;
             this.setSplitCount(parseInt(btn.dataset.split));
         });
+
+        // Convert mode: format buttons (event delegation)
+        const handleFormatClick = (e) => {
+            const btn = e.target.closest('.format-btn');
+            if (!btn || btn.disabled) return;
+            this.outputFormat = btn.dataset.format;
+            this.syncFormatUI();
+            this.updateQualityControlState();
+            this.updateDownloadLabel();
+        };
+        this.formatButtons.addEventListener('click', handleFormatClick);
+        this.mobileFormatButtons.addEventListener('click', handleFormatClick);
+
+        // Convert mode: quality slider
+        this.qualitySlider.addEventListener('input', () => {
+            this.outputQuality = parseInt(this.qualitySlider.value);
+            this.mobileQualitySlider.value = this.outputQuality;
+            this.qualityValue.textContent = this.outputQuality + '%';
+            this.mobileQualityValue.textContent = this.outputQuality + '%';
+            this.updateDownloadLabel();
+        });
+        this.mobileQualitySlider.addEventListener('input', () => {
+            this.outputQuality = parseInt(this.mobileQualitySlider.value);
+            this.qualitySlider.value = this.outputQuality;
+            this.qualityValue.textContent = this.outputQuality + '%';
+            this.mobileQualityValue.textContent = this.outputQuality + '%';
+            this.updateDownloadLabel();
+        });
     }
 
     // --- Calculations ---
 
     getCanvasDimensions() {
         const [w, h] = this.canvasRatio;
-        const maxSide = this.canvasSize;
-        if (w >= h) {
-            return {
-                width: maxSide,
-                height: Math.round(maxSide * h / w)
-            };
-        } else {
-            return {
-                width: Math.round(maxSide * w / h),
-                height: maxSide
-            };
-        }
+        return {
+            width: this.canvasSize,
+            height: Math.round(this.canvasSize * h / w)
+        };
     }
 
     getFrameWidth() {
@@ -596,7 +734,9 @@ class PhotoFrameMaker {
     }
 
     getPhotoArea() {
-        const dims = this.getCanvasDimensions();
+        const dims = (this.appMode === 'split' && this.canvas.width > 0)
+            ? { width: this.canvas.width, height: this.canvas.height }
+            : this.getCanvasDimensions();
         const fw = this.getFrameWidth();
         return {
             x: fw,
@@ -629,29 +769,73 @@ class PhotoFrameMaker {
 
     // --- App mode switching ---
 
+    updateModeSlider() {
+        const active = this.appModeToggle.querySelector('.app-mode-btn.active');
+        if (!active || !this.modeSlider) return;
+        const toggleRect = this.appModeToggle.getBoundingClientRect();
+        const btnRect = active.getBoundingClientRect();
+        this.modeSlider.style.width = btnRect.width + 'px';
+        this.modeSlider.style.transform = `translateX(${btnRect.left - toggleRect.left - 3}px)`;
+    }
+
     switchAppMode(mode) {
         if (mode === this.appMode) return;
+
+        // Save current mode's image state
+        this._modeState[this.appMode] = { images: [...this.images], currentIndex: this.currentIndex };
+
         this.appMode = mode;
 
+        // Restore new mode's image state
+        const _saved = this._modeState[mode];
+        this.images = [..._saved.images];
+        this.currentIndex = _saved.images.length > 0 ? Math.min(_saved.currentIndex, _saved.images.length - 1) : 0;
+
         const isSplit = mode === 'split';
+        const isConvert = mode === 'convert';
+        const isExif = mode === 'exif';
 
         // Toggle mode buttons
         this.appModeToggle.querySelectorAll('.app-mode-btn').forEach(b =>
             b.classList.toggle('active', b.dataset.mode === mode)
         );
+        this.updateModeSlider();
 
         // Toggle split section visibility
         this.splitSection.style.display = isSplit ? '' : 'none';
         this.mobileSplitSection.style.display = isSplit ? '' : 'none';
 
-        // In split mode, force ratio based on direction and hide ratio selection
+        // Toggle convert section visibility
+        this.convertSection.style.display = isConvert ? '' : 'none';
+        this.mobileTabBtnConvert.style.display = isConvert ? '' : 'none';
+        if (!isConvert) {
+            this.tabPanelConvert.classList.remove('active');
+        }
+
+        // Toggle EXIF section visibility
+        this.exifPanel.style.display = isExif ? '' : 'none';
+        this.mobileTabBtnExif.style.display = isExif ? '' : 'none';
+        if (!isExif) {
+            this.tabPanelExif.classList.remove('active');
+        }
+
+        // In split/convert mode, force ratio based on direction and hide ratio selection
         if (isSplit) {
             this.savedRatioBeforeSplit = [...this.canvasRatio];
             this.canvasRatio = this.splitDirection === 'horizontal' ? [3, 4] : [4, 3];
             this.ratioSection.style.display = 'none';
             this.mobileRatioHeader.style.display = 'none';
             this.mobileRatioButtons.style.display = 'none';
+        } else if (isConvert || isExif) {
+            if (this.savedRatioBeforeSplit) {
+                this.canvasRatio = this.savedRatioBeforeSplit;
+                this.savedRatioBeforeSplit = null;
+            }
+            this.ratioSection.style.display = 'none';
+            this.mobileRatioHeader.style.display = 'none';
+            this.mobileRatioButtons.style.display = 'none';
         } else {
+            // frame mode: show ratio controls
             if (this.savedRatioBeforeSplit) {
                 this.canvasRatio = this.savedRatioBeforeSplit;
                 this.savedRatioBeforeSplit = null;
@@ -666,20 +850,24 @@ class PhotoFrameMaker {
         this.resetAllOffsets();
         this.updateCanvasSize();
 
-        // In split mode, hide frame controls
-        this.frameRatioSection.style.display = isSplit ? 'none' : '';
-        this.frameColorSection.style.display = isSplit ? 'none' : '';
-        this.mobileTabBtnFrame.style.display = isSplit ? 'none' : '';
-        this.mobileTabBtnColor.style.display = isSplit ? 'none' : '';
-        // Close frame/color tab panels if open when entering split mode
-        if (isSplit) {
+        // In split/convert mode, hide frame controls (exif keeps them)
+        const hideFrame = isSplit || isConvert;
+        this.frameRatioSection.style.display = hideFrame ? 'none' : '';
+        this.frameColorSection.style.display = hideFrame ? 'none' : '';
+        this.mobileTabBtnFrame.style.display = hideFrame ? 'none' : '';
+        this.mobileTabBtnColor.style.display = hideFrame ? 'none' : '';
+        // Hide favorites in convert/exif mode
+        if (this.favoritesSection) this.favoritesSection.style.display = (isConvert || isExif) ? 'none' : '';
+        // Close frame/color tab panels if open
+        if (hideFrame) {
             this.tabPanelFrame.classList.remove('active');
             this.tabPanelColor.classList.remove('active');
         }
 
-        // In split mode, hide preview mode toggle and force default view
-        this.previewModeToggle.style.display = isSplit ? 'none' : '';
-        if (isSplit && this.previewMode !== 'default') {
+        // In split/convert/exif mode, hide preview mode toggle
+        const hidePreview = isSplit || isConvert || isExif;
+        this.previewModeToggle.style.display = hidePreview ? 'none' : '';
+        if (hidePreview && this.previewMode !== 'default') {
             this.previewMode = 'default';
             this.previewModeToggle.querySelectorAll('.preview-mode-btn').forEach(b =>
                 b.classList.toggle('active', b.dataset.mode === 'default')
@@ -690,13 +878,14 @@ class PhotoFrameMaker {
         // Reset split panel
         this.splitCurrentPanel = 0;
 
-        // Re-render everything
+        // Update download label
+        this.updateDownloadLabel();
+        if (isConvert) this.syncFormatUI();
+        if (isExif) this.syncExifUI();
+
+        // Re-render everything with new mode's image state
         this.syncFramePxInputs();
-        this.render();
-        this.updateNavArrows();
-        this.updateThumbnailStrip();
-        this.updateDownloadButton();
-        this.updateInfo();
+        this.onImagesChanged();
     }
 
     setSplitCount(count) {
@@ -853,8 +1042,13 @@ class PhotoFrameMaker {
     }
 
     updatePreviewContainerSize() {
-        const [w, h] = this.canvasRatio;
-        const ratio = w / h;
+        let ratio;
+        if ((this.appMode === 'convert' || this.appMode === 'exif' || this.appMode === 'split') && this.canvas.width > 0 && this.canvas.height > 0) {
+            ratio = this.canvas.width / this.canvas.height;
+        } else {
+            const [w, h] = this.canvasRatio;
+            ratio = w / h;
+        }
 
         const parent = this.previewContainer.parentElement;
         const parentWidth = parent.clientWidth;
@@ -902,8 +1096,18 @@ class PhotoFrameMaker {
             this.previewContainer.style.marginLeft = 'auto';
             this.previewContainer.style.marginRight = 'auto';
         } else {
+            // Use .main grid cell width, not .preview-area (which we resize)
+            const previewArea = this.previewContainer.closest('.preview-area');
+            previewArea.style.width = '';
+            previewArea.style.marginLeft = '';
+            previewArea.style.marginRight = '';
+            const gridCellWidth = previewArea.parentElement.clientWidth
+                ? previewArea.parentElement.clientWidth - 300 - 24
+                : parentWidth;
+            const actualParentWidth = gridCellWidth > 0 ? gridCellWidth : parentWidth;
+
             const maxH = window.innerHeight * 0.75;
-            const availW = parentWidth - padX;
+            const availW = actualParentWidth - padX;
             const availH = maxH - padY;
 
             if (availW <= 0 || availH <= 0) return;
@@ -917,12 +1121,19 @@ class PhotoFrameMaker {
                 ch = cw / ratio;
             }
 
-            this.previewContainer.style.width = Math.round(cw + padX) + 'px';
-            this.previewContainer.style.height = Math.round(ch + padY) + 'px';
+            const cardWidth = Math.round(cw + padX);
+            this.previewContainer.style.width = '';
+            this.previewContainer.style.marginLeft = '';
+            this.previewContainer.style.marginRight = '';
             this.canvas.style.width = Math.round(cw) + 'px';
             this.canvas.style.height = Math.round(ch) + 'px';
-            this.previewContainer.style.marginLeft = 'auto';
-            this.previewContainer.style.marginRight = 'auto';
+
+            // Size the entire preview-area card to match canvas width
+            previewArea.style.width = cardWidth + 'px';
+            previewArea.style.marginLeft = 'auto';
+            previewArea.style.marginRight = 'auto';
+
+            this.previewContainer.style.height = Math.round(ch + padY) + 'px';
         }
     }
 
@@ -930,24 +1141,1258 @@ class PhotoFrameMaker {
 
     render(keepProfileCache) {
         if (!keepProfileCache) this.invalidateProfileCache();
-        const dims = this.getCanvasDimensions();
-        this.ctx.clearRect(0, 0, dims.width, dims.height);
 
-        // Draw frame background
-        this.drawFrameBackground(this.ctx, this.currentImage ? this.currentImage.image : null, dims.width, dims.height);
+        // Convert mode: show original image without frame
+        if (this.appMode === 'convert') {
+            this.renderConvertPreview();
+            this.updateMockupImages();
+            return;
+        }
 
-        // Draw image or placeholder
-        if (this.currentImage) {
+        // EXIF mode
+        if (this.appMode === 'exif') {
+            this.renderExifFrame();
+            this.updateMockupImages();
+            clearTimeout(this._saveSettingsTimer);
+            this._saveSettingsTimer = setTimeout(() => this.saveLastSettings(), 500);
+            return;
+        }
+
+        // For split mode with image, use image natural dimensions
+        let dims;
+        if (this.appMode === 'split' && this.currentImage) {
+            const img = this.currentImage.image;
+            const fw = this.getFrameWidth();
+            dims = { width: img.naturalWidth + fw * 2, height: img.naturalHeight + fw * 2 };
+            this.canvas.width = dims.width;
+            this.canvas.height = dims.height;
+            this.canvas.style.aspectRatio = `${dims.width} / ${dims.height}`;
+        } else {
+            dims = this.getCanvasDimensions();
+        }
+
+        // When no image, hide canvas and let CSS background show
+        if (!this.currentImage) {
+            this.canvas.width = dims.width;
+            this.canvas.height = dims.height;
+            this.canvas.style.aspectRatio = `${dims.width} / ${dims.height}`;
+            this.ctx.clearRect(0, 0, dims.width, dims.height);
+            this.drawPlaceholder();
+        } else {
+            this.ctx.clearRect(0, 0, dims.width, dims.height);
+
+            // Draw frame background
+            this.drawFrameBackground(this.ctx, this.currentImage.image, dims.width, dims.height);
+
+            // Draw image
             if (this.appMode === 'split') {
                 this.drawSplitImage();
             } else {
                 this.drawImage();
             }
-        } else {
-            this.drawPlaceholder();
         }
 
         this.updateMockupImages();
+
+        // Debounce save settings to localStorage
+        clearTimeout(this._saveSettingsTimer);
+        this._saveSettingsTimer = setTimeout(() => this.saveLastSettings(), 500);
+    }
+
+    renderConvertPreview() {
+        const cur = this.currentImage;
+        if (!cur) {
+            const dims = this.getCanvasDimensions();
+            this.canvas.width = dims.width;
+            this.canvas.height = dims.height;
+            this.ctx.clearRect(0, 0, dims.width, dims.height);
+            this.drawPlaceholder();
+            return;
+        }
+        const img = cur.image;
+        // Use original image dimensions (capped at 2000 for preview performance)
+        const MAX_PREVIEW = 2000;
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        if (w > MAX_PREVIEW || h > MAX_PREVIEW) {
+            if (w >= h) {
+                h = Math.round(MAX_PREVIEW * h / w);
+                w = MAX_PREVIEW;
+            } else {
+                w = Math.round(MAX_PREVIEW * w / h);
+                h = MAX_PREVIEW;
+            }
+        }
+        this.canvas.width = w;
+        this.canvas.height = h;
+        this.canvas.style.aspectRatio = `${w} / ${h}`;
+        this.ctx.clearRect(0, 0, w, h);
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+        this.ctx.drawImage(img, 0, 0, w, h);
+        this.updatePreviewContainerSize();
+    }
+
+    // --- EXIF frame rendering ---
+
+    getExifOverlayDimensions(dims) {
+        const baseW = dims.width;
+        const baseH = dims.height;
+        switch (this.exifStyle) {
+            case 'filmstrip': {
+                const stripH = Math.round(baseH * 0.10);
+                return { canvasWidth: baseW, canvasHeight: baseH + stripH * 2, imageX: 0, imageY: stripH, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + stripH, barW: baseW, barH: stripH };
+            }
+            case 'minimal':
+                return { canvasWidth: baseW, canvasHeight: baseH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: 0, barW: baseW, barH: baseH };
+            case 'magazine': {
+                const barW = Math.round(baseW * 0.09);
+                return { canvasWidth: baseW + barW, canvasHeight: baseH, imageX: barW, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: 0, barW, barH: baseH };
+            }
+            case 'signature': {
+                const barH = Math.round(baseH * 0.10);
+                return { canvasWidth: baseW, canvasHeight: baseH + barH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: baseH, barW: baseW, barH };
+            }
+            case 'letterbox': {
+                const barH = Math.round(baseH * 0.16);
+                return { canvasWidth: baseW, canvasHeight: baseH + barH * 2, imageX: 0, imageY: barH, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + barH, barW: baseW, barH };
+            }
+            case 'polaroid': {
+                const topH = Math.round(baseH * 0.04);
+                const botH = Math.round(baseH * 0.32);
+                return { canvasWidth: baseW, canvasHeight: baseH + topH + botH, imageX: 0, imageY: topH, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + topH, barW: baseW, barH: botH };
+            }
+            case 'leica': {
+                const barH = Math.round(baseH * 0.09);
+                return { canvasWidth: baseW, canvasHeight: baseH + barH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: baseH, barW: baseW, barH };
+            }
+            case 'fujistyle': {
+                const topH = Math.round(baseH * 0.09);
+                const botH = Math.round(baseH * 0.08);
+                return { canvasWidth: baseW, canvasHeight: baseH + topH + botH, imageX: 0, imageY: topH, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + topH, barW: baseW, barH: botH };
+            }
+            case 'fujirecipe': {
+                const topM = Math.round(baseH * 0.004);
+                const barH = Math.round(baseH * 0.10);
+                return { canvasWidth: baseW, canvasHeight: baseH + topM + barH, imageX: 0, imageY: topM, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + topM, barW: baseW, barH };
+            }
+            case 'glass':
+                return { canvasWidth: baseW, canvasHeight: baseH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: 0, barW: baseW, barH: baseH };
+            case 'leicalux': {
+                const barH = Math.round(baseH * 0.13);
+                return { canvasWidth: baseW, canvasHeight: baseH + barH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: baseH, barW: baseW, barH };
+            }
+            case 'instax': {
+                const sideM = Math.round(baseH * 0.026);
+                const botH  = Math.round(baseH * 0.26);
+                return { canvasWidth: baseW + sideM * 2, canvasHeight: baseH + sideM + botH, imageX: sideM, imageY: sideM, imageW: baseW, imageH: baseH, barX: sideM, barY: baseH + sideM, barW: baseW, barH: botH };
+            }
+            case 'filmstock': {
+                const stripH = Math.round(baseH * 0.11);
+                return { canvasWidth: baseW, canvasHeight: baseH + stripH * 2, imageX: 0, imageY: stripH, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + stripH, barW: baseW, barH: stripH };
+            }
+            case 'shoton': {
+                const barH = Math.round(baseH * 0.23);
+                return { canvasWidth: baseW, canvasHeight: baseH + barH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: baseH, barW: baseW, barH };
+            }
+            case 'editorial': {
+                const margin = Math.round(baseW * 0.04);
+                const barH   = Math.round(baseH * 0.23);
+                return { canvasWidth: baseW + margin * 2, canvasHeight: baseH + margin + barH, imageX: margin, imageY: margin, imageW: baseW, imageH: baseH, barX: margin, barY: baseH + margin, barW: baseW, barH };
+            }
+            case 'hud': {
+                const topH = Math.round(baseH * 0.13);
+                const botH = Math.round(baseH * 0.17);
+                return { canvasWidth: baseW, canvasHeight: baseH + topH + botH, imageX: 0, imageY: topH, imageW: baseW, imageH: baseH, barX: 0, barY: baseH + topH, barW: baseW, barH: botH };
+            }
+            case 'minimalbar': {
+                const barH = Math.max(Math.round(baseH * 0.045), Math.round(baseW * 0.028));
+                return { canvasWidth: baseW, canvasHeight: baseH + barH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: baseH, barW: baseW, barH };
+            }
+            case 'cardgrid': {
+                const barH = Math.round(baseH * 0.52);
+                return { canvasWidth: baseW, canvasHeight: baseH + barH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: baseH, barW: baseW, barH };
+            }
+            default:
+                return { canvasWidth: baseW, canvasHeight: baseH, imageX: 0, imageY: 0, imageW: baseW, imageH: baseH, barX: 0, barY: 0, barW: 0, barH: 0 };
+        }
+    }
+
+    renderExifFrame() {
+        const cur = this.currentImage;
+
+        if (!cur) {
+            const dims = this.getCanvasDimensions();
+            this.canvas.width = dims.width;
+            this.canvas.height = dims.height;
+            this.canvas.style.aspectRatio = `${dims.width} / ${dims.height}`;
+            this.ctx.clearRect(0, 0, dims.width, dims.height);
+            this.drawPlaceholder();
+            return;
+        }
+
+        const imgNW = cur.image.naturalWidth;
+        const imgNH = cur.image.naturalHeight;
+        const innerDims = { width: imgNW, height: imgNH };
+        const overlay = this.getExifOverlayDimensions(innerDims);
+        const fw = this.getFrameWidth();
+        const totalW = overlay.canvasWidth + fw * 2;
+        const totalH = overlay.canvasHeight + fw * 2;
+
+        this.canvas.width = totalW;
+        this.canvas.height = totalH;
+        this.canvas.style.aspectRatio = `${totalW} / ${totalH}`;
+        this.ctx.clearRect(0, 0, totalW, totalH);
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+
+        // Draw frame background
+        this.drawFrameBackground(this.ctx, cur.image, totalW, totalH);
+
+        // Offset overlay positions by frame width
+        const ox = { ...overlay, imageX: overlay.imageX + fw, imageY: overlay.imageY + fw, barX: overlay.barX + fw, barY: overlay.barY + fw };
+
+        // Draw image at original ratio (no crop)
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(ox.imageX, ox.imageY, ox.imageW, ox.imageH);
+        this.ctx.clip();
+        this.ctx.drawImage(cur.image, ox.imageX, ox.imageY, ox.imageW, ox.imageH);
+        this.ctx.restore();
+
+        // EXIF overlay
+        if (this.hasExifData()) {
+            this.drawExifOverlay(this.ctx, totalW, totalH, ox);
+        } else {
+            this.drawNoExifMessage(this.ctx, totalW, totalH, ox);
+        }
+
+        this.updatePreviewContainerSize();
+    }
+
+    drawExifOverlay(ctx, canvasW, canvasH, overlay) {
+        const values = this.getActiveExifValues();
+        if (values.length === 0) return;
+        switch (this.exifStyle) {
+            case 'filmstrip': this.drawFilmStripOverlay(ctx, overlay, values); break;
+            case 'minimal':   this.drawMinimalOverlay(ctx, overlay, values); break;
+            case 'magazine':  this.drawMagazineOverlay(ctx, overlay, values); break;
+            case 'signature': this.drawSignatureOverlay(ctx, overlay, values); break;
+            case 'letterbox': this.drawLetterboxOverlay(ctx, overlay, values); break;
+            case 'polaroid':  this.drawPolaroidOverlay(ctx, overlay, values); break;
+            case 'leica':     this.drawLeicaOverlay(ctx, overlay, values); break;
+            case 'fujistyle':   this.drawFujistyleOverlay(ctx, overlay, values); break;
+            case 'fujirecipe':  this.drawFujirecipeOverlay(ctx, overlay, values); break;
+            case 'glass':       this.drawGlassOverlay(ctx, overlay, values); break;
+            case 'leicalux':    this.drawLeicaluxOverlay(ctx, overlay, values); break;
+            case 'instax':      this.drawInstaxOverlay(ctx, overlay, values); break;
+            case 'filmstock':   this.drawFilmstockOverlay(ctx, overlay, values); break;
+            case 'shoton':      this.drawShotonOverlay(ctx, overlay, values); break;
+            case 'editorial':   this.drawEditorialOverlay(ctx, overlay, values); break;
+            case 'hud':         this.drawHudOverlay(ctx, overlay, values); break;
+            case 'minimalbar':  this.drawMinimalbarOverlay(ctx, overlay, values); break;
+            case 'cardgrid':    this.drawCardgridOverlay(ctx, overlay, values); break;
+        }
+    }
+
+    drawFilmStripOverlay(ctx, overlay, values) {
+        // fw = frame width (imageX offset = 0 + fw for filmstrip)
+        const fw = overlay.imageX;
+        const stripH = overlay.imageY - fw; // actual film strip height
+        if (stripH <= 0) return;
+
+        const stripX = overlay.barX;   // left edge of inner area
+        const stripW = overlay.barW;   // inner canvas width
+        const topStripY = fw;          // top strip starts after frame
+        const botStripY = overlay.barY;
+
+        const FILM_BG    = '#1c1c1c';
+        const TEXT_COLOR = '#c8bfa8'; // warm cream, like film annotation ink
+
+        // Sprocket hole proportions (based on 35mm KS/BH perforation)
+        const holeW = Math.round(stripH * 0.42);
+        const holeH = Math.round(stripH * 0.62);
+        const holeR = Math.round(holeW * 0.28);
+        const pitch  = Math.round(stripH * 0.88); // center-to-center
+        const holeVY = Math.round((stripH - holeH) / 2);
+        const nHoles = Math.max(3, Math.floor((stripW + pitch) / pitch));
+        const totalHW = (nHoles - 1) * pitch + holeW;
+        const holeStartX = Math.round((stripW - totalHW) / 2);
+
+        // Rounded rect path helper
+        const rrPath = (c, x, y, w, h, r) => {
+            c.beginPath();
+            c.moveTo(x + r, y);
+            c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+            c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+            c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+            c.closePath();
+        };
+
+        // Draw one film strip band with punched sprocket holes
+        const drawStrip = (destY) => {
+            const oc = document.createElement('canvas');
+            oc.width = stripW; oc.height = stripH;
+            const oc_ctx = oc.getContext('2d');
+
+            // Film base
+            oc_ctx.fillStyle = FILM_BG;
+            oc_ctx.fillRect(0, 0, stripW, stripH);
+
+            // Subtle horizontal grain lines
+            oc_ctx.globalAlpha = 0.035;
+            oc_ctx.fillStyle = '#ffffff';
+            for (let gy = 0; gy < stripH; gy += 2) oc_ctx.fillRect(0, gy, stripW, 1);
+            oc_ctx.globalAlpha = 1;
+
+            // Punch sprocket holes (destination-out = real transparency)
+            oc_ctx.globalCompositeOperation = 'destination-out';
+            for (let i = 0; i < nHoles; i++) {
+                rrPath(oc_ctx, holeStartX + i * pitch, holeVY, holeW, holeH, holeR);
+                oc_ctx.fill();
+            }
+            oc_ctx.globalCompositeOperation = 'source-over';
+
+            ctx.drawImage(oc, stripX, destY);
+        };
+
+        drawStrip(topStripY);
+        drawStrip(botStripY);
+
+        const fontPx  = this.getExifFontPx(overlay.imageH);
+        const annotPx = Math.max(8, Math.round(stripH * 0.30));
+        const pad     = Math.round(holeW * 0.55);
+        const midTopY = topStripY + stripH / 2;
+        const midBotY = botStripY + stripH / 2;
+
+        // Top strip: frame number annotation (right side)
+        ctx.save();
+        ctx.fillStyle = TEXT_COLOR;
+        ctx.font = `400 ${annotPx}px "Courier New", monospace`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u25C6 1A', stripX + stripW - pad, midTopY);
+        ctx.restore();
+
+        // Bottom strip: camera name (left) + exposure data (right)
+        if (values.length > 0) {
+            ctx.save();
+            ctx.textBaseline = 'middle';
+            const camVal   = values.find(v => v.key === 'camera');
+            const otherVal = values.filter(v => v.key !== 'camera');
+
+            if (camVal && otherVal.length > 0) {
+                ctx.fillStyle = TEXT_COLOR;
+                ctx.font = `500 ${Math.round(fontPx * 0.80)}px "DM Sans", sans-serif`;
+                ctx.textAlign = 'left';
+                ctx.fillText(camVal.value, stripX + pad, midBotY);
+
+                const expText = otherVal.map(v => v.value).join('  ');
+                ctx.font = `300 ${Math.round(fontPx * 0.78)}px "DM Sans", sans-serif`;
+                ctx.textAlign = 'right';
+                ctx.fillText(expText, stripX + stripW - pad, midBotY);
+            } else {
+                ctx.fillStyle = TEXT_COLOR;
+                ctx.font = `300 ${Math.round(fontPx * 0.80)}px "DM Sans", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(values.map(v => v.value).join('  ·  '), stripX + stripW / 2, midBotY, stripW * 0.8);
+            }
+            ctx.restore();
+        }
+    }
+
+    drawMinimalOverlay(ctx, overlay, values) {
+        const fontPx = this.getExifFontPx(overlay.canvasHeight);
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const padding = fontPx * 1.5;
+
+        ctx.fillStyle = textColor;
+        ctx.font = `300 ${fontPx}px "DM Sans", sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = fontPx * 0.4;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+
+        const text = values.map(v => v.value).join(` ${this.exifSeparator} `);
+        ctx.fillText(text, overlay.imageX + overlay.imageW - padding, overlay.imageY + overlay.imageH - padding);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+    }
+
+    drawMagazineOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const fontPx = this.getExifFontPx(overlay.canvasHeight);
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const barBgColor = this.resolveExifBarColor(textColor);
+
+        if (barBgColor !== 'transparent') {
+            ctx.fillStyle = barBgColor;
+            ctx.fillRect(barX, barY, barW, barH);
+        }
+
+        const brand = this.detectBrand(this.currentImage.exifData);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const centerX = barX + barW / 2;
+        const lineHeight = fontPx * 1.8;
+        let curY = barY + barH * 0.12;
+
+        // Brand name vertically
+        if (brand) {
+            ctx.font = `600 ${Math.round(fontPx * 1.3)}px "DM Sans", sans-serif`;
+            ctx.fillStyle = brand.accent;
+            const chars = brand.name.split('');
+            chars.forEach((char) => {
+                ctx.fillText(char, centerX, curY);
+                curY += fontPx * 1.4;
+            });
+            curY += lineHeight * 0.5;
+        }
+
+        // EXIF values
+        ctx.font = `400 ${fontPx}px "DM Sans", sans-serif`;
+        ctx.fillStyle = textColor;
+        values.forEach((v) => {
+            ctx.fillText(v.value, centerX, curY, barW * 0.85);
+            curY += lineHeight;
+        });
+    }
+
+    drawSignatureOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const fontPx = this.getExifFontPx(overlay.canvasHeight);
+        const brand = this.detectBrand(this.currentImage.exifData);
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const barBgColor = this.resolveExifBarColor(textColor);
+
+        if (barBgColor !== 'transparent') {
+            ctx.fillStyle = barBgColor;
+            ctx.fillRect(barX, barY, barW, barH);
+        }
+
+        // Line 1: Brand name or camera
+        const brandY = barY + barH * 0.35;
+        if (brand) {
+            ctx.font = `700 ${Math.round(fontPx * 1.6)}px "Playfair Display", serif`;
+            ctx.fillStyle = brand.accent;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(brand.name, barX + barW / 2, brandY);
+        } else {
+            const cameraVal = values.find(v => v.key === 'camera');
+            if (cameraVal) {
+                ctx.font = `700 ${Math.round(fontPx * 1.4)}px "DM Sans", sans-serif`;
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(cameraVal.value, barX + barW / 2, brandY);
+            }
+        }
+
+        // Line 2: Settings
+        const settingsValues = values.filter(v => v.key !== 'camera');
+        if (settingsValues.length > 0) {
+            const settingsY = barY + barH * 0.70;
+            ctx.font = `400 ${fontPx}px "DM Sans", sans-serif`;
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const text = settingsValues.map(v => v.value).join(` ${this.exifSeparator} `);
+            ctx.fillText(text, barX + barW / 2, settingsY, barW * 0.9);
+        }
+    }
+
+    drawLetterboxOverlay(ctx, overlay, values) {
+        const fw   = overlay.imageX;
+        const barH = overlay.imageY - fw;
+        if (barH <= 0) return;
+        const barW = overlay.barW;
+        const barX = overlay.barX;
+        const topY = fw;
+        const botY = overlay.barY;
+
+        const DARK  = '#0c0c0c';
+        const TEXT  = '#e0e0e0';
+        const MUTED = '#787878';
+
+        ctx.fillStyle = DARK;
+        ctx.fillRect(barX, topY, barW, barH);
+        ctx.fillRect(barX, botY, barW, barH);
+
+        // Subtle separator line at top of bottom bar
+        ctx.strokeStyle = '#2a2a2a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(barX, botY); ctx.lineTo(barX + barW, botY);
+        ctx.stroke();
+
+        const fontPx    = this.getExifFontPx(overlay.imageH);
+        const pad       = Math.round(barW * 0.04);
+        const camVal    = values.find(v => v.key === 'camera');
+        const otherVals = values.filter(v => v.key !== 'camera');
+
+        ctx.save();
+        ctx.textBaseline = 'middle';
+        if (camVal && otherVals.length > 0) {
+            ctx.fillStyle = TEXT;
+            ctx.font = `600 ${Math.round(fontPx * 0.92)}px "Courier New", monospace`;
+            ctx.textAlign = 'left';
+            ctx.fillText(camVal.value.toUpperCase(), barX + pad, botY + barH * 0.34);
+            ctx.fillStyle = MUTED;
+            ctx.font = `400 ${Math.round(fontPx * 0.76)}px "Courier New", monospace`;
+            ctx.fillText(otherVals.map(v => v.value).join('   '), barX + pad, botY + barH * 0.70);
+        } else {
+            ctx.fillStyle = TEXT;
+            ctx.font = `500 ${Math.round(fontPx * 0.88)}px "Courier New", monospace`;
+            ctx.textAlign = 'center';
+            ctx.fillText(values.map(v => v.value).join('  '), barX + barW / 2, botY + barH / 2, barW * 0.85);
+        }
+        ctx.restore();
+    }
+
+    drawPolaroidOverlay(ctx, overlay, values) {
+        const fw  = overlay.imageX;
+        const topH = overlay.imageY - fw;
+        const { barX, barY, barW, barH } = overlay;
+
+        const CREAM = '#f5f0e8';
+        const TEXT  = '#3a3a3a';
+        const MUTED = '#9a9a9a';
+
+        if (topH > 0) {
+            ctx.fillStyle = CREAM;
+            ctx.fillRect(barX, fw, barW, topH);
+        }
+        ctx.fillStyle = CREAM;
+        ctx.fillRect(barX, barY, barW, barH);
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(barX, barY); ctx.lineTo(barX + barW, barY);
+        ctx.stroke();
+
+        const fontPx    = this.getExifFontPx(overlay.imageH);
+        const camVal    = values.find(v => v.key === 'camera');
+        const otherVals = values.filter(v => v.key !== 'camera');
+
+        ctx.save();
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        if (camVal) {
+            ctx.fillStyle = TEXT;
+            ctx.font = `400 ${Math.round(fontPx * 1.05)}px "DM Sans", sans-serif`;
+            ctx.fillText('Shot on ' + camVal.value, barX + barW / 2, barY + barH * (otherVals.length > 0 ? 0.36 : 0.50), barW * 0.82);
+        }
+        if (otherVals.length > 0) {
+            ctx.fillStyle = MUTED;
+            ctx.font = `300 ${Math.round(fontPx * 0.82)}px "DM Sans", sans-serif`;
+            ctx.fillText(otherVals.map(v => v.value).join('  ·  '), barX + barW / 2, barY + barH * (camVal ? 0.65 : 0.50), barW * 0.80);
+        }
+        ctx.restore();
+    }
+
+    drawLeicaOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const isDark    = textColor === '#FFFFFF';
+
+        const BG    = isDark ? '#111111' : '#f8f5f0';
+        const MAIN  = isDark ? '#ece8e2' : '#1a1a1a';
+        const MUTED = isDark ? '#7a7a7a' : '#9a9a9a';
+        const RED   = '#CC1818';
+
+        ctx.fillStyle = BG;
+        ctx.fillRect(barX, barY, barW, barH);
+        // Leica-red top accent line
+        ctx.fillStyle = RED;
+        ctx.fillRect(barX, barY, barW, Math.max(1, Math.round(barH * 0.025)));
+
+        const fontPx    = this.getExifFontPx(overlay.imageH);
+        const pad       = Math.round(barW * 0.04);
+        const dotR      = Math.round(barH * 0.10);
+        const camVal    = values.find(v => v.key === 'camera');
+        const otherVals = values.filter(v => v.key !== 'camera');
+
+        ctx.save();
+        ctx.textBaseline = 'middle';
+
+        // Red dot (left)
+        ctx.fillStyle = RED;
+        ctx.beginPath();
+        ctx.arc(barX + pad + dotR, barY + barH / 2, dotR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Camera name: italic serif, right-aligned
+        if (camVal) {
+            ctx.fillStyle = MAIN;
+            ctx.font = `italic 700 ${Math.round(fontPx * 1.05)}px "Playfair Display", serif`;
+            ctx.textAlign = 'right';
+            ctx.fillText(camVal.value, barX + barW - pad, barY + barH * (otherVals.length > 0 ? 0.32 : 0.50), barW * 0.65);
+        }
+        // Settings: light sans, right-aligned
+        if (otherVals.length > 0) {
+            ctx.fillStyle = MUTED;
+            ctx.font = `300 ${Math.round(fontPx * 0.80)}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.fillText(otherVals.map(v => v.value).join('  ·  '), barX + barW - pad, barY + barH * (camVal ? 0.72 : 0.50), barW * 0.65);
+        }
+        ctx.restore();
+    }
+
+    drawFujistyleOverlay(ctx, overlay, values) {
+        const fw  = overlay.imageX;
+        const topH = overlay.imageY - fw;
+        const { barX, barY, barW, barH } = overlay;
+
+        const brand   = this.detectBrand(this.currentImage?.exifData);
+        const ACCENT  = brand?.accent  || '#4a7c59';
+        const PRIMARY = brand?.primary || '#1c1c1c';
+
+        // Top bar: accent color + camera name
+        if (topH > 0) {
+            ctx.fillStyle = ACCENT;
+            ctx.fillRect(barX, fw, barW, topH);
+
+            const camVal = values.find(v => v.key === 'camera');
+            const topPx  = Math.max(9, Math.round(topH * 0.40));
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.font = `700 ${topPx}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(
+                (camVal ? camVal.value : 'PHOTO FRAME MAKER').toUpperCase(),
+                barX + barW / 2, fw + topH / 2, barW * 0.85
+            );
+            ctx.restore();
+        }
+
+        // Bottom bar: dark + settings
+        ctx.fillStyle = PRIMARY;
+        ctx.fillRect(barX, barY, barW, barH);
+        // Thin accent stripe at top of bottom bar
+        ctx.fillStyle = ACCENT;
+        ctx.fillRect(barX, barY, barW, Math.max(1, Math.round(barH * 0.04)));
+
+        const otherVals = values.filter(v => v.key !== 'camera');
+        if (otherVals.length > 0) {
+            const botPx = Math.max(8, Math.round(barH * 0.38));
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,0.78)';
+            ctx.font = `300 ${botPx}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(otherVals.map(v => v.value).join('  ·  '), barX + barW / 2, barY + barH / 2, barW * 0.85);
+            ctx.restore();
+        }
+    }
+
+    // ── New EXIF styles ──────────────────────────────────────────────────
+
+    drawFujirecipeOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH, imageX, imageY } = overlay;
+        const fw   = this.getFrameWidth();
+        const topM = imageY - fw;
+        const BG = '#FAFAF5', DIV = '#E0DDD5', TEXT1 = '#2C2C2A', TEXT2 = '#8A8A82', TEXT3 = '#A0A098';
+        if (topM > 0) { ctx.fillStyle = BG; ctx.fillRect(barX, fw, barW, topM); }
+        ctx.fillStyle = BG;
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.strokeStyle = DIV; ctx.lineWidth = Math.max(1, Math.round(overlay.imageH * 0.0006));
+        ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX + barW, barY); ctx.stroke();
+
+        const fp  = this.getExifFontPx(overlay.imageH);
+        const pad = Math.round(barW * 0.044);
+        const camVal  = values.find(v => v.key === 'camera');
+        const lensVal = values.find(v => v.key === 'lens');
+        const dateVal = values.find(v => v.key === 'date');
+        ctx.save(); ctx.textBaseline = 'middle';
+
+        // Line 1 left: film sim / camera name
+        const filmName = camVal ? camVal.value.toUpperCase() : 'STANDARD';
+        ctx.fillStyle = TEXT1; ctx.font = `600 ${Math.round(fp * 0.95)}px "Courier New", monospace`;
+        ctx.textAlign = 'left'; ctx.fillText(filmName, barX + pad, barY + barH * 0.35, barW * 0.54);
+
+        // Line 1 right: date as '24 06 15
+        if (dateVal) {
+            const parts = dateVal.value.split('.');
+            const short = parts.length >= 3 ? `'${parts[0].slice(2)} ${parts[1]} ${parts[2]}` : dateVal.value;
+            ctx.fillStyle = TEXT2; ctx.font = `400 ${Math.round(fp * 0.84)}px "Courier New", monospace`;
+            ctx.textAlign = 'right'; ctx.fillText(short, barX + barW - pad, barY + barH * 0.35);
+        }
+
+        // Line 2: camera · lens
+        const meta = [camVal?.value, lensVal?.value].filter(Boolean).join(' · ');
+        if (meta) {
+            ctx.fillStyle = TEXT3; ctx.font = `400 ${Math.round(fp * 0.74)}px "Courier New", monospace`;
+            ctx.textAlign = 'left'; ctx.fillText(meta, barX + pad, barY + barH * 0.72, barW * 0.85);
+        }
+        ctx.restore();
+    }
+
+    drawGlassOverlay(ctx, overlay, values) {
+        const { imageX, imageY, imageW, imageH } = overlay;
+        const fp  = this.getExifFontPx(imageH);
+        const pad = Math.round(imageW * 0.042);
+        const camVal  = values.find(v => v.key === 'camera');
+        const lensVal = values.find(v => v.key === 'lens');
+        const others  = values.filter(v => v.key !== 'camera' && v.key !== 'lens' && v.key !== 'date');
+        const cardH   = Math.round(fp * 5.2);
+        const ipad    = Math.round(cardH * 0.18);
+
+        // measure text widths to auto-size card
+        const line1 = camVal?.value || '';
+        const line2 = [lensVal?.value, ...others.map(v => v.value)].filter(Boolean).join(' · ');
+        ctx.font = `600 ${Math.round(fp * 1.05)}px "DM Sans", sans-serif`;
+        const w1 = line1 ? ctx.measureText(line1).width : 0;
+        ctx.font = `400 ${Math.round(fp * 0.80)}px "DM Sans", sans-serif`;
+        const w2 = line2 ? ctx.measureText(line2).width : 0;
+        const cardW   = Math.min(Math.round(Math.max(w1, w2) + ipad * 2), imageW - pad * 2);
+
+        const cardX   = imageX + pad;
+        const cardY   = imageY + imageH - cardH - pad;
+        const r       = Math.round(cardH * 0.22);
+
+        ctx.save();
+        // frosted glass base
+        ctx.globalAlpha = 0.20; ctx.fillStyle = '#FFFFFF';
+        _roundRect(ctx, cardX, cardY, cardW, cardH, r); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+        ctx.lineWidth = Math.max(1, Math.round(imageH * 0.0008));
+        _roundRect(ctx, cardX, cardY, cardW, cardH, r); ctx.stroke();
+
+        const tx = cardX + ipad;
+        ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = Math.round(fp * 0.35);
+        if (line1) {
+            ctx.fillStyle = '#FFFFFF'; ctx.font = `600 ${Math.round(fp * 1.05)}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText(line1, tx, cardY + cardH * 0.36);
+        }
+        if (line2) {
+            ctx.fillStyle = 'rgba(255,255,255,0.82)'; ctx.font = `400 ${Math.round(fp * 0.80)}px "DM Sans", sans-serif`;
+            ctx.shadowBlur = Math.round(fp * 0.18);
+            ctx.fillText(line2, tx, cardY + cardH * 0.70);
+        }
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+
+    drawLeicaluxOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const isDark = textColor === '#FFFFFF';
+        const BG = isDark ? '#000000' : '#FFFFFF';
+        const PRIMARY = isDark ? '#FFFFFF' : '#000000';
+        const SECONDARY = isDark ? '#666666' : '#888888';
+        ctx.fillStyle = BG; ctx.fillRect(barX, barY, barW, barH);
+
+        const fp  = this.getExifFontPx(overlay.imageH);
+        const pad = Math.round(barW * 0.044);
+        const brand = this.detectBrand(this.currentImage?.exifData);
+        const dotColor = { sony: null, nikon: '#FFD100', canon: '#BC0024', fujifilm: '#006C3E', leica: '#E60012' }[brand?.key] || '#E60012';
+        const camVal   = values.find(v => v.key === 'camera');
+        const apVal    = values.find(v => v.key === 'aperture');
+        const focalVal = values.find(v => v.key === 'focalLength');
+        const shutVal  = values.find(v => v.key === 'shutter');
+        const isoVal   = values.find(v => v.key === 'iso');
+        const midY = barY + barH / 2;
+
+        ctx.save(); ctx.textBaseline = 'middle';
+        // Red/brand dot (left)
+        const dotR = Math.round(barH * 0.085);
+        if (brand?.key !== 'sony') {
+            ctx.fillStyle = dotColor;
+            ctx.beginPath(); ctx.arc(barX + pad + dotR, midY, dotR, 0, Math.PI * 2); ctx.fill();
+        }
+        // Brand name
+        const brandName = (brand ? brand.name : (camVal?.value?.split(' ')[0] || 'CAMERA')).toUpperCase();
+        ctx.fillStyle = PRIMARY; ctx.font = `700 ${Math.round(fp * 0.80)}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        ctx.textAlign = 'left';
+        const dotGap = brand?.key !== 'sony' ? dotR * 2 + Math.round(barW * 0.016) : 0;
+        ctx.fillText(brandName, barX + pad + dotGap, midY, barW * 0.28);
+        // Right: focal+aperture / shutter+ISO
+        const l1 = [focalVal?.value, apVal?.value].filter(Boolean).join('  ');
+        const l2 = [shutVal?.value, isoVal?.value].filter(Boolean).join('  ');
+        if (l1) {
+            ctx.fillStyle = PRIMARY; ctx.font = `300 ${Math.round(fp * 0.98)}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+            ctx.fillText(l1, barX + barW - pad, barY + barH * 0.34);
+        }
+        if (l2) {
+            ctx.fillStyle = SECONDARY; ctx.font = `300 ${Math.round(fp * 0.76)}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+            ctx.fillText(l2, barX + barW - pad, barY + barH * 0.68);
+        }
+        ctx.restore();
+    }
+
+    drawInstaxOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH, imageX, imageY, imageW, imageH } = overlay;
+        const fw   = this.getFrameWidth();
+        const sideM = imageX - fw;
+        const CREAM = '#FAF9F6', TEXT = '#3A3A38', MUTED = '#6A6A65', DATE_C = '#8A8A82';
+        // Fill outer paper area (four zones around the photo — do NOT cover the photo)
+        ctx.fillStyle = CREAM;
+        ctx.fillRect(fw, fw, sideM, imageY - fw + imageH + barH);           // left strip
+        ctx.fillRect(imageX + imageW, fw, sideM, imageY - fw + imageH + barH); // right strip
+        ctx.fillRect(imageX, fw, imageW, sideM);                             // top strip
+        ctx.fillRect(barX, barY, barW, barH);                                // bottom bar
+        // Very subtle top-of-bar shadow
+        const grad = ctx.createLinearGradient(0, barY, 0, barY + Math.round(barH * 0.15));
+        grad.addColorStop(0, 'rgba(0,0,0,0.04)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad; ctx.fillRect(barX, barY, barW, Math.round(barH * 0.15));
+        // Photo subtle border
+        ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
+        ctx.strokeRect(imageX, imageY, imageW, imageH);
+
+        const fp   = this.getExifFontPx(imageH);
+        const padL = Math.round(barW * 0.065);
+        const camVal   = values.find(v => v.key === 'camera');
+        const focalVal = values.find(v => v.key === 'focalLength');
+        const apVal    = values.find(v => v.key === 'aperture');
+        const isoVal   = values.find(v => v.key === 'iso');
+        const dateVal  = values.find(v => v.key === 'date');
+        ctx.save();
+        if (camVal) {
+            ctx.fillStyle = TEXT; ctx.font = `400 ${Math.round(fp * 1.28)}px "Caveat", cursive`;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText(camVal.value, barX + padL, barY + Math.round(barH * 0.14), barW * 0.65);
+        }
+        const exif = [focalVal?.value, apVal?.value, isoVal?.value].filter(Boolean);
+        if (exif.length) {
+            ctx.fillStyle = MUTED; ctx.font = `400 ${Math.round(fp * 1.02)}px "Caveat", cursive`;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText(exif.join('  '), barX + padL, barY + Math.round(barH * 0.44), barW * 0.65);
+        }
+        if (dateVal) {
+            ctx.fillStyle = DATE_C; ctx.font = `400 ${Math.round(fp * 0.94)}px "Caveat", cursive`;
+            ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+            ctx.fillText(dateVal.value, barX + barW - padL, barY + barH - Math.round(barH * 0.10));
+        }
+        ctx.restore();
+    }
+
+    drawFilmstockOverlay(ctx, overlay, values) {
+        const fw      = this.getFrameWidth();
+        const stripH  = overlay.imageY - fw;
+        if (stripH <= 0) return;
+        const stripW  = overlay.barW;
+        const stripX  = overlay.barX;
+        const topY    = fw;
+        const botY    = overlay.barY;
+        const brand   = this.detectBrand(this.currentImage?.exifData);
+        // Film stock color schemes
+        const schemes = {
+            fujifilm: { base: '#1A2420', text: '#6DB38A', accent: '#40A060' },
+            canon:    { base: '#1E1418', text: '#E8E0D0', accent: '#BC0024' },
+            nikon:    { base: '#1A1A18', text: '#C8C0A8', accent: '#FFD100' },
+            default:  { base: '#2D2419', text: '#D4A853', accent: '#E8A020' },
+        };
+        const sc = schemes[brand?.key] || schemes.default;
+
+        // Draw film base strips
+        ctx.fillStyle = sc.base;
+        ctx.fillRect(stripX, topY, stripW, stripH);
+        ctx.fillRect(stripX, botY, stripW, stripH);
+
+        // Sprocket holes (punch transparent)
+        const holeW = Math.round(stripH * 0.55);
+        const holeH = Math.round(stripH * 0.72);
+        const holeR = Math.round(holeW * 0.38);
+        const holeY = (y) => y + (stripH - holeH) / 2;
+        const spacing = Math.round(holeW * 2.0);
+        const offscreen = document.createElement('canvas');
+        offscreen.width = stripW; offscreen.height = stripH;
+        const oc = offscreen.getContext('2d');
+        oc.fillStyle = sc.base; oc.fillRect(0, 0, stripW, stripH);
+        // Subtle grain
+        for (let i = 0; i < 1200; i++) {
+            const gx = Math.random() * stripW, gy = Math.random() * stripH;
+            oc.fillStyle = `rgba(255,255,255,${Math.random() * 0.04})`;
+            oc.fillRect(gx, gy, 1, 1);
+        }
+        oc.globalCompositeOperation = 'destination-out';
+        for (let x = Math.round(spacing * 0.4); x < stripW; x += spacing) {
+            _roundRect(oc, x - holeW / 2, (stripH - holeH) / 2, holeW, holeH, holeR);
+            oc.fill();
+        }
+        [topY, botY].forEach(sy => ctx.drawImage(offscreen, stripX, sy));
+        offscreen.width = 0;
+
+        // Film edge text
+        const fp    = Math.max(8, Math.round(stripH * 0.30));
+        const midT  = topY + stripH / 2;
+        const midB  = botY + stripH / 2;
+        const padX  = Math.round(holeW * 0.6);
+        ctx.save(); ctx.textBaseline = 'middle'; ctx.fillStyle = sc.text;
+        // Top strip: frame numbers + film brand
+        ctx.font = `900 ${fp}px "Courier New", monospace`;
+        ctx.textAlign = 'left'; ctx.fillText('◀ 5', stripX + padX, midT);
+        ctx.textAlign = 'center';
+        const brandLabel = (brand ? brand.name.toUpperCase() : 'KODAK') + ' 400';
+        ctx.font = `700 ${fp}px "Courier New", monospace`;
+        ctx.globalAlpha = 0.78; ctx.fillText('▶ ' + brandLabel, stripX + stripW / 2, midT);
+        ctx.globalAlpha = 1; ctx.textAlign = 'right';
+        ctx.font = `900 ${fp}px "Courier New", monospace`; ctx.fillText('6 ▶', stripX + stripW - padX, midT);
+        // Bottom strip: EXIF data
+        ctx.font = `400 ${fp}px "Courier New", monospace`;
+        ctx.textAlign = 'center'; ctx.globalAlpha = 0.80;
+        const exifLine = values.map(v => v.value).join('  ');
+        ctx.fillText(exifLine, stripX + stripW / 2, midB, stripW * 0.88);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    drawShotonOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const isDark = textColor === '#FFFFFF';
+        const BG = isDark ? '#000000' : '#FFFFFF';
+        const TEXT1 = isDark ? '#F0F0F0' : '#1A1A1A';
+        const TEXT2 = isDark ? '#777777' : '#888888';
+        const TEXT3 = isDark ? '#555555' : '#AAAAAA';
+        const DIV   = isDark ? '#222222' : '#EEEEEE';
+        ctx.fillStyle = BG; ctx.fillRect(barX, barY, barW, barH);
+        // Top divider
+        ctx.strokeStyle = DIV; ctx.lineWidth = Math.max(1, Math.round(overlay.imageH * 0.0005));
+        ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX + barW, barY); ctx.stroke();
+
+        const fp   = this.getExifFontPx(overlay.imageH);
+        const pad  = Math.round(barW * 0.044);
+        const brand = this.detectBrand(this.currentImage?.exifData);
+        const camVal  = values.find(v => v.key === 'camera');
+        const lensVal = values.find(v => v.key === 'lens');
+        const apVal   = values.find(v => v.key === 'aperture');
+        const shutVal = values.find(v => v.key === 'shutter');
+        const isoVal  = values.find(v => v.key === 'iso');
+
+        // Row 1: Logo circle + camera/lens
+        const logoR = Math.round(fp * 1.6);
+        const logoX = barX + pad + logoR;
+        const logoY = barY + barH * 0.30;
+        ctx.save();
+        ctx.fillStyle = isDark ? '#2A2A2A' : '#F5F5F5';
+        ctx.beginPath(); ctx.arc(logoX, logoY, logoR, 0, Math.PI * 2); ctx.fill();
+        // Brand initial in circle
+        const initial = brand ? brand.name[0].toUpperCase() : (camVal?.value?.[0] || '?');
+        ctx.fillStyle = brand?.accent || TEXT1;
+        ctx.font = `700 ${Math.round(fp * 0.88)}px "DM Sans", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(initial, logoX, logoY);
+        // Camera name + lens
+        const textStartX = barX + pad + logoR * 2 + Math.round(barW * 0.02);
+        ctx.fillStyle = TEXT1; ctx.font = `600 ${Math.round(fp * 1.06)}px "DM Sans", sans-serif`;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(camVal?.value || 'Camera', textStartX, barY + barH * 0.24, barW * 0.55);
+        ctx.fillStyle = TEXT2; ctx.font = `400 ${Math.round(fp * 0.80)}px "DM Sans", sans-serif`;
+        ctx.fillText(lensVal?.value || '', textStartX, barY + barH * 0.38, barW * 0.55);
+
+        // Dashed row divider
+        const divY = Math.round(barY + barH * 0.52);
+        ctx.setLineDash([Math.round(fp * 0.4), Math.round(fp * 0.4)]);
+        ctx.strokeStyle = DIV; ctx.lineWidth = Math.max(1, Math.round(barH * 0.008));
+        ctx.beginPath(); ctx.moveTo(barX + pad, divY); ctx.lineTo(barX + barW - pad, divY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Row 2: 3-column EXIF grid
+        const cols = [
+            { val: apVal?.value || '—',   label: 'APERTURE' },
+            { val: shutVal?.value || '—', label: 'SHUTTER' },
+            { val: isoVal?.value || '—',  label: 'ISO' },
+        ];
+        const colW = barW / 3;
+        cols.forEach((col, i) => {
+            const cx = barX + colW * i + colW / 2;
+            // Column divider
+            if (i > 0) {
+                ctx.strokeStyle = DIV; ctx.lineWidth = 1; ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(barX + colW * i, divY + Math.round(barH * 0.06));
+                ctx.lineTo(barX + colW * i, barY + barH - Math.round(barH * 0.06));
+                ctx.stroke();
+            }
+            ctx.fillStyle = TEXT1; ctx.font = `600 ${Math.round(fp * 1.14)}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(col.val, cx, barY + barH * 0.71);
+            ctx.fillStyle = TEXT3; ctx.font = `400 ${Math.round(fp * 0.63)}px "DM Sans", sans-serif`;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(col.label, cx, barY + barH * 0.87);
+        });
+        ctx.restore();
+    }
+
+    drawEditorialOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH, imageX, imageY } = overlay;
+        const fw   = this.getFrameWidth();
+        const margin = imageX - fw;
+        const BG = '#FFFFFF', RULE1 = '#1A1A1A', RULE2 = '#CCCCCC';
+        const C1 = '#1A1A1A', C2 = '#555555', C3 = '#888888', C4 = '#AAAAAA';
+        // Fill margin areas
+        ctx.fillStyle = BG;
+        ctx.fillRect(fw, fw, imageX - fw, overlay.imageH + margin); // left margin
+        ctx.fillRect(imageX + barW, fw, margin, overlay.imageH + margin); // right margin
+        ctx.fillRect(barX, barY, barW, barH + fw); // text area
+
+        const fp = this.getExifFontPx(overlay.imageH);
+        const camVal   = values.find(v => v.key === 'camera');
+        const lensVal  = values.find(v => v.key === 'lens');
+        const apVal    = values.find(v => v.key === 'aperture');
+        const shutVal  = values.find(v => v.key === 'shutter');
+        const isoVal   = values.find(v => v.key === 'iso');
+        const focalVal = values.find(v => v.key === 'focalLength');
+        const dateVal  = values.find(v => v.key === 'date');
+
+        const ruleX = barX, ruleW = barW;
+        let y = barY + Math.round(barH * 0.06);
+        // Upper thick rule
+        ctx.fillStyle = RULE1; ctx.fillRect(ruleX, y, ruleW, Math.max(2, Math.round(barH * 0.012)));
+        y += Math.round(barH * 0.18);
+
+        ctx.save(); ctx.textBaseline = 'top';
+        if (camVal) {
+            ctx.fillStyle = C1; ctx.font = `700 ${Math.round(fp * 1.04)}px "Playfair Display", "Noto Serif", Georgia, serif`;
+            ctx.textAlign = 'left'; ctx.fillText(camVal.value, ruleX, y, ruleW * 0.9);
+            y += Math.round(fp * 1.4);
+        }
+        if (lensVal) {
+            ctx.fillStyle = C2; ctx.font = `italic 400 ${Math.round(fp * 0.85)}px "Playfair Display", "Noto Serif", Georgia, serif`;
+            ctx.fillText(lensVal.value, ruleX, y, ruleW * 0.9); y += Math.round(fp * 1.8);
+        }
+        const exif1 = [apVal && `Aperture ${apVal.value}`, shutVal && `Shutter ${shutVal.value}`].filter(Boolean).join('  ·  ');
+        const exif2 = [isoVal?.value, focalVal && `Focal ${focalVal.value}`].filter(Boolean).join('  ·  ');
+        ctx.fillStyle = C3; ctx.font = `400 ${Math.round(fp * 0.72)}px "DM Sans", sans-serif`;
+        if (exif1) { ctx.fillText(exif1, ruleX, y, ruleW * 0.9); y += Math.round(fp * 1.1); }
+        if (exif2) { ctx.fillText(exif2, ruleX, y, ruleW * 0.9); y += Math.round(fp * 1.7); }
+        if (dateVal) {
+            ctx.fillStyle = C4; ctx.font = `300 ${Math.round(fp * 0.65)}px "DM Sans", sans-serif`;
+            ctx.fillText(dateVal.value, ruleX, y, ruleW * 0.9); y += Math.round(fp * 1.6);
+        }
+        // Lower thin rule
+        ctx.fillStyle = RULE2; ctx.fillRect(ruleX, y, ruleW, Math.max(1, Math.round(barH * 0.007)));
+        ctx.restore();
+    }
+
+    drawHudOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH, imageX, imageY, imageW, imageH } = overlay;
+        const fw   = this.getFrameWidth();
+        const topH = imageY - fw;
+        const BG   = '#0A0A0A';
+        const VAL  = '#FFFFFF', LABEL = '#555555', INFO = '#666666';
+        // Background strips
+        ctx.fillStyle = BG;
+        ctx.fillRect(fw, fw, barW, topH);
+        ctx.fillRect(barX, barY, barW, barH);
+        // Photo border
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = Math.max(1, Math.round(imageH * 0.001));
+        ctx.strokeRect(imageX, imageY, imageW, imageH);
+
+        const fp   = this.getExifFontPx(imageH);
+        const pad  = Math.round(barW * 0.044);
+        const camVal   = values.find(v => v.key === 'camera');
+        const lensVal  = values.find(v => v.key === 'lens');
+        const apVal    = values.find(v => v.key === 'aperture');
+        const isoVal   = values.find(v => v.key === 'iso');
+        const focalVal = values.find(v => v.key === 'focalLength');
+        const shutVal  = values.find(v => v.key === 'shutter');
+        const dateVal  = values.find(v => v.key === 'date');
+        const valPx    = Math.round(fp * 1.30);
+        const lblPx    = Math.round(Math.max(7, fp * 0.56));
+        const midTopY  = fw + topH / 2;
+
+        ctx.save();
+        // Corner helper
+        const drawCorner = (tx, ty, alignH, val, label) => {
+            ctx.fillStyle = VAL; ctx.font = `700 ${valPx}px "JetBrains Mono", "SF Mono", monospace`;
+            ctx.textAlign = alignH; ctx.textBaseline = 'middle';
+            ctx.fillText(val, tx, ty - Math.round(fp * 0.55));
+            ctx.fillStyle = LABEL; ctx.font = `500 ${lblPx}px "DM Sans", sans-serif`;
+            ctx.fillText(label.toUpperCase(), tx, ty + Math.round(fp * 0.55));
+        };
+        // Top-left: aperture
+        if (apVal)    drawCorner(barX + pad, midTopY, 'left',  apVal.value,    'APERTURE');
+        // Top-right: ISO
+        if (isoVal)   drawCorner(barX + barW - pad, midTopY, 'right', isoVal.value,   'ISO');
+        // Bottom-left: focal
+        const botCornerY = barY + Math.round(barH * 0.30);
+        if (focalVal) drawCorner(barX + pad, botCornerY, 'left', focalVal.value, 'FOCAL LENGTH');
+        // Bottom-right: shutter
+        if (shutVal)  drawCorner(barX + barW - pad, botCornerY, 'right', shutVal.value,  'SHUTTER SPEED');
+
+        // Bottom info bar (camera · lens — date)
+        const infoY = barY + barH * 0.72;
+        const camLens = [camVal?.value, lensVal?.value].filter(Boolean).join(' · ');
+        ctx.fillStyle = INFO; ctx.font = `400 ${Math.round(fp * 0.62)}px "DM Sans", sans-serif`;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(camLens, barX + pad, infoY, barW * 0.62);
+        if (dateVal) {
+            ctx.textAlign = 'right';
+            ctx.fillText(dateVal.value, barX + barW - pad, infoY);
+        }
+        ctx.restore();
+    }
+
+    drawMinimalbarOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const isDark = textColor === '#FFFFFF';
+        const BG  = isDark ? '#111111' : '#FFFFFF';
+        const TXT = isDark ? '#666666' : '#999999';
+        const DIV = isDark ? '#333333' : '#E0E0E0';
+        ctx.fillStyle = BG; ctx.fillRect(barX, barY, barW, barH);
+        // Hairline divider
+        ctx.strokeStyle = DIV; ctx.lineWidth = Math.max(0.5, Math.round(barH * 0.015));
+        ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX + barW, barY); ctx.stroke();
+
+        const fp  = Math.max(9, Math.round(barH * 0.30));
+        const pad = Math.round(barW * 0.032);
+        const sep = ' · ';
+        const dateVal = values.find(v => v.key === 'date');
+        const main = values.filter(v => v.key !== 'date').map(v => v.value).join(sep);
+        ctx.save();
+        ctx.fillStyle = TXT; ctx.font = `400 ${fp}px "Inter", "Pretendard", "Helvetica Neue", sans-serif`;
+        ctx.textBaseline = 'middle'; const midY = barY + barH / 2;
+        // Check if single line fits
+        const fullLine = [main, dateVal?.value].filter(Boolean).join(sep);
+        ctx.textAlign = 'left';
+        const lineW = ctx.measureText(fullLine).width;
+        if (lineW <= barW - pad * 2) {
+            ctx.fillText(fullLine, barX + pad, midY, barW - pad * 2);
+        } else {
+            // Two lines: main left + date right
+            ctx.fillText(main, barX + pad, barY + barH * 0.30, barW * 0.72);
+            if (dateVal) {
+                ctx.textAlign = 'right';
+                ctx.fillText(dateVal.value, barX + barW - pad, barY + barH * 0.72);
+            }
+        }
+        ctx.restore();
+    }
+
+    drawCardgridOverlay(ctx, overlay, values) {
+        const { barX, barY, barW, barH } = overlay;
+        const textColor = this.resolveExifTextColor(ctx, overlay.imageW, overlay.imageH);
+        const isDark = textColor === '#FFFFFF';
+        const BG    = isDark ? '#1A1A1A' : '#FFFFFF';
+        const CARD  = isDark ? '#242424' : '#F8F8F6';
+        const CBORD = isDark ? '#333333' : 'transparent';
+        const TEXT1 = isDark ? '#E8E8E8' : '#1A1A1A';
+        const TEXT2 = isDark ? '#777777' : '#888888';
+        const ICOL  = isDark ? '#555555' : '#AAAAAA';
+        ctx.fillStyle = BG; ctx.fillRect(barX, barY, barW, barH);
+        // Subtle top divider
+        ctx.strokeStyle = isDark ? '#2A2A2A' : '#F0F0F0';
+        ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX + barW, barY); ctx.stroke();
+
+        const fp   = this.getExifFontPx(overlay.imageH);
+        const pad  = Math.round(barW * 0.044);
+        const brand   = this.detectBrand(this.currentImage?.exifData);
+        const camVal  = values.find(v => v.key === 'camera');
+        const lensVal = values.find(v => v.key === 'lens');
+        const apVal   = values.find(v => v.key === 'aperture');
+        const shutVal = values.find(v => v.key === 'shutter');
+        const isoVal  = values.find(v => v.key === 'iso');
+        const focalVal = values.find(v => v.key === 'focalLength');
+        const dateVal  = values.find(v => v.key === 'date');
+
+        // Brand row
+        const logoSz = Math.round(fp * 2.2);
+        const logoX  = barX + pad;
+        const logoY  = barY + Math.round(barH * 0.08);
+        const logoR  = Math.round(logoSz * 0.2);
+        ctx.save();
+        ctx.fillStyle = isDark ? '#2A2A2A' : '#F5F5F5';
+        _roundRect(ctx, logoX, logoY, logoSz, logoSz, logoR); ctx.fill();
+        if (CBORD !== 'transparent') {
+            ctx.strokeStyle = CBORD; ctx.lineWidth = 1;
+            _roundRect(ctx, logoX, logoY, logoSz, logoSz, logoR); ctx.stroke();
+        }
+        const initial = brand ? brand.name[0].toUpperCase() : (camVal?.value?.[0] || '?');
+        ctx.fillStyle = brand?.accent || TEXT1;
+        ctx.font = `700 ${Math.round(fp * 0.85)}px "DM Sans", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(initial, logoX + logoSz / 2, logoY + logoSz / 2);
+        // Camera + lens text
+        const tx = logoX + logoSz + Math.round(barW * 0.018);
+        ctx.fillStyle = TEXT1; ctx.font = `600 ${Math.round(fp * 0.98)}px "DM Sans", sans-serif`;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(camVal?.value || 'Camera', tx, logoY + logoSz * 0.32, barW * 0.55);
+        ctx.fillStyle = TEXT2; ctx.font = `400 ${Math.round(fp * 0.72)}px "DM Sans", sans-serif`;
+        ctx.fillText(lensVal?.value || '', tx, logoY + logoSz * 0.72, barW * 0.55);
+
+        // Card grid: 3×2
+        const gridY      = barY + Math.round(barH * 0.30);
+        const gridBotPad = Math.round(barH * 0.04);
+        const gapSz      = Math.round(barW * 0.012);
+        const cols       = 3;
+        const rows       = 2;
+        const cardWi = Math.round((barW - pad * 2 - gapSz * (cols - 1)) / cols);
+        const cardHi = Math.round((barY + barH - gridBotPad - gridY - gapSz * (rows - 1)) / rows);
+        const cardR  = Math.round(cardWi * 0.12);
+        const cards  = [
+            { val: apVal?.value,    label: 'Aperture', icon: '◎' },
+            { val: shutVal?.value,  label: 'Shutter',  icon: '⚡' },
+            { val: isoVal?.value,   label: 'ISO',      icon: '▣' },
+            { val: focalVal?.value, label: 'Focal',    icon: '⊕' },
+            { val: dateVal?.value,  label: 'Date',     icon: '◈' },
+            { val: `${Math.round(overlay.imageW / overlay.imageH * 100) / 100}:1`, label: 'Ratio', icon: '⊞' },
+        ];
+        cards.forEach((card, i) => {
+            const col = i % cols, row = Math.floor(i / cols);
+            const cx = barX + pad + col * (cardWi + gapSz);
+            const cy = gridY + row * (cardHi + gapSz);
+            ctx.fillStyle = CARD;
+            _roundRect(ctx, cx, cy, cardWi, cardHi, cardR); ctx.fill();
+            if (CBORD !== 'transparent') {
+                ctx.strokeStyle = CBORD; ctx.lineWidth = 1;
+                _roundRect(ctx, cx, cy, cardWi, cardHi, cardR); ctx.stroke();
+            }
+            const iconPx = Math.max(8, Math.round(fp * 0.72));
+            const valPx  = Math.max(9, Math.round(fp * 0.96));
+            const lblPx  = Math.max(7, Math.round(fp * 0.58));
+            // icon
+            ctx.fillStyle = ICOL; ctx.font = `${iconPx}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText(card.icon, cx + Math.round(cardWi * 0.12), cy + Math.round(cardHi * 0.12));
+            // value
+            ctx.fillStyle = TEXT1; ctx.font = `700 ${valPx}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(card.val || '—', cx + cardWi / 2, cy + cardHi * 0.60, cardWi * 0.88);
+            // label
+            ctx.fillStyle = ICOL; ctx.font = `400 ${lblPx}px "DM Sans", sans-serif`;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(card.label, cx + cardWi / 2, cy + cardHi * 0.83);
+        });
+        ctx.restore();
+    }
+
+    drawNoExifMessage(ctx, canvasW, canvasH, overlay) {
+        const fontPx = Math.round(canvasH * 0.018);
+        if (this.exifStyle === 'minimal') {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = `400 ${fontPx}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 4;
+            ctx.fillText('EXIF 정보 없음', canvasW - fontPx * 1.5, canvasH - fontPx * 1.5);
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+        } else {
+            const barColor = this.resolveExifBarColor(this.exifTextColor === 'black' ? '#000000' : '#FFFFFF');
+            if (barColor !== 'transparent') {
+                ctx.fillStyle = barColor;
+                ctx.fillRect(overlay.barX, overlay.barY, overlay.barW, overlay.barH);
+            }
+            ctx.fillStyle = '#999999';
+            ctx.font = `400 ${fontPx}px "DM Sans", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('EXIF 정보가 없습니다', overlay.barX + overlay.barW / 2, overlay.barY + overlay.barH / 2);
+        }
     }
 
     drawImage() {
@@ -1000,7 +2445,18 @@ class PhotoFrameMaker {
     }
 
     drawFrameBackground(ctx, img, canvasW, canvasH) {
-        if (this.isStyleFrame && img) {
+        const placeholderBg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim() || '#E8E8E8';
+        if (this.frameColor === 'auto') {
+            if (img) {
+                if (!this._autoDominantColor) {
+                    this._autoDominantColor = this.extractDominantColor(img);
+                }
+                ctx.fillStyle = this._autoDominantColor;
+            } else {
+                ctx.fillStyle = placeholderBg;
+            }
+            ctx.fillRect(0, 0, canvasW, canvasH);
+        } else if (this.isStyleFrame && img) {
             ctx.fillStyle = '#222';
             ctx.fillRect(0, 0, canvasW, canvasH);
             switch (this.frameColor) {
@@ -1010,7 +2466,7 @@ class PhotoFrameMaker {
                 case 'mirror': this.drawMirrorBackground(ctx, img, canvasW, canvasH); break;
             }
         } else {
-            ctx.fillStyle = this.isStyleFrame ? '#222' : this.frameColor;
+            ctx.fillStyle = (this.isStyleFrame && !img) ? placeholderBg : (this.isStyleFrame ? '#222' : this.frameColor);
             ctx.fillRect(0, 0, canvasW, canvasH);
         }
     }
@@ -1084,6 +2540,70 @@ class PhotoFrameMaker {
         ctx.fillRect(0, 0, canvasW, canvasH);
     }
 
+    extractDominantColor(img) {
+        if (!this._colorSampleCanvas) this._colorSampleCanvas = document.createElement('canvas');
+        const sc = this._colorSampleCanvas;
+        const sz = 32;
+        sc.width = sz;
+        sc.height = sz;
+        const sctx = sc.getContext('2d', { willReadFrequently: true });
+        sctx.drawImage(img, 0, 0, sz, sz);
+        const data = sctx.getImageData(0, 0, sz, sz).data;
+
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+        }
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+
+        // HSL 보정: 채도 낮추고 밝기 올려서 프레임에 적합하게
+        const [h, s, l] = this.rgbToHsl(r, g, b);
+        const adjS = Math.min(s, 0.35);
+        const adjL = Math.max(l, 0.75);
+        const [ar, ag, ab] = this.hslToRgb(h, adjS, adjL);
+
+        return '#' + [ar, ag, ab].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    rgbToHsl(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0, s = 0, l = (max + min) / 2;
+        if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                case g: h = ((b - r) / d + 2) / 6; break;
+                case b: h = ((r - g) / d + 4) / 6; break;
+            }
+        }
+        return [h, s, l];
+    }
+
+    hslToRgb(h, s, l) {
+        let r, g, b;
+        if (s === 0) { r = g = b = l; }
+        else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            const p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1 / 3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1 / 3);
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+
     drawPixelateBackground(ctx, img, canvasW, canvasH) {
         const t = this.pixelateIntensity / 100;
         // At intensity 0 → large pixels (scale 0.15), at 100 → tiny pixels (scale 0.01)
@@ -1152,6 +2672,7 @@ class PhotoFrameMaker {
     updateMockupImages() {
         if (this.previewMode === 'default') return;
         if (this.isDragging) return;
+        if (!this.hasImage) return;
         const dataUrl = this.canvas.toDataURL('image/jpeg', 0.85);
         if (this.previewMode === 'feed') {
             this.feedImage.src = dataUrl;
@@ -1332,6 +2853,10 @@ class PhotoFrameMaker {
             // If this item is currently selected, update EXIF display
             if (this.currentImage === item) {
                 this.displayExif(item.exifData);
+                if (this.appMode === 'exif') {
+                    this.syncExifUI();
+                    this.render();
+                }
             }
         } catch (e) {
             // Ignore EXIF parse errors
@@ -1349,6 +2874,7 @@ class PhotoFrameMaker {
         // Critical path: render canvas + nav arrows immediately
         // Only invalidate cache for the previously selected image (it may have been dragged)
         if (this._profileCache) delete this._profileCache[prevIndex];
+        this._autoDominantColor = null;
         this.render(true);
         this.updateNavArrows();
         this.updateThumbnailHighlight();
@@ -1459,6 +2985,7 @@ class PhotoFrameMaker {
 
     onImagesChanged() {
         const has = this.hasImage;
+        this._autoDominantColor = null;
 
         this.updateThumbnailStrip();
         this.updateNavArrows();
@@ -1477,6 +3004,16 @@ class PhotoFrameMaker {
         this.updatePreviewContainerSize();
 
         if (!has) {
+            // Reset preview-area width when no images
+            const previewArea = this.previewContainer.closest('.preview-area');
+            if (previewArea) {
+                previewArea.style.width = '';
+                previewArea.style.marginLeft = '';
+                previewArea.style.marginRight = '';
+            }
+            this.previewContainer.style.width = '';
+            this.previewContainer.style.height = '';
+
             this.exifSection.style.display = 'none';
             this.exifGrid.innerHTML = '';
             this.mobileExifSection.style.display = 'none';
@@ -1501,6 +3038,326 @@ class PhotoFrameMaker {
         }
 
         this.updatePreviewContainerSize();
+    }
+
+    // --- Preset system ---
+
+    getCurrentPreset() {
+        return {
+            canvasRatio: [...this.canvasRatio],
+            frameRatio: this.frameRatio,
+            frameColor: this.frameColor,
+            blurIntensity: this.blurIntensity,
+            pixelateIntensity: this.pixelateIntensity,
+            exifStyle: this.exifStyle,
+            exifFields: { ...this.exifFields },
+            exifFontSize: this.exifFontSize,
+            exifTextColor: this.exifTextColor,
+            exifSeparator: this.exifSeparator,
+            exifBarColor: this.exifBarColor
+        };
+    }
+
+    applyPreset(preset, options = {}) {
+        if (preset.canvasRatio) this.canvasRatio = [...preset.canvasRatio];
+        if (preset.frameRatio !== undefined) this.frameRatio = preset.frameRatio;
+        if (preset.frameColor !== undefined) this.frameColor = preset.frameColor;
+        if (preset.blurIntensity !== undefined) this.blurIntensity = preset.blurIntensity;
+        if (preset.pixelateIntensity !== undefined) this.pixelateIntensity = preset.pixelateIntensity;
+        if (preset.exifStyle !== undefined) this.exifStyle = preset.exifStyle;
+        if (preset.exifFields !== undefined) this.exifFields = { ...preset.exifFields };
+        if (preset.exifFontSize !== undefined) this.exifFontSize = preset.exifFontSize;
+        if (preset.exifTextColor !== undefined) this.exifTextColor = preset.exifTextColor;
+        if (preset.exifSeparator !== undefined) this.exifSeparator = preset.exifSeparator;
+        if (preset.exifBarColor !== undefined) this.exifBarColor = preset.exifBarColor;
+
+        if (this.frameColor === 'auto') this._autoDominantColor = null;
+
+        this.syncAllUI();
+
+        if (!options.skipRender) {
+            this.resetAllOffsets();
+            this.updateCanvasSize();
+            this.render();
+            this.updateInfo();
+        }
+    }
+
+    syncAllUI() {
+        const ratioStr = this.canvasRatio[0] + ':' + this.canvasRatio[1];
+        this.ratioButtons.querySelectorAll('.ratio-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.ratio === ratioStr));
+        this.mobileRatioButtons.querySelectorAll('.ratio-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.ratio === ratioStr));
+
+        this.frameRatioSlider.value = this.frameRatio;
+        this.frameRatioInput.value = this.frameRatio;
+        this.mobileFrameRatioSlider.value = this.frameRatio;
+        this.mobileFrameRatioInput.value = this.frameRatio;
+        this.syncFramePxInputs();
+
+        const color = this.frameColor;
+        this.colorPresets.querySelectorAll('.color-swatch').forEach(s =>
+            s.classList.toggle('active', s.dataset.color === color));
+        this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s =>
+            s.classList.toggle('active', s.dataset.color === color));
+        if (!this.isStyleFrame && color !== 'auto') {
+            this.customColorInput.value = color;
+            this.mobileCustomColorInput.value = color;
+        }
+
+        this.blurSlider.value = this.blurIntensity;
+        this.mobileBlurSlider.value = this.blurIntensity;
+        this.blurValueLabel.textContent = this.blurIntensity;
+        this.mobileBlurValueLabel.textContent = this.blurIntensity;
+        this.pixelateSlider.value = this.pixelateIntensity;
+        this.mobilePixelateSlider.value = this.pixelateIntensity;
+        this.pixelateValueLabel.textContent = this.pixelateIntensity;
+        this.mobilePixelateValueLabel.textContent = this.pixelateIntensity;
+
+        this.updateStyleControlsVisibility();
+    }
+
+    // --- Convert mode helpers ---
+
+    checkWebPSupport() {
+        const c = document.createElement('canvas');
+        c.width = 1; c.height = 1;
+        this.supportsWebP = c.toDataURL('image/webp').startsWith('data:image/webp');
+        if (!this.supportsWebP) {
+            document.querySelectorAll('.format-btn[data-format="webp"]').forEach(b => { b.disabled = true; });
+        }
+    }
+
+    getMimeType() {
+        return { png: 'image/png', jpeg: 'image/jpeg', webp: 'image/webp' }[this.outputFormat];
+    }
+
+    getExtension() {
+        return { png: '.png', jpeg: '.jpg', webp: '.webp' }[this.outputFormat];
+    }
+
+    getBlobArgs() {
+        const mime = this.getMimeType();
+        const quality = this.outputFormat === 'png' ? undefined : this.outputQuality / 100;
+        return [mime, quality];
+    }
+
+    updateDownloadLabel() {
+        let label;
+        if (this.appMode === 'exif') {
+            label = 'EXIF 프레임 다운로드';
+        } else if (this.appMode === 'convert') {
+            const fmt = this.outputFormat.toUpperCase().replace('JPEG', 'JPG');
+            label = this.outputFormat === 'png'
+                ? `${fmt} 다운로드 (무손실)`
+                : `${fmt} 다운로드 (${this.outputQuality}%)`;
+        } else {
+            label = 'PNG 다운로드 (무손실)';
+        }
+        const btnLabel = this.downloadBtn.querySelector('.btn-label');
+        if (btnLabel) btnLabel.textContent = label;
+    }
+
+    updateQualityControlState() {
+        const disabled = this.outputFormat === 'png';
+        [this.qualityControl, this.mobileQualityControl].forEach(el => {
+            if (el) el.classList.toggle('disabled', disabled);
+        });
+        [this.qualitySlider, this.mobileQualitySlider].forEach(el => {
+            if (el) el.disabled = disabled;
+        });
+    }
+
+    syncFormatUI() {
+        const fmt = this.outputFormat;
+        [this.formatButtons, this.mobileFormatButtons].forEach(container => {
+            if (!container) return;
+            container.querySelectorAll('.format-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.format === fmt));
+        });
+        [this.qualitySlider, this.mobileQualitySlider].forEach(el => {
+            if (el) el.value = this.outputQuality;
+        });
+        [this.qualityValue, this.mobileQualityValue].forEach(el => {
+            if (el) el.textContent = this.outputQuality + '%';
+        });
+        this.updateQualityControlState();
+        this.updateDownloadLabel();
+    }
+
+    syncExifUI() {
+        // Style buttons
+        [this.exifStyleButtons, this.mobileExifStyleButtons].forEach(c => {
+            if (!c) return;
+            c.querySelectorAll('.exif-style-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.style === this.exifStyle));
+        });
+        // Field toggles
+        [this.exifFieldToggles, this.mobileExifFieldToggles].forEach(c => {
+            if (!c) return;
+            c.querySelectorAll('input[data-field]').forEach(cb => {
+                cb.checked = this.exifFields[cb.dataset.field];
+                if (this.currentImage && this.currentImage.exifData) {
+                    const hasValue = this.checkExifFieldAvailable(cb.dataset.field);
+                    cb.disabled = !hasValue;
+                    cb.closest('.exif-field-toggle').classList.toggle('unavailable', !hasValue);
+                } else {
+                    cb.disabled = false;
+                    cb.closest('.exif-field-toggle').classList.remove('unavailable');
+                }
+            });
+        });
+        // Font size
+        [this.exifFontSizeButtons, this.mobileExifFontSizeButtons].forEach(c => {
+            if (!c) return;
+            c.querySelectorAll('.size-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.size === this.exifFontSize));
+        });
+        // Text color
+        [this.exifTextColorButtons, this.mobileExifTextColorButtons].forEach(c => {
+            if (!c) return;
+            c.querySelectorAll('.color-opt').forEach(b =>
+                b.classList.toggle('active', b.dataset.color === this.exifTextColor));
+        });
+        // Bar color
+        [this.exifBarColorButtons, this.mobileExifBarColorButtons].forEach(c => {
+            if (!c) return;
+            c.querySelectorAll('.color-opt').forEach(b =>
+                b.classList.toggle('active', b.dataset.color === this.exifBarColor));
+        });
+        // Separator
+        [this.exifSeparatorButtons, this.mobileExifSeparatorButtons].forEach(c => {
+            if (!c) return;
+            c.querySelectorAll('.sep-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.sep === this.exifSeparator));
+        });
+    }
+
+    setupExifEventListeners() {
+        const bindBtns = (container, mobileContainer, attr, callback) => {
+            [container, mobileContainer].forEach(c => {
+                if (!c) return;
+                c.addEventListener('click', (e) => {
+                    const btn = e.target.closest(`[data-${attr}]`);
+                    if (!btn) return;
+                    callback(btn.dataset[attr]);
+                    this.syncExifUI();
+                    this.render();
+                });
+            });
+        };
+
+        // Style
+        bindBtns(this.exifStyleButtons, this.mobileExifStyleButtons, 'style', v => { this.exifStyle = v; });
+        // Font size
+        bindBtns(this.exifFontSizeButtons, this.mobileExifFontSizeButtons, 'size', v => { this.exifFontSize = v; });
+        // Text color
+        bindBtns(this.exifTextColorButtons, this.mobileExifTextColorButtons, 'color', v => { this.exifTextColor = v; });
+        // Bar color
+        bindBtns(this.exifBarColorButtons, this.mobileExifBarColorButtons, 'color', v => { this.exifBarColor = v; });
+        // Separator
+        bindBtns(this.exifSeparatorButtons, this.mobileExifSeparatorButtons, 'sep', v => { this.exifSeparator = v; });
+
+        // Field toggles
+        [this.exifFieldToggles, this.mobileExifFieldToggles].forEach(c => {
+            if (!c) return;
+            c.addEventListener('change', (e) => {
+                const cb = e.target;
+                if (!cb.dataset.field) return;
+                this.exifFields[cb.dataset.field] = cb.checked;
+                this.syncExifUI();
+                this.render();
+            });
+        });
+    }
+
+    // --- Settings persistence ---
+
+    saveLastSettings() {
+        try {
+            localStorage.setItem('pfm-last-settings', JSON.stringify(this.getCurrentPreset()));
+        } catch (e) { /* ignore */ }
+    }
+
+    loadLastSettings() {
+        try {
+            const saved = localStorage.getItem('pfm-last-settings');
+            if (saved) this.applyPreset(JSON.parse(saved), { skipRender: true });
+        } catch (e) { /* ignore */ }
+    }
+
+    // --- Favorites ---
+
+    getFavorites() {
+        try {
+            return JSON.parse(localStorage.getItem('pfm-favorites') || '[]');
+        } catch (e) { return []; }
+    }
+
+    saveFavorite() {
+        const favorites = this.getFavorites();
+        if (favorites.length >= 5) return;
+        const preset = this.getCurrentPreset();
+        preset.name = '';
+        favorites.push(preset);
+        try {
+            localStorage.setItem('pfm-favorites', JSON.stringify(favorites));
+        } catch (e) { /* ignore */ }
+        this.renderFavoritesUI();
+    }
+
+    removeFavorite(index) {
+        const favorites = this.getFavorites();
+        favorites.splice(index, 1);
+        try {
+            localStorage.setItem('pfm-favorites', JSON.stringify(favorites));
+        } catch (e) { /* ignore */ }
+        this.renderFavoritesUI();
+    }
+
+    renderFavoritesUI() {
+        const favorites = this.getFavorites();
+        const buildList = (container) => {
+            container.textContent = '';
+            favorites.forEach((fav, i) => {
+                const item = document.createElement('div');
+                item.className = 'favorite-item';
+                item.dataset.index = i;
+
+                const preview = document.createElement('div');
+                preview.className = 'favorite-preview';
+                if (fav.frameColor === 'auto') {
+                    preview.style.background = 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)';
+                } else if (fav.frameColor.startsWith('#')) {
+                    preview.style.background = fav.frameColor;
+                }
+                preview.style.aspectRatio = fav.canvasRatio[0] + '/' + fav.canvasRatio[1];
+                const inner = document.createElement('div');
+                inner.className = 'favorite-preview-inner';
+                preview.appendChild(inner);
+
+                const name = document.createElement('span');
+                name.className = 'favorite-name';
+                name.textContent = fav.name || (fav.canvasRatio[0] + ':' + fav.canvasRatio[1] + ' ' + fav.frameRatio + '%');
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'favorite-remove';
+                removeBtn.dataset.index = i;
+                removeBtn.textContent = '\u00d7';
+                removeBtn.title = '삭제';
+
+                item.append(preview, name, removeBtn);
+                container.appendChild(item);
+            });
+        };
+        buildList(this.favoritesList);
+        buildList(this.mobileFavoritesList);
+
+        this.favoritesEmpty.style.display = favorites.length === 0 ? '' : 'none';
+        const full = favorites.length >= 5;
+        this.favoriteSaveBtn.disabled = full;
+        this.mobileFavoriteSaveBtn.disabled = full;
     }
 
     // --- Reset all offsets ---
@@ -1682,6 +3539,15 @@ class PhotoFrameMaker {
         } else if (this.hasMultipleImages) {
             label = `ZIP 다운로드 (${this.imageCount}장)`;
             mobileText = 'ZIP';
+        } else if (this.appMode === 'exif') {
+            label = 'EXIF 프레임 다운로드';
+            mobileText = '저장';
+        } else if (this.appMode === 'convert') {
+            const fmt = this.outputFormat.toUpperCase().replace('JPEG', 'JPG');
+            label = this.outputFormat === 'png'
+                ? `${fmt} 다운로드 (무손실)`
+                : `${fmt} 다운로드 (${this.outputQuality}%)`;
+            mobileText = '저장';
         } else {
             label = 'PNG 다운로드 (무손실)';
             mobileText = '저장';
@@ -1984,6 +3850,99 @@ class PhotoFrameMaker {
         this.mobileExifSection.style.display = '';
     }
 
+    // --- EXIF frame helpers ---
+
+    getActiveExifValues() {
+        const cur = this.currentImage;
+        if (!cur || !cur.exifData) return [];
+        const data = cur.exifData;
+        const result = [];
+        for (const [key, enabled] of Object.entries(this.exifFields)) {
+            if (!enabled) continue;
+            let value = null;
+            switch (key) {
+                case 'camera': {
+                    const make = data[0x010F] || '';
+                    const model = data[0x0110] || '';
+                    if (model) value = model.startsWith(make) ? model : (make ? `${make} ${model}` : model);
+                    break;
+                }
+                case 'lens': value = data[0xA434] || null; break;
+                case 'focalLength':
+                    if (data[0x920A]) value = `${Math.round(data[0x920A].value)}mm`;
+                    break;
+                case 'aperture':
+                    if (data[0x829D]) { const f = data[0x829D].value; value = `f/${f % 1 === 0 ? f.toFixed(0) : f.toFixed(1)}`; }
+                    break;
+                case 'shutter':
+                    if (data[0x829A]) { const { num, den } = data[0x829A]; if (num && den) { const ss = num / den; value = ss >= 1 ? `${ss}s` : `1/${Math.round(den / num)}s`; } }
+                    break;
+                case 'iso':
+                    if (data[0x8827]) value = `ISO ${data[0x8827]}`;
+                    break;
+                case 'date': {
+                    const dateStr = data[0x9003] || data[0x0132];
+                    if (dateStr) value = dateStr.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1.$2.$3');
+                    break;
+                }
+            }
+            if (value) result.push({ key, value });
+        }
+        return result;
+    }
+
+    detectBrand(exifData) {
+        if (!exifData) return null;
+        const make = (exifData[0x010F] || '').toLowerCase();
+        for (const [key, theme] of Object.entries(BRAND_THEMES)) {
+            if (make.includes(key)) return { key, ...theme };
+        }
+        return null;
+    }
+
+    getExifFontPx(canvasHeight) {
+        return Math.round(canvasHeight * (EXIF_FONT_SIZES[this.exifFontSize] || 0.02));
+    }
+
+    resolveExifTextColor(ctx, canvasW, canvasH) {
+        if (this.exifTextColor !== 'auto') return this.exifTextColor === 'white' ? '#FFFFFF' : '#000000';
+        const sampleH = Math.max(1, Math.round(canvasH * 0.1));
+        try {
+            const imageData = ctx.getImageData(0, canvasH - sampleH, canvasW, sampleH);
+            let brightness = 0;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                brightness += (imageData.data[i] * 0.299 + imageData.data[i+1] * 0.587 + imageData.data[i+2] * 0.114);
+            }
+            brightness /= (imageData.data.length / 4);
+            return brightness > 128 ? '#000000' : '#FFFFFF';
+        } catch (e) { return '#FFFFFF'; }
+    }
+
+    resolveExifBarColor(textColor) {
+        if (this.exifBarColor === 'transparent') return 'transparent';
+        if (this.exifBarColor === 'auto') return textColor === '#FFFFFF' ? '#000000' : '#FFFFFF';
+        return this.exifBarColor === 'white' ? '#FFFFFF' : '#000000';
+    }
+
+    hasExifData() {
+        return !!(this.currentImage && this.currentImage.exifData);
+    }
+
+    checkExifFieldAvailable(field) {
+        const data = this.currentImage?.exifData;
+        if (!data) return false;
+        switch (field) {
+            case 'camera': return !!(data[0x010F] || data[0x0110]);
+            case 'lens': return !!data[0xA434];
+            case 'focalLength': return !!data[0x920A];
+            case 'aperture': return !!data[0x829D];
+            case 'shutter': return !!data[0x829A];
+            case 'iso': return !!data[0x8827];
+            case 'date': return !!(data[0x9003] || data[0x0132]);
+            default: return false;
+        }
+    }
+
     updateMobilePhotoTab() {
         const cur = this.currentImage;
         if (cur) {
@@ -2046,6 +4005,7 @@ class PhotoFrameMaker {
             document.getElementById('mobile-ratio-buttons').querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === ratio));
             const [w, h] = ratio.split(':').map(Number);
             this.canvasRatio = [w, h];
+
             this.syncFramePxInputs();
             this.resetAllOffsets();
             this.updateCanvasSize();
@@ -2073,6 +4033,7 @@ class PhotoFrameMaker {
             this.mobileFrameRatioInput.value = this.frameRatio;
             this.frameRatioSlider.value = this.frameRatio;
             this.frameRatioInput.value = this.frameRatio;
+
             this.syncFramePxInputs();
             this.resetAllOffsets();
             this.render();
@@ -2127,6 +4088,7 @@ class PhotoFrameMaker {
                 this.customColorInput.value = color;
                 this.mobileCustomColorInput.value = color;
             }
+
             this.updateStyleControlsVisibility();
             this.render();
         });
@@ -2136,6 +4098,7 @@ class PhotoFrameMaker {
             this.customColorInput.value = this.frameColor;
             this.colorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
             this.mobileColorPresets.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+
             this.updateStyleControlsVisibility();
             this.render();
         });
@@ -2245,6 +4208,10 @@ class PhotoFrameMaker {
 
         this.setDownloadLock(true);
         try {
+            if (this.appMode === 'convert') {
+                await this.downloadConverted();
+                return;
+            }
             if (this.appMode === 'split') {
                 await this.downloadSplit();
                 return;
@@ -2269,6 +4236,87 @@ class PhotoFrameMaker {
             this.hideProgress();
             this.setDownloadLock(false);
         }
+    }
+
+    async downloadConverted() {
+        const [mime, quality] = this.getBlobArgs();
+        const ext = this.getExtension();
+        const items = this.loadedImages;
+
+        if (items.length === 1) {
+            const item = items[0];
+            const img = item.image;
+            const offscreen = document.createElement('canvas');
+            offscreen.width = img.naturalWidth;
+            offscreen.height = img.naturalHeight;
+            const ctx = offscreen.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const blob = await new Promise((resolve, reject) => {
+                offscreen.toBlob(b => {
+                    offscreen.width = 0; offscreen.height = 0;
+                    b ? resolve(b) : reject(new Error('toBlob failed'));
+                }, mime, quality);
+            });
+            const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : 'photo';
+            await this.triggerDownload(blob, baseName + ext);
+        } else {
+            // Multiple images
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const total = items.length;
+            this.showProgress(0, total);
+
+            if (isMobile) {
+                const files = [];
+                for (let i = 0; i < total; i++) {
+                    const item = items[i];
+                    const blob = await this.renderConvertedBlob(item, mime, quality);
+                    const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : `photo_${i + 1}`;
+                    files.push(new File([blob], baseName + ext, { type: mime }));
+                    this.showProgress(i + 1, total);
+                }
+                if (navigator.canShare && navigator.canShare({ files })) {
+                    await navigator.share({ files });
+                } else {
+                    for (const file of files) {
+                        await this.triggerDownload(file, file.name);
+                    }
+                }
+            } else if (typeof JSZip !== 'undefined') {
+                const zip = new JSZip();
+                for (let i = 0; i < total; i++) {
+                    const item = items[i];
+                    const blob = await this.renderConvertedBlob(item, mime, quality);
+                    const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : `photo_${i + 1}`;
+                    zip.file(baseName + ext, blob);
+                    this.showProgress(i + 1, total);
+                }
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                await this.triggerDownload(zipBlob, 'photos_converted.zip');
+            } else {
+                for (let i = 0; i < total; i++) {
+                    const item = items[i];
+                    const blob = await this.renderConvertedBlob(item, mime, quality);
+                    const baseName = item.fileName ? item.fileName.replace(/\.[^.]+$/, '') : `photo_${i + 1}`;
+                    await this.triggerDownload(blob, baseName + ext);
+                    this.showProgress(i + 1, total);
+                }
+            }
+        }
+    }
+
+    async renderConvertedBlob(item, mime, quality) {
+        const img = item.image;
+        const offscreen = document.createElement('canvas');
+        offscreen.width = img.naturalWidth;
+        offscreen.height = img.naturalHeight;
+        const ctx = offscreen.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        return await new Promise((resolve, reject) => {
+            offscreen.toBlob(b => {
+                offscreen.width = 0; offscreen.height = 0;
+                b ? resolve(b) : reject(new Error('toBlob failed'));
+            }, mime, quality);
+        });
     }
 
     async downloadMultipleAsImages() {
@@ -2385,6 +4433,11 @@ class PhotoFrameMaker {
         const cur = this.currentImage;
         if (!cur) return;
 
+        if (this.appMode === 'exif') {
+            await this.downloadExifFrame();
+            return;
+        }
+
         const dims = this.getCanvasDimensions();
         const offscreen = document.createElement('canvas');
         offscreen.width = dims.width;
@@ -2420,6 +4473,57 @@ class PhotoFrameMaker {
         const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
         const fileName = `${baseName}_pfm.png`;
 
+        await this.triggerDownload(blob, fileName);
+    }
+
+    async downloadExifFrame() {
+        const cur = this.currentImage;
+        if (!cur) return;
+
+        const imgNW = cur.image.naturalWidth;
+        const imgNH = cur.image.naturalHeight;
+        const innerDims = { width: imgNW, height: imgNH };
+        const overlay = this.getExifOverlayDimensions(innerDims);
+        const fw = this.getFrameWidth();
+        const totalW = overlay.canvasWidth + fw * 2;
+        const totalH = overlay.canvasHeight + fw * 2;
+
+        const offscreen = document.createElement('canvas');
+        offscreen.width = totalW;
+        offscreen.height = totalH;
+        const ctx = offscreen.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Draw frame background
+        this.drawFrameBackground(ctx, cur.image, totalW, totalH);
+
+        // Offset overlay positions by frame width
+        const ox = { ...overlay, imageX: overlay.imageX + fw, imageY: overlay.imageY + fw, barX: overlay.barX + fw, barY: overlay.barY + fw };
+
+        // Draw image at original ratio (no crop)
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(ox.imageX, ox.imageY, ox.imageW, ox.imageH);
+        ctx.clip();
+        ctx.drawImage(cur.image, ox.imageX, ox.imageY, ox.imageW, ox.imageH);
+        ctx.restore();
+
+        // EXIF overlay
+        if (this.hasExifData()) {
+            this.drawExifOverlay(ctx, totalW, totalH, ox);
+        }
+
+        const blob = await new Promise((resolve, reject) => {
+            offscreen.toBlob(b => {
+                offscreen.width = 0;
+                offscreen.height = 0;
+                b ? resolve(b) : reject(new Error('Canvas toBlob failed'));
+            }, 'image/png');
+        });
+
+        const baseName = cur.fileName ? cur.fileName.replace(/\.[^.]+$/, '') : 'photo';
+        const fileName = `${baseName}_exif.png`;
         await this.triggerDownload(blob, fileName);
     }
 

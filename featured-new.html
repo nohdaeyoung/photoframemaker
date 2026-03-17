@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Frame Maker — 사진에 가치를 더하는 가장 완벽한 방법</title>
+  <meta name="description" content="사진에 프레임을 추가하고 고화질로 저장하는 무료 온라인 도구. 프레임, 분할, 변환, EXIF 프레임 4가지 모드. 무료, 회원가입 불필요, 서버 업로드 없음.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://f.324.ing/featured-new.html">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon_180x180.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://f.324.ing/featured-new.html">
+  <meta property="og:title" content="Photo Frame Maker — 사진에 가치를 더하는 가장 완벽한 방법">
+  <meta property="og:description" content="무료, 회원가입 불필요, 서버 업로드 없음. 브라우저에서 모든 처리가 이루어집니다.">
+  <meta property="og:image" content="https://f.324.ing/og-image.png">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:site_name" content="Photo Frame Maker by DY">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Photo Frame Maker — 사진에 가치를 더하는 가장 완벽한 방법">
+  <meta name="twitter:description" content="무료, 회원가입 불필요, 서버 업로드 없음.">
+  <meta name="twitter:image" content="https://f.324.ing/og-image.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap">
+  <link rel="stylesheet" href="/nav.css">
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    a { text-decoration:none; }
+    img { max-width:100%; display:block; }
+
+    /* ── Tokens: Botanical × 324.ing ── */
+    :root {
+      --bg:        #F9F8F4;
+      --bg-clay:   #EAE5DC;
+      --bg-card:   #FFFFFF;
+      --bg-muted:  #F2EFE9;
+      --fg:        #2D3A31;
+      --fg-2:      #5A6358;
+      --fg-muted:  #96998F;
+      --sage:      #8C9A84;
+      --sage-lt:   #C8D4C2;
+      --terra:     #C27B66;
+      --accent:    #A87A52;
+      --border:    #E6E2DA;
+      --sh-sm:     0 4px 6px -1px rgba(45,58,49,.05);
+      --sh-md:     0 10px 20px -4px rgba(45,58,49,.07);
+      --sh-lg:     0 20px 40px -8px rgba(45,58,49,.10);
+      --sh-xl:     0 30px 60px -14px rgba(45,58,49,.16);
+      --r-card:    24px;
+      --r-pill:    9999px;
+      --r-arch:    9999px 9999px 0 0;
+      --serif:     'Playfair Display', Georgia, serif;
+      --sans:      'DM Sans', -apple-system, 'Noto Sans KR', sans-serif;
+    }
+
+    html { font-size:16px; scroll-behavior:smooth; }
+    body {
+      font-family:var(--sans);
+      background:var(--bg);
+      color:var(--fg);
+      line-height:1.6;
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+    }
+
+    /* ── Paper Grain ── */
+    #grain {
+      pointer-events:none;
+      position:fixed; inset:0; z-index:9999;
+      opacity:.02;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat:repeat;
+    }
+
+    /* ── Layout utils ── */
+    .wrap {
+      width:100%; max-width:1280px;
+      margin:0 auto;
+      padding:0 clamp(1.5rem,5vw,4.5rem);
+    }
+    .label {
+      display:inline-block;
+      font-size:.6875rem; font-weight:500;
+      letter-spacing:.18em; text-transform:uppercase;
+      color:var(--sage);
+    }
+    .divider { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); }
+
+    /* ── Scroll reveal ── */
+    .sr { opacity:0; transform:translateY(24px); transition:opacity .8s ease,transform .8s ease; }
+    .sr.in { opacity:1; transform:none; }
+    .d1{transition-delay:.1s} .d2{transition-delay:.2s} .d3{transition-delay:.3s} .d4{transition-delay:.4s}
+
+    /* ── NAV ── */
+    .nav {
+      position:sticky; top:0; z-index:200;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 clamp(1.5rem,5vw,4.5rem);
+      height:64px;
+      background:rgba(249,248,244,.9);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav-logo { font-family:var(--serif); font-size:1.125rem; font-weight:700; color:var(--fg); letter-spacing:-.01em; }
+    .nav-menu { display:flex; align-items:center; gap:2.25rem; list-style:none; }
+    .nav-menu a { font-size:.75rem; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-2); transition:color .25s; }
+    .nav-menu a:hover { color:var(--fg); }
+    .nav-cta {
+      color:white !important; background:var(--fg);
+      padding:.5rem 1.375rem; border-radius:var(--r-pill);
+      transition:background .3s,transform .3s !important;
+    }
+    .nav-cta:hover { background:var(--terra) !important; transform:translateY(-1px); }
+    .nav-toggle { display:none; background:none; border:none; cursor:pointer; color:var(--fg); padding:.25rem; }
+
+    /* ── HERO ── */
+    .hero {
+      display:grid; grid-template-columns:1fr 1fr;
+      min-height:calc(100svh - 49px);
+      overflow:hidden;
+    }
+
+    /* Left: content */
+    .hero-content {
+      display:flex; flex-direction:column; justify-content:center;
+      padding:clamp(3rem,5vw,6rem) clamp(2.5rem,5vw,5.5rem);
+      background:var(--bg);
+    }
+    .hero-content .label { margin-bottom:1.5rem; }
+    .hero-h1 {
+      font-family:var(--serif);
+      font-size:clamp(2.25rem,4vw,4rem);
+      font-weight:700; color:var(--fg);
+      line-height:1.1; letter-spacing:-.025em;
+      margin-bottom:1.75rem;
+    }
+    .hero-h1 em { color:var(--accent); font-style:italic; }
+    .hero-p {
+      font-size:1.0625rem; color:var(--fg-2);
+      line-height:1.75; max-width:420px;
+      margin-bottom:2.75rem;
+    }
+    .hero-actions { display:flex; gap:.875rem; align-items:center; flex-wrap:wrap; }
+    .btn-fill {
+      display:inline-flex; align-items:center; gap:.5rem;
+      font-size:.8rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+      color:white; background:var(--fg);
+      padding:.9375rem 2.125rem; border-radius:var(--r-pill);
+      transition:background .3s,transform .3s,box-shadow .3s;
+      box-shadow:var(--sh-md);
+    }
+    .btn-fill:hover { background:var(--terra); transform:translateY(-2px); box-shadow:var(--sh-lg); }
+    .btn-outline {
+      display:inline-flex; align-items:center; gap:.5rem;
+      font-size:.8rem; font-weight:500; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--sage); border:1px solid var(--sage-lt);
+      padding:.9375rem 2.125rem; border-radius:var(--r-pill);
+      transition:border-color .3s,color .3s,transform .3s;
+    }
+    .btn-outline:hover { border-color:var(--sage); color:var(--fg); transform:translateY(-1px); }
+    .hero-trust { margin-top:2rem; display:flex; gap:1.5rem; flex-wrap:wrap; }
+    .hero-trust span { font-size:.75rem; color:var(--fg-muted); display:flex; align-items:center; gap:.375rem; }
+    .hero-trust span::before { content:'✓'; color:var(--sage); font-weight:700; }
+
+    /* Right: EXIF frame mockup */
+    .hero-visual {
+      background:var(--bg-clay);
+      display:flex; align-items:center; justify-content:center;
+      position:relative; overflow:hidden;
+      padding:3rem 2.5rem;
+    }
+    .hero-visual::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(145deg,rgba(140,154,132,.15) 0%,transparent 60%);
+    }
+
+    /* The EXIF frame card mockup */
+    .exif-mockup {
+      position:relative; z-index:1;
+      width:min(340px,80%);
+      background:white;
+      border-radius:16px;
+      box-shadow:var(--sh-xl);
+      overflow:hidden;
+      transform:rotate(-1.5deg);
+      transition:transform .8s ease, box-shadow .8s ease;
+    }
+    .exif-mockup:hover { transform:rotate(0deg); box-shadow:0 40px 80px -20px rgba(45,58,49,.22); }
+
+    .exif-photo-wrap {
+      width:100%; aspect-ratio:4/3;
+      overflow:hidden; position:relative;
+    }
+    .exif-photo-wrap img {
+      width:100%; height:100%; object-fit:cover; display:block;
+      transition:transform 1.2s ease;
+    }
+    .exif-mockup:hover .exif-photo-wrap img { transform:scale(1.04); }
+
+    /* Fallback CSS photo */
+    .exif-photo-fallback {
+      width:100%; height:100%;
+      background:linear-gradient(145deg, #3a4a3d 0%, #8c9a84 60%, #c8d4c2 100%);
+    }
+
+    .exif-frame-bar {
+      padding:1rem 1.25rem .875rem;
+      background:white;
+      border-top:1px solid #f0ede8;
+      display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+    }
+    .exif-cam-info { flex:1; }
+    .exif-cam-name {
+      font-family:var(--serif); font-size:.875rem; font-weight:700;
+      color:var(--fg); letter-spacing:-.01em; display:block; margin-bottom:.2rem;
+    }
+    .exif-cam-settings {
+      font-size:.6875rem; font-weight:400; color:var(--fg-muted);
+      letter-spacing:.06em; font-family:var(--sans);
+      display:flex; gap:.5rem; flex-wrap:wrap;
+    }
+    .exif-cam-settings span { white-space:nowrap; }
+    .exif-cam-logo {
+      width:36px; height:36px;
+      border-radius:8px; background:var(--fg);
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+    .exif-cam-logo svg { width:20px; height:20px; stroke:white; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+    /* Decorative floating badge */
+    .hero-badge-float {
+      position:absolute; bottom:2.5rem; right:2rem; z-index:2;
+      background:rgba(255,255,255,.92); backdrop-filter:blur(10px);
+      border:1px solid var(--border); border-radius:14px;
+      padding:.75rem 1.125rem; box-shadow:var(--sh-lg);
+    }
+    .hero-badge-float .badge-sub { font-size:.625rem; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--fg-muted); display:block; margin-bottom:.25rem; }
+    .hero-badge-float .badge-main { font-family:var(--serif); font-size:1rem; font-weight:700; color:var(--fg); display:block; }
+
+    /* ── STATS BAR ── */
+    .stats { background:var(--fg); }
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); padding:2.75rem 0; }
+    .stat { text-align:center; padding:0 1.5rem; border-right:1px solid rgba(255,255,255,.08); }
+    .stat:last-child { border-right:none; }
+    .stat-n { font-family:var(--serif); font-size:2.125rem; font-weight:700; color:white; line-height:1; display:block; margin-bottom:.375rem; }
+    .stat-l { font-size:.6875rem; font-weight:400; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.38); }
+
+    /* ── SECTION HEADER ── */
+    .sec-head { text-align:center; margin-bottom:clamp(3rem,5vw,5.5rem); }
+    .sec-head .label { margin-bottom:1rem; }
+    .sec-h2 {
+      font-family:var(--serif); font-size:clamp(2rem,3.5vw,3.5rem);
+      font-weight:700; color:var(--fg);
+      line-height:1.12; letter-spacing:-.02em; margin-bottom:.875rem;
+    }
+    .sec-h2 em { color:var(--accent); font-style:italic; }
+    .sec-p { font-size:1rem; color:var(--fg-2); max-width:460px; margin:0 auto; line-height:1.75; }
+
+    /* ── FEATURES ── */
+    .features { padding:clamp(5rem,8vw,9rem) 0; }
+    .feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
+    .feat-card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r-card); overflow:hidden;
+      display:flex; flex-direction:column;
+      transition:transform .5s ease,box-shadow .5s ease;
+      box-shadow:var(--sh-sm);
+    }
+    .feat-card.stagger { transform:translateY(3rem); }
+    .feat-card:hover { transform:translateY(-5px) !important; box-shadow:var(--sh-xl); }
+    .feat-vis { aspect-ratio:16/9; background:var(--bg-muted); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .feat-body { padding:clamp(1.75rem,2.5vw,2.5rem); display:flex; flex-direction:column; gap:1rem; flex:1; }
+    .feat-icon { width:44px; height:44px; border-radius:12px; background:var(--bg-muted); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .feat-icon svg { width:20px; height:20px; stroke:var(--accent); stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .feat-body .label { margin-bottom:-.25rem; }
+    .feat-h3 { font-family:var(--serif); font-size:1.5rem; font-weight:700; color:var(--fg); letter-spacing:-.015em; line-height:1.2; }
+    .feat-h3 em { color:var(--accent); }
+    .feat-desc { font-size:.9375rem; color:var(--fg-2); line-height:1.7; flex:1; }
+    .feat-tags { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .feat-tag { font-size:.6875rem; font-weight:500; letter-spacing:.06em; color:var(--fg-muted); background:var(--bg-muted); padding:.3rem .75rem; border-radius:var(--r-pill); }
+
+    /* Feature visual illustrations */
+    .v-frame { width:55%; aspect-ratio:1; background:white; padding:12%; box-shadow:0 6px 24px rgba(45,58,49,.10); border-radius:4px; }
+    .v-frame-photo { width:100%; height:100%; background:linear-gradient(135deg,#D4BFA8,#A88870); border-radius:2px; }
+    .v-split { display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:3px; width:55%; aspect-ratio:1; border-radius:4px; overflow:hidden; }
+    .v-split-c { background:linear-gradient(135deg,var(--bg-clay),var(--sage-lt)); }
+    .v-split-c:nth-child(2n) { background:linear-gradient(135deg,var(--sage-lt),var(--bg-clay)); }
+    .v-convert { display:flex; align-items:center; gap:1.25rem; }
+    .v-conv-a { width:88px; aspect-ratio:4/3; background:linear-gradient(135deg,var(--bg-clay),var(--sage-lt)); border-radius:8px; box-shadow:var(--sh-sm); }
+    .v-conv-arrow { font-size:1.25rem; color:var(--sage); }
+    .v-conv-b { width:66px; aspect-ratio:1; background:linear-gradient(135deg,var(--sage-lt),var(--bg-clay)); border-radius:8px; box-shadow:var(--sh-sm); }
+    .v-exif { width:58%; background:var(--fg); border-radius:8px; padding:8% 10%; display:flex; flex-direction:column; box-shadow:var(--sh-lg); overflow:hidden; }
+    .v-exif-photo { flex:1; background:linear-gradient(135deg,#3a4a3d,var(--sage)); border-radius:4px; margin-bottom:8%; min-height:0; }
+    .v-exif-hr { height:1px; background:rgba(255,255,255,.1); margin-bottom:8%; }
+    .v-exif-row { display:flex; gap:5%; }
+    .v-exif-dot { height:5px; flex:1; background:rgba(255,255,255,.18); border-radius:var(--r-pill); }
+    .v-exif-dot:first-child { flex:2; background:rgba(255,255,255,.42); }
+
+    /* ── COLORS SECTION ── */
+    .colors-sec { padding:clamp(5rem,8vw,9rem) 0; background:var(--bg-clay); }
+    .color-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+    .color-card {
+      background:white; border-radius:20px; overflow:hidden;
+      border:1px solid var(--border);
+      transition:transform .5s,box-shadow .5s; box-shadow:var(--sh-sm);
+    }
+    .color-card:hover { transform:translateY(-4px); box-shadow:var(--sh-lg); }
+    .color-vis { aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; }
+    .color-label-wrap { padding:1.25rem 1.5rem; }
+    .color-title { font-family:var(--serif); font-size:1.125rem; font-weight:700; color:var(--fg); margin-bottom:.375rem; }
+    .color-desc { font-size:.875rem; color:var(--fg-2); line-height:1.6; }
+
+    /* Color vis: white tone */
+    .cv-white { background:#f5f5f5; }
+    .cv-white-inner { width:65%; aspect-ratio:1; background:white; padding:12%; box-shadow:0 4px 16px rgba(0,0,0,.08); }
+    .cv-white-photo { width:100%; height:100%; background:linear-gradient(135deg,#d4bfa8,#a88870); border-radius:2px; }
+
+    /* Color vis: auto/gradient */
+    .cv-auto { background:linear-gradient(145deg,#2d3a31,#5a6358); }
+    .cv-auto-inner { width:65%; aspect-ratio:1; padding:12%; }
+    .cv-auto-bg { width:100%; height:100%; background:linear-gradient(135deg,#3a4a3d,#8c9a84,#c8d4c2); border-radius:2px; position:relative; }
+    .cv-auto-frame { position:absolute; inset:10%; border:2px solid rgba(140,154,132,.6); border-radius:2px; }
+
+    /* Color vis: special */
+    .cv-special { background:linear-gradient(145deg,#1a1a1c,#2d2d30); }
+    .cv-special-row { display:flex; gap:8px; align-items:center; }
+    .cv-sp-box { width:52px; aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+
+    /* ── PREVIEW MODES ── */
+    .preview-sec { padding:clamp(5rem,8vw,9rem) 0; }
+    .preview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2rem; }
+    .preview-card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r-card); overflow:hidden;
+      transition:transform .5s,box-shadow .5s; box-shadow:var(--sh-sm);
+    }
+    .preview-card:hover { transform:translateY(-4px); box-shadow:var(--sh-xl); }
+    .preview-card.active { border-color:var(--sage); box-shadow:0 0 0 3px rgba(140,154,132,.15),var(--sh-md); }
+    .preview-vis { aspect-ratio:3/4; background:var(--bg-muted); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .preview-body { padding:1.5rem; }
+    .preview-tag { display:inline-block; font-size:.625rem; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--sage); background:rgba(140,154,132,.1); padding:.25rem .625rem; border-radius:var(--r-pill); margin-bottom:.75rem; }
+    .preview-title { font-family:var(--serif); font-size:1.125rem; font-weight:700; color:var(--fg); margin-bottom:.5rem; }
+    .preview-desc { font-size:.875rem; color:var(--fg-2); line-height:1.65; }
+
+    /* Preview visual: basic canvas */
+    .pv-basic { width:80%; aspect-ratio:1; background:var(--bg-clay); display:flex; align-items:center; justify-content:center; border-radius:8px; }
+    .pv-basic-inner { width:70%; aspect-ratio:1; background:white; padding:10%; box-shadow:var(--sh-sm); }
+    .pv-basic-photo { width:100%; height:100%; background:linear-gradient(135deg,var(--bg-clay),var(--sage-lt)); border-radius:2px; }
+
+    /* Preview visual: feed (mini Instagram) */
+    .pv-feed { width:85%; background:#fafafa; border-radius:12px; overflow:hidden; box-shadow:var(--sh-md); }
+    .pv-feed-header { height:36px; background:white; border-bottom:1px solid #efefef; display:flex; align-items:center; padding:0 10px; gap:6px; }
+    .pv-feed-dot { width:6px; height:6px; border-radius:50%; background:#efefef; }
+    .pv-feed-avatar { width:20px; height:20px; border-radius:50%; background:var(--sage-lt); }
+    .pv-feed-name { font-size:9px; font-weight:600; color:#262626; font-family:var(--sans); }
+    .pv-feed-post { aspect-ratio:1; background:var(--bg-clay); position:relative; overflow:hidden; }
+    .pv-feed-post-img { width:100%; height:100%; object-fit:cover; display:block; }
+    .pv-feed-bar { padding:8px 10px 6px; background:white; }
+    .pv-feed-actions { display:flex; gap:10px; margin-bottom:5px; }
+    .pv-feed-icon { width:16px; height:16px; border-radius:3px; background:#efefef; }
+    .pv-feed-likes { font-size:8px; font-weight:600; color:#262626; font-family:var(--sans); }
+
+    /* Preview visual: profile grid */
+    .pv-profile { width:85%; background:#fafafa; border-radius:12px; overflow:hidden; box-shadow:var(--sh-md); }
+    .pv-profile-header { height:48px; background:white; border-bottom:1px solid #efefef; display:flex; align-items:center; padding:0 10px; gap:8px; }
+    .pv-profile-ava { width:28px; height:28px; border-radius:50%; background:var(--sage-lt); }
+    .pv-profile-info { flex:1; }
+    .pv-profile-name { font-size:9px; font-weight:600; color:#262626; font-family:var(--sans); display:block; }
+    .pv-profile-sub { font-size:7.5px; color:#aaa; font-family:var(--sans); display:block; }
+    .pv-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:#efefef; }
+    .pv-grid-cell { aspect-ratio:1; background:var(--bg-clay); }
+    .pv-grid-cell:nth-child(2n) { background:var(--sage-lt); }
+    .pv-grid-cell.active-cell { outline:2px solid var(--terra); outline-offset:-1px; }
+
+    /* ── EXIF STYLES ── */
+    .exif-sec { padding:clamp(5rem,8vw,9rem) 0; background:var(--fg); }
+    .exif-sec .sec-h2 { color:white; }
+    .exif-sec .sec-p { color:rgba(255,255,255,.55); }
+    .exif-sec .label { color:rgba(255,255,255,.38); }
+    .exif-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+    .exif-card {
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+      border-radius:20px; overflow:hidden;
+      transition:background .4s,transform .5s,box-shadow .5s;
+    }
+    .exif-card:hover { background:rgba(255,255,255,.1); transform:translateY(-4px); box-shadow:0 20px 40px -10px rgba(0,0,0,.3); }
+    .exif-vis { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .exif-body { padding:1.5rem 1.75rem; }
+    .exif-body .label { color:rgba(255,255,255,.3); margin-bottom:.625rem; }
+    .exif-body-title { font-family:var(--serif); font-size:1.25rem; font-weight:700; color:white; margin-bottom:.5rem; }
+    .exif-body-desc { font-size:.875rem; color:rgba(255,255,255,.5); line-height:1.65; }
+
+    /* EXIF style 1: Classic film strip */
+    .ev-classic { background:#1a1a1c; width:90%; }
+    .ev-classic-photo { width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#2d3a31,var(--sage)); position:relative; }
+    .ev-classic-sprockets { position:absolute; left:0; right:0; bottom:0; height:24px; background:#111; display:flex; align-items:center; gap:6px; padding:0 8px; }
+    .ev-classic-hole { width:12px; height:12px; border-radius:3px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); flex-shrink:0; }
+    .ev-classic-meta { background:#111; padding:8px 10px 10px; display:flex; justify-content:space-between; align-items:center; }
+    .ev-classic-cam { font-size:8px; color:rgba(255,255,255,.5); font-family:var(--sans); letter-spacing:.06em; text-transform:uppercase; }
+    .ev-classic-data { font-size:8px; color:rgba(255,255,255,.3); font-family:var(--sans); }
+
+    /* EXIF style 2: Minimal text */
+    .ev-minimal { background:white; width:82%; }
+    .ev-minimal-photo { width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,var(--bg-clay),var(--sage-lt)); }
+    .ev-minimal-meta { padding:10px 12px; display:flex; justify-content:space-between; align-items:baseline; }
+    .ev-minimal-cam { font-family:var(--serif); font-size:9px; font-weight:600; color:var(--fg); letter-spacing:.03em; }
+    .ev-minimal-data { font-size:7.5px; color:var(--fg-muted); font-family:var(--sans); letter-spacing:.04em; }
+
+    /* EXIF style 3: Magazine */
+    .ev-mag { background:white; width:82%; position:relative; }
+    .ev-mag-photo { width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#3a4a3d,#8c9a84); }
+    .ev-mag-side { padding:8px 10px; display:flex; gap:8px; align-items:center; background:var(--fg); }
+    .ev-mag-dot { width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,.12); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .ev-mag-dot svg { width:10px; height:10px; stroke:rgba(255,255,255,.6); stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .ev-mag-info { flex:1; }
+    .ev-mag-cam { font-size:8px; font-weight:600; color:white; font-family:var(--sans); letter-spacing:.04em; display:block; }
+    .ev-mag-data { font-size:7px; color:rgba(255,255,255,.4); font-family:var(--sans); letter-spacing:.04em; }
+
+    /* EXIF style 4: Signature */
+    .ev-sig { background:#f5f4f0; width:82%; }
+    .ev-sig-photo { width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#c8d4c2,#8c9a84); }
+    .ev-sig-bottom { padding:10px 12px; border-top:1px solid rgba(0,0,0,.06); display:flex; gap:8px; align-items:center; }
+    .ev-sig-line { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+    .ev-sig-cam { font-family:var(--serif); font-size:9.5px; font-style:italic; font-weight:600; color:var(--accent); }
+    .ev-sig-data { font-size:7.5px; color:var(--fg-muted); font-family:var(--sans); letter-spacing:.04em; }
+
+    /* ── PROCESS ── */
+    .process-sec { padding:clamp(5rem,8vw,9rem) 0; background:var(--bg-clay); }
+    .process-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1.75rem; position:relative; }
+    .process-row::before {
+      content:''; position:absolute; top:2rem;
+      left:calc(12.5% + 1.75rem); right:calc(12.5% + 1.75rem);
+      height:1px; background:linear-gradient(90deg,transparent,var(--sage-lt) 20%,var(--sage-lt) 80%,transparent);
+    }
+    .process-step { display:flex; flex-direction:column; align-items:center; text-align:center; gap:1.25rem; }
+    .step-num {
+      width:4rem; height:4rem; border-radius:50%;
+      background:white; border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-family:var(--serif); font-size:1.5rem; font-weight:700; color:var(--fg);
+      box-shadow:var(--sh-sm); position:relative; z-index:1; flex-shrink:0;
+      transition:background .4s,color .4s;
+    }
+    .process-step:hover .step-num { background:var(--fg); color:white; }
+    .step-title { font-family:var(--serif); font-size:1.125rem; font-weight:700; color:var(--fg); letter-spacing:-.01em; }
+    .step-desc { font-size:.875rem; color:var(--fg-2); line-height:1.7; }
+
+    /* ── FAQ ── */
+    .faq-sec { padding:clamp(5rem,8vw,9rem) 0; }
+    .faq-list { max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:.75rem; }
+    .faq-item { border:1px solid var(--border); border-radius:16px; overflow:hidden; background:var(--bg-card); }
+    .faq-q {
+      width:100%; background:none; border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.25rem 1.5rem; gap:1rem;
+      font-family:var(--serif); font-size:1.0625rem; font-weight:600;
+      color:var(--fg); text-align:left; transition:color .3s;
+    }
+    .faq-q:hover { color:var(--accent); }
+    .faq-q-icon {
+      width:24px; height:24px; flex-shrink:0;
+      border-radius:50%; border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .4s ease, background .3s, border-color .3s;
+    }
+    .faq-q-icon svg { width:12px; height:12px; stroke:var(--fg-muted); stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .faq-item.open .faq-q-icon { transform:rotate(45deg); background:var(--fg); border-color:var(--fg); }
+    .faq-item.open .faq-q-icon svg { stroke:white; }
+    .faq-a {
+      max-height:0; overflow:hidden;
+      transition:max-height .4s ease, opacity .4s ease, padding .4s ease;
+      opacity:0; padding:0 1.5rem;
+    }
+    .faq-a-inner { padding-bottom:1.25rem; font-size:.9375rem; color:var(--fg-2); line-height:1.75; }
+    .faq-item.open .faq-a { max-height:200px; opacity:1; }
+    .faq-a a { color:var(--accent); transition:color .25s; }
+    .faq-a a:hover { color:var(--terra); }
+
+    /* ── CTA ── */
+    .cta-sec { padding:clamp(6rem,9vw,10rem) 0; background:var(--fg); position:relative; overflow:hidden; }
+    .cta-sec::before { content:''; position:absolute; width:440px; height:440px; top:-140px; right:-100px; border-radius:50%; border:1px solid rgba(255,255,255,.06); }
+    .cta-sec::after  { content:''; position:absolute; width:300px; height:300px; bottom:-90px; left:-70px; border-radius:50%; border:1px solid rgba(255,255,255,.04); }
+    .cta-inner { text-align:center; position:relative; z-index:1; }
+    .cta-inner .label { color:rgba(255,255,255,.38); margin-bottom:1.5rem; }
+    .cta-h2 { font-family:var(--serif); font-size:clamp(2.25rem,4.5vw,4rem); font-weight:700; color:white; line-height:1.08; letter-spacing:-.025em; margin-bottom:1.25rem; }
+    .cta-h2 em { color:var(--terra); font-style:italic; }
+    .cta-p { font-size:1.0625rem; color:rgba(255,255,255,.5); max-width:400px; margin:0 auto 3.25rem; line-height:1.75; }
+    .btn-cta {
+      display:inline-flex; align-items:center; gap:.625rem;
+      font-size:.875rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--fg); background:white;
+      padding:1.125rem 3rem; border-radius:var(--r-pill);
+      transition:background .3s,color .3s,transform .3s,box-shadow .3s;
+    }
+    .btn-cta:hover { background:var(--terra); color:white; transform:translateY(-3px); box-shadow:0 20px 40px -8px rgba(194,123,102,.45); }
+    .cta-chips { margin-top:2.25rem; display:flex; gap:.875rem; justify-content:center; flex-wrap:wrap; }
+    .cta-chip { font-size:.6875rem; letter-spacing:.08em; color:rgba(255,255,255,.3); border:1px solid rgba(255,255,255,.1); padding:.375rem .875rem; border-radius:var(--r-pill); }
+
+    /* ── FOOTER ── */
+    footer { background:var(--fg); border-top:1px solid rgba(255,255,255,.07); padding:1.875rem 0; }
+    .foot-inner { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; flex-wrap:wrap; }
+    .foot-logo { font-family:var(--serif); font-size:1rem; font-weight:700; color:rgba(255,255,255,.75); }
+    .foot-links { display:flex; gap:1.75rem; list-style:none; }
+    .foot-links a { font-size:.6875rem; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.3); transition:color .25s; }
+    .foot-links a:hover { color:rgba(255,255,255,.75); }
+    .foot-copy { font-size:.6875rem; color:rgba(255,255,255,.2); }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .color-grid { grid-template-columns:1fr 1fr; }
+      .exif-grid { grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns:1fr; min-height:auto; }
+      .hero-content { padding:3.5rem 2rem 4rem; order:2; }
+      .hero-visual { height:min(70vw,480px); order:1; padding:2rem; }
+      .exif-mockup { width:min(280px,70%); transform:rotate(0deg); }
+      .hero-badge-float { display:none; }
+      .stats-grid { grid-template-columns:1fr 1fr; }
+      .stat { border-right:none; border-bottom:1px solid rgba(255,255,255,.08); padding:1.5rem 1rem; }
+      .stat:nth-last-child(-n+2) { border-bottom:none; }
+      .feat-grid { grid-template-columns:1fr; }
+      .feat-card.stagger { transform:none; }
+      .feat-card:hover { transform:translateY(-3px) !important; }
+      .color-grid { grid-template-columns:1fr; }
+      .preview-grid { grid-template-columns:1fr; }
+      .exif-grid { grid-template-columns:1fr; }
+      .process-row { grid-template-columns:1fr 1fr; gap:2rem; }
+      .process-row::before { display:none; }
+      .nav-menu { display:none; }
+      .nav-toggle { display:flex; }
+    }
+    @media (max-width: 600px) {
+      .hero-visual { height:min(80vw,360px); }
+      .process-row { grid-template-columns:1fr; }
+      .foot-inner { flex-direction:column; align-items:flex-start; }
+      .foot-links { gap:1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="grain" aria-hidden="true"></div>
+
+<div id="site-nav"></div>
+
+<!-- ── HERO ── -->
+<section class="hero">
+
+  <!-- Left: Text -->
+  <div class="hero-content">
+    <span class="label">Photography Tool by DY · 324.ing</span>
+    <h1 class="hero-h1">
+      사진에 가치를 더하는<br><em>가장 완벽한</em> 방법
+    </h1>
+    <p class="hero-p">
+      무료, 회원가입 불필요, 서버 업로드 없음.<br>
+      브라우저에서 모든 처리가 이루어집니다.
+    </p>
+    <div class="hero-actions">
+      <a href="/" class="btn-fill">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4,2 13,7.5 4,13"/></svg>
+        지금 사용해보기
+      </a>
+      <a href="#features" class="btn-outline">기능 보기</a>
+    </div>
+    <div class="hero-trust">
+      <span>완전 무료</span>
+      <span>회원가입 불필요</span>
+      <span>서버 업로드 없음</span>
+    </div>
+  </div>
+
+  <!-- Right: EXIF Frame Mockup -->
+  <div class="hero-visual">
+    <div class="exif-mockup">
+      <!-- Photo area -->
+      <div class="exif-photo-wrap">
+        <img
+          src="/featured/hero-photo.jpg"
+          alt="야자수 사진 예시"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
+        >
+        <div class="exif-photo-fallback" style="display:none"></div>
+      </div>
+      <!-- EXIF frame bar -->
+      <div class="exif-frame-bar">
+        <div class="exif-cam-info">
+          <span class="exif-cam-name">FUJIFILM GFX100RF</span>
+          <div class="exif-cam-settings">
+            <span>f/4.0</span>
+            <span>·</span>
+            <span>1/2500s</span>
+            <span>·</span>
+            <span>ISO 400</span>
+            <span>·</span>
+            <span>35mm</span>
+          </div>
+        </div>
+        <div class="exif-cam-logo">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3.5"/>
+            <path d="M8.5 3h7l2 3H20a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2l2-3z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <!-- Floating badge -->
+    <div class="hero-badge-float">
+      <span class="badge-sub">EXIF 프레임 디자이너</span>
+      <span class="badge-main">10가지 스타일</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── STATS ── -->
+<div class="stats">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat">
+        <span class="stat-n">4</span>
+        <span class="stat-l">제공 모드</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n">7</span>
+        <span class="stat-l">캔버스 비율</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n">10</span>
+        <span class="stat-l">EXIF 스타일</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n" style="font-size:1.375rem;padding-top:.3rem">로컬</span>
+        <span class="stat-l">기기 내 처리</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="divider"></div>
+
+<!-- ── FEATURES ── -->
+<section id="features" class="features">
+  <div class="wrap">
+    <div class="sec-head sr">
+      <span class="label">Features</span>
+      <h2 class="sec-h2">하나의 도구,<br><em>네 가지 가능성</em></h2>
+      <p class="sec-p">각기 다른 상황을 위해 설계된 4가지 사진 편집 모드</p>
+    </div>
+    <div class="feat-grid">
+
+      <!-- Frame -->
+      <div class="feat-card sr d1">
+        <div class="feat-vis">
+          <div class="v-frame"><div class="v-frame-photo"></div></div>
+        </div>
+        <div class="feat-body">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+          </div>
+          <div>
+            <span class="label">Mode 01</span>
+            <h3 class="feat-h3">프레임 <em>모드</em></h3>
+          </div>
+          <p class="feat-desc">사진 둘레에 여백(프레임)을 추가합니다. 7가지 비율을 지원하며 두께를 % 또는 px로 자유롭게 조절할 수 있습니다.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">7가지 비율</span>
+            <span class="feat-tag">% / px 두께 조절</span>
+            <span class="feat-tag">커스텀 색상</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Split -->
+      <div class="feat-card stagger sr d2">
+        <div class="feat-vis">
+          <div class="v-split">
+            <div class="v-split-c"></div><div class="v-split-c"></div><div class="v-split-c"></div>
+            <div class="v-split-c"></div><div class="v-split-c"></div><div class="v-split-c"></div>
+            <div class="v-split-c"></div><div class="v-split-c"></div><div class="v-split-c"></div>
+          </div>
+        </div>
+        <div class="feat-body">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+          </div>
+          <div>
+            <span class="label">Mode 02</span>
+            <h3 class="feat-h3">분할 <em>모드</em></h3>
+          </div>
+          <p class="feat-desc">하나의 사진을 여러 컷으로 분할합니다. 가로/세로 방향을 선택해 인스타 멀티포스팅 콘텐츠를 쉽게 만들 수 있습니다.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">가로/세로 분할</span>
+            <span class="feat-tag">멀티포스팅</span>
+            <span class="feat-tag">인스타 그리드</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Convert -->
+      <div class="feat-card sr d3">
+        <div class="feat-vis">
+          <div class="v-convert">
+            <div class="v-conv-a"></div>
+            <span class="v-conv-arrow">→</span>
+            <div class="v-conv-b"></div>
+          </div>
+        </div>
+        <div class="feat-body">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M13 3l8 8h-8z"/><path d="M3 13l8 8v-8z"/></svg>
+          </div>
+          <div>
+            <span class="label">Mode 03</span>
+            <h3 class="feat-h3">변환 <em>모드</em></h3>
+          </div>
+          <p class="feat-desc">이미지 포맷을 원하는 형식으로 변환합니다. JPG/PNG/WebP를 지원하며 품질을 직접 조절해 파일 크기를 최적화할 수 있습니다.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">JPG / PNG / WebP</span>
+            <span class="feat-tag">품질 직접 조절</span>
+            <span class="feat-tag">비율 변환</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXIF -->
+      <div class="feat-card stagger sr d4">
+        <div class="feat-vis">
+          <div class="v-exif">
+            <div class="v-exif-photo"></div>
+            <div class="v-exif-hr"></div>
+            <div class="v-exif-row">
+              <div class="v-exif-dot"></div><div class="v-exif-dot"></div>
+              <div class="v-exif-dot"></div><div class="v-exif-dot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="feat-body">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="11" r="3"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/></svg>
+          </div>
+          <div>
+            <span class="label">Mode 04</span>
+            <h3 class="feat-h3">EXIF <em>프레임</em></h3>
+          </div>
+          <p class="feat-desc">촬영 정보를 감각적인 프레임으로 표현합니다. 10가지 스타일 중 하나를 골라 사진에 클릭 한 번으로 첨부하고 EXIF 정보를 자동으로 채워보세요.</p>
+          <div class="feat-tags">
+            <span class="feat-tag">10가지 스타일</span>
+            <span class="feat-tag">자동 EXIF 파싱</span>
+            <span class="feat-tag">클릭 사진 첨부</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ── FRAME COLORS ── -->
+<section class="colors-sec">
+  <div class="wrap">
+    <div class="sec-head sr">
+      <span class="label">Customization</span>
+      <h2 class="sec-h2">내 사진에 맞는<br><em>프레임</em>을 골라보세요</h2>
+      <p class="sec-p">자동 색상 추출부터 그라디언트, 특수 스타일까지</p>
+    </div>
+    <div class="color-grid">
+
+      <!-- White tone -->
+      <div class="color-card sr d1">
+        <div class="color-vis cv-white">
+          <div class="cv-white-inner"><div class="cv-white-photo"></div></div>
+        </div>
+        <div class="color-label-wrap">
+          <p class="color-title">화이트톤</p>
+          <p class="color-desc">클래식한 흰색 프레임. 어떤 사진과도 잘 어울리는 가장 기본적이고 깔끔한 선택.</p>
+        </div>
+      </div>
+
+      <!-- Auto / Gradient -->
+      <div class="color-card sr d2">
+        <div class="color-vis cv-auto">
+          <div class="cv-auto-inner">
+            <div class="cv-auto-bg">
+              <div class="cv-auto-frame"></div>
+            </div>
+          </div>
+        </div>
+        <div class="color-label-wrap">
+          <p class="color-title">자동 색상 · 그라디언트</p>
+          <p class="color-desc">사진에서 주요 색상을 자동 추출하거나 감각적인 그라디언트 프레임으로 사진을 더욱 돋보이게.</p>
+        </div>
+      </div>
+
+      <!-- Special style -->
+      <div class="color-card sr d3">
+        <div class="color-vis cv-special">
+          <div class="cv-special-row">
+            <div class="cv-sp-box" style="background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);">
+              <div style="width:32px;height:32px;background:linear-gradient(135deg,#3a4a3d,var(--sage));border-radius:3px;"></div>
+            </div>
+            <div class="cv-sp-box" style="background:#111; border:1px solid rgba(255,255,255,.15);">
+              <div style="width:32px;height:32px;background:linear-gradient(135deg,#1a1a1c,#333);border-radius:3px;"></div>
+            </div>
+            <div class="cv-sp-box" style="background:rgba(168,122,82,.2); border:1px solid rgba(168,122,82,.3);">
+              <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--terra));border-radius:3px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="color-label-wrap">
+          <p class="color-title">특수 스타일</p>
+          <p class="color-desc">다크, 빈티지, 필름 등 분위기 있는 특수 프레임 스타일로 사진에 개성을 더하세요.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ── PREVIEW MODES ── -->
+<section class="preview-sec">
+  <div class="wrap">
+    <div class="sec-head sr">
+      <span class="label">Preview</span>
+      <h2 class="sec-h2">인스타그램 업로드 전에<br><em>미리 확인</em>하세요</h2>
+      <p class="sec-p">실제 피드, 프로필 그리드에서 어떻게 보일지 미리 볼 수 있습니다</p>
+    </div>
+    <div class="preview-grid">
+
+      <!-- Basic -->
+      <div class="preview-card sr d1">
+        <div class="preview-vis">
+          <div class="pv-basic">
+            <div class="pv-basic-inner"><div class="pv-basic-photo"></div></div>
+          </div>
+        </div>
+        <div class="preview-body">
+          <span class="preview-tag">기본 모드</span>
+          <p class="preview-title">순수 캔버스 미리보기</p>
+          <p class="preview-desc">편집된 사진을 순수한 캔버스 위에서 확인합니다. 최종 결과물을 가장 정확하게 확인할 수 있는 기본 뷰.</p>
+        </div>
+      </div>
+
+      <!-- Feed -->
+      <div class="preview-card active sr d2">
+        <div class="preview-vis" style="background:#fafafa;">
+          <div class="pv-feed" style="width:85%;">
+            <div class="pv-feed-header">
+              <div class="pv-feed-avatar"></div>
+              <span class="pv-feed-name">@yourname</span>
+            </div>
+            <div class="pv-feed-post">
+              <img src="/featured/hero-photo.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.classList.add('v-exif-photo');this.remove()">
+            </div>
+            <div class="pv-feed-bar">
+              <div class="pv-feed-actions">
+                <div class="pv-feed-icon"></div>
+                <div class="pv-feed-icon"></div>
+                <div class="pv-feed-icon"></div>
+              </div>
+              <div class="pv-feed-likes">좋아요 248개</div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-body">
+          <span class="preview-tag" style="background:rgba(140,154,132,.15);">피드 모드</span>
+          <p class="preview-title">실제 Instagram 피드처럼</p>
+          <p class="preview-desc">인스타그램 피드에서 실제로 어떻게 보이는지 확인합니다. 업로드 전 최종 확인에 가장 유용합니다.</p>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div class="preview-card sr d3">
+        <div class="preview-vis" style="background:#fafafa;">
+          <div class="pv-profile" style="width:85%;">
+            <div class="pv-profile-header">
+              <div class="pv-profile-ava"></div>
+              <div class="pv-profile-info">
+                <span class="pv-profile-name">yourname</span>
+                <span class="pv-profile-sub">게시물 48개</span>
+              </div>
+            </div>
+            <div class="pv-grid">
+              <div class="pv-grid-cell"></div>
+              <div class="pv-grid-cell"></div>
+              <div class="pv-grid-cell active-cell" style="overflow:hidden;">
+                <img src="/featured/hero-photo.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.remove()">
+              </div>
+              <div class="pv-grid-cell"></div>
+              <div class="pv-grid-cell"></div>
+              <div class="pv-grid-cell"></div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-body">
+          <span class="preview-tag">프로필 모드</span>
+          <p class="preview-title">프로필 그리드 형태로</p>
+          <p class="preview-desc">프로필 그리드에서 다른 사진들과 어떤 조화를 이루는지 확인합니다. 일관된 피드 구성에 도움이 됩니다.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ── EXIF STYLES ── -->
+<section class="exif-sec">
+  <div class="wrap">
+    <div class="sec-head sr">
+      <span class="label">EXIF Frame Styles</span>
+      <h2 class="sec-h2">촬영 정보를<br><em>감각적으로</em> 담다</h2>
+      <p class="sec-p">10가지 EXIF 스타일로 카메라 정보를 사진과 함께 표현하세요</p>
+    </div>
+    <div class="exif-grid">
+
+      <!-- 01. Fujifilm Recipe -->
+      <div class="exif-card sr d1">
+        <div class="exif-vis" style="background:#1A1A18; padding:1.25rem;">
+          <div style="background:#1A1A18; width:88%; margin:0 auto; border:0.5px solid #333330;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#2d3a31,#3a4a3d);"></div>
+            <div style="height:0.5px; background:#333330;"></div>
+            <div style="padding:8px 12px; display:flex; justify-content:space-between; align-items:flex-end;">
+              <div>
+                <div style="font-size:8px; font-weight:600; color:#E8E8E2; font-family:monospace; letter-spacing:.04em;">PROVIA / STANDARD</div>
+                <div style="font-size:7px; color:#6A6A62; font-family:monospace;">FUJIFILM · 35mm</div>
+              </div>
+              <div style="font-size:7.5px; color:#6A6A62; font-family:monospace;">'26.03</div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 01</span>
+          <p class="exif-body-title">후지필름 레시피</p>
+          <p class="exif-body-desc">후지필름 필름 시뮬레이션 레시피와 촬영 설정을 담은 감성적인 스타일. 어두운 배경으로 사진을 돋보이게 합니다.</p>
+        </div>
+      </div>
+
+      <!-- 02. Glassmorphism -->
+      <div class="exif-card sr d2">
+        <div class="exif-vis" style="background:linear-gradient(135deg,#2d3a31,#8c9a84); padding:0; position:relative; overflow:hidden; min-height:160px;">
+          <div style="position:absolute; bottom:0.75rem; left:0.75rem; right:0.75rem; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22); border-radius:10px; padding:8px 12px; display:flex; align-items:center; gap:8px;">
+            <div style="width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+            <div>
+              <div style="font-size:7.5px; font-weight:600; color:white; text-shadow:0 1px 2px rgba(0,0,0,.4);">LEICA CAMERA AG</div>
+              <div style="font-size:6.5px; color:rgba(255,255,255,0.75);">35mm · f/2.8 · 1/500s · ISO 400</div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 02</span>
+          <p class="exif-body-title">글라스모피즘</p>
+          <p class="exif-body-desc">사진 위에 반투명 유리 카드 오버레이. 이미지를 가리지 않으면서 정보를 우아하게 표시합니다.</p>
+        </div>
+      </div>
+
+      <!-- 03. Leica Lux -->
+      <div class="exif-card sr d3">
+        <div class="exif-vis" style="background:#000; padding:1.25rem;">
+          <div style="background:#000; width:88%; margin:0 auto;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#1a1a1a,#333);"></div>
+            <div style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:5px;">
+                <div style="width:6px; height:6px; border-radius:50%; background:#E60012; flex-shrink:0;"></div>
+                <span style="font-size:7.5px; font-weight:700; letter-spacing:3px; color:white; text-transform:uppercase;">LEICA</span>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:8px; color:white; font-weight:300; letter-spacing:.5px;">35mm &nbsp; f/2.8</div>
+                <div style="font-size:7px; color:#666; letter-spacing:.5px;">1/500s &nbsp; ISO400</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 03</span>
+          <p class="exif-body-title">라이카 룩스</p>
+          <p class="exif-body-desc">라이카 특유의 레드 닷과 Helvetica 미니멀리즘. 단호한 흑백 대비로 촬영 정보를 전달합니다.</p>
+        </div>
+      </div>
+
+      <!-- 04. Polaroid -->
+      <div class="exif-card sr d4">
+        <div class="exif-vis" style="background:#e8e3da; padding:1.25rem;">
+          <div style="background:#FAF9F6; box-shadow:0 2px 8px rgba(0,0,0,.1); width:82%; margin:0 auto; padding:7px 7px 18px;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#c8d4c2,#8c9a84);"></div>
+            <div style="padding:8px 4px 0; display:flex; justify-content:space-between; align-items:flex-end;">
+              <div style="font-size:11px; font-style:italic; color:#3A3A38; font-family:'Caveat',cursive;">FUJIFILM GFX100RF</div>
+              <div style="font-size:9px; color:#8A8A82; font-family:'Caveat',cursive;">26.03.17</div>
+            </div>
+            <div style="font-size:9px; color:#6A6A65; font-family:'Caveat',cursive; padding:2px 4px 0;">f/4.0 &nbsp; ISO 400 &nbsp; 35mm</div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 04</span>
+          <p class="exif-body-title">폴라로이드</p>
+          <p class="exif-body-desc">손으로 쓴 듯한 Caveat 필기체로 촬영 정보를 담은 폴라로이드 카드. 아날로그 감성 그대로.</p>
+        </div>
+      </div>
+
+      <!-- 05. Film Strip Negative -->
+      <div class="exif-card sr d1">
+        <div class="exif-vis" style="background:#1a1205; padding:1rem 0.75rem;">
+          <div style="background:#2D2419; width:90%; margin:0 auto; font-family:monospace;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; height:18px;">
+              <div style="font-size:6px; color:#D4A853; letter-spacing:3px; opacity:.85;">◀ 5 &nbsp;&nbsp; 5A</div>
+              <div style="display:flex; gap:5px; align-items:center;">
+                <div style="width:8px; height:10px; background:#111; border-radius:2px; border:1px solid rgba(255,255,255,.2);"></div>
+                <div style="width:8px; height:10px; background:#111; border-radius:2px; border:1px solid rgba(255,255,255,.2);"></div>
+                <div style="width:8px; height:10px; background:#111; border-radius:2px; border:1px solid rgba(255,255,255,.2);"></div>
+              </div>
+              <div style="font-size:6px; color:#D4A853; letter-spacing:2px; opacity:.85;">6 ▶</div>
+            </div>
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#1a1a1c,#2d2419); border-left:6px solid #1a1205; border-right:6px solid #1a1205;"></div>
+            <div style="padding:3px 8px 5px; display:flex; justify-content:space-between;">
+              <span style="font-size:6px; color:#D4A853; opacity:.8;">FUJIFILM · GFX100RF</span>
+              <span style="font-size:6px; color:#D4A853; opacity:.6;">f/4.0 · 1/2500s · ISO400</span>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 05</span>
+          <p class="exif-body-title">필름 스트립 네거티브</p>
+          <p class="exif-body-desc">필름 스트립의 스프로켓 홀과 앰버 톤 마킹. 아날로그 필름 현상 느낌을 재현합니다.</p>
+        </div>
+      </div>
+
+      <!-- 06. Shot On -->
+      <div class="exif-card sr d2">
+        <div class="exif-vis" style="background:#000; padding:1.25rem;">
+          <div style="background:#000; width:88%; margin:0 auto;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#1a1a1a,#2d2d2d); border-bottom:1px solid #222;"></div>
+            <div style="padding:10px 12px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <div style="width:28px; height:28px; border-radius:50%; background:#222; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:7.5px; font-weight:600; color:#f0f0f0;">FUJIFILM GFX100RF</div>
+                  <div style="font-size:6.5px; color:#777;">35mm</div>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-around; border-top:1px solid #222; padding-top:6px;">
+                <div style="text-align:center;"><div style="font-size:7.5px; font-weight:600; color:#f0f0f0;">f/4.0</div><div style="font-size:5.5px; color:#555; text-transform:uppercase; letter-spacing:.5px;">Aperture</div></div>
+                <div style="text-align:center;"><div style="font-size:7.5px; font-weight:600; color:#f0f0f0;">1/500s</div><div style="font-size:5.5px; color:#555; text-transform:uppercase; letter-spacing:.5px;">Shutter</div></div>
+                <div style="text-align:center;"><div style="font-size:7.5px; font-weight:600; color:#f0f0f0;">ISO 400</div><div style="font-size:5.5px; color:#555; text-transform:uppercase; letter-spacing:.5px;">ISO</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 06</span>
+          <p class="exif-body-title">샷 온</p>
+          <p class="exif-body-desc">카메라 아이콘과 함께 조리개·셔터·ISO를 카드형으로 나열. 다크 UI 감성의 정보 카드.</p>
+        </div>
+      </div>
+
+      <!-- 07. Magazine Editorial -->
+      <div class="exif-card sr d3">
+        <div class="exif-vis" style="background:#f5f3ee; padding:1.25rem;">
+          <div style="background:#fff; width:88%; margin:0 auto; padding:8px;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#3a4a3d,#8c9a84);"></div>
+            <div style="margin-top:10px; padding:0 4px;">
+              <div style="height:1.5px; background:#1A1A1A; margin-bottom:8px;"></div>
+              <div style="display:flex; align-items:baseline; gap:5px; margin-bottom:4px;">
+                <span style="font-size:8.5px; font-weight:700; font-family:'Playfair Display',serif; color:#1A1A1A;">FUJIFILM GFX100RF</span>
+                <span style="font-size:7px; font-style:italic; font-family:'Playfair Display',serif; color:#555;">GF 35mm</span>
+              </div>
+              <div style="font-size:6.5px; color:#888;">f/4.0 · 1/2500s · ISO400 · 35mm</div>
+              <div style="height:0.5px; background:#ccc; margin-top:8px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 07</span>
+          <p class="exif-body-title">매거진 에디토리얼</p>
+          <p class="exif-body-desc">굵은 룰 라인과 Playfair 세리프체. 잡지 한 페이지처럼 에디토리얼한 분위기를 연출합니다.</p>
+        </div>
+      </div>
+
+      <!-- 08. HUD Dashboard -->
+      <div class="exif-card sr d4">
+        <div class="exif-vis" style="background:#060606; padding:1.1rem;">
+          <div style="background:#0A0A0A; width:88%; margin:0 auto; padding:8px;">
+            <div style="display:flex; justify-content:space-between; padding:0 4px 6px;">
+              <div><div style="font-size:10px; font-weight:700; color:#fff; font-family:monospace;">f/4.0</div><div style="font-size:5px; letter-spacing:2px; color:#555; text-transform:uppercase;">APERTURE</div></div>
+              <div style="text-align:right;"><div style="font-size:10px; font-weight:700; color:#fff; font-family:monospace;">ISO 400</div><div style="font-size:5px; letter-spacing:2px; color:#555; text-transform:uppercase;">ISO</div></div>
+            </div>
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#111,#1a1a1a); border:1px solid rgba(255,255,255,.07);"></div>
+            <div style="display:flex; justify-content:space-between; padding:6px 4px 0;">
+              <div><div style="font-size:10px; font-weight:700; color:#fff; font-family:monospace;">35mm</div><div style="font-size:5px; letter-spacing:2px; color:#555; text-transform:uppercase;">FOCAL</div></div>
+              <div style="text-align:right;"><div style="font-size:10px; font-weight:700; color:#fff; font-family:monospace;">1/2500s</div><div style="font-size:5px; letter-spacing:2px; color:#555; text-transform:uppercase;">SHUTTER</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 08</span>
+          <p class="exif-body-title">HUD 대시보드</p>
+          <p class="exif-body-desc">초점거리·조리개·셔터·ISO를 사방에 배치한 계기판 스타일. 테크니컬하고 강렬한 분위기.</p>
+        </div>
+      </div>
+
+      <!-- 09. Minimal Line -->
+      <div class="exif-card sr d1">
+        <div class="exif-vis" style="background:#f0ede7; padding:1.25rem;">
+          <div style="background:#fff; width:82%; margin:0 auto;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,var(--bg-clay,#EAE5DC),var(--sage-lt,#C8D4C2)); border-bottom:0.5px solid #e0e0e0;"></div>
+            <div style="padding:8px 10px; text-align:center;">
+              <span style="font-size:7px; color:#999; letter-spacing:.04em;">FUJIFILM GFX100RF · 35mm · f/4.0 · 1/2500s · ISO 400</span>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 09</span>
+          <p class="exif-body-title">미니멀 라인</p>
+          <p class="exif-body-desc">얇은 구분선 하나와 작은 텍스트만으로 구성된 극도의 미니멀리즘. 사진을 전혀 방해하지 않습니다.</p>
+        </div>
+      </div>
+
+      <!-- 10. Card Grid -->
+      <div class="exif-card sr d2">
+        <div class="exif-vis" style="background:#f5f3ee; padding:1.25rem;">
+          <div style="background:#fff; width:88%; margin:0 auto;">
+            <div style="width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#c8d4c2,#8c9a84); border-bottom:0.5px solid rgba(0,0,0,.08);"></div>
+            <div style="padding:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+              <div style="background:#f8f8f6; border-radius:4px; padding:4px 6px; display:flex; align-items:center; gap:4px;"><div style="width:10px; height:10px; background:#e8e8e8; border-radius:2px; flex-shrink:0;"></div><div><div style="font-size:7px; font-weight:600; color:#1a1a1a;">f/4.0</div><div style="font-size:5.5px; color:#aaa;">Aperture</div></div></div>
+              <div style="background:#f8f8f6; border-radius:4px; padding:4px 6px; display:flex; align-items:center; gap:4px;"><div style="width:10px; height:10px; background:#e8e8e8; border-radius:2px; flex-shrink:0;"></div><div><div style="font-size:7px; font-weight:600; color:#1a1a1a;">ISO 400</div><div style="font-size:5.5px; color:#aaa;">ISO</div></div></div>
+              <div style="background:#f8f8f6; border-radius:4px; padding:4px 6px; display:flex; align-items:center; gap:4px;"><div style="width:10px; height:10px; background:#e8e8e8; border-radius:2px; flex-shrink:0;"></div><div><div style="font-size:7px; font-weight:600; color:#1a1a1a;">35mm</div><div style="font-size:5.5px; color:#aaa;">Focal</div></div></div>
+              <div style="background:#f8f8f6; border-radius:4px; padding:4px 6px; display:flex; align-items:center; gap:4px;"><div style="width:10px; height:10px; background:#e8e8e8; border-radius:2px; flex-shrink:0;"></div><div><div style="font-size:7px; font-weight:600; color:#1a1a1a;">1/2500s</div><div style="font-size:5.5px; color:#aaa;">Shutter</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="exif-body">
+          <span class="label">Style 10</span>
+          <p class="exif-body-title">카드 그리드</p>
+          <p class="exif-body-desc">조리개·ISO·초점거리·셔터를 4개 미니 카드로 정렬. 정보를 한눈에 읽기 좋은 그리드 레이아웃.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ── PROCESS ── -->
+<section class="process-sec">
+  <div class="wrap">
+    <div class="sec-head sr">
+      <span class="label">How It Works</span>
+      <h2 class="sec-h2"><em>3분</em>이면 충분해요</h2>
+      <p class="sec-p">클릭 몇 번으로 완성되는 간단한 4단계</p>
+    </div>
+    <div class="process-row">
+      <div class="process-step sr d1">
+        <div class="step-num">1</div>
+        <h3 class="step-title">사진 업로드</h3>
+        <p class="step-desc">클릭, 드래그 앤 드롭, Ctrl+V 붙여넣기로 사진을 불러옵니다.</p>
+      </div>
+      <div class="process-step sr d2">
+        <div class="step-num">2</div>
+        <h3 class="step-title">모드와 스타일 선택</h3>
+        <p class="step-desc">프레임 / 분할 / 변환 / EXIF 중 원하는 모드와 스타일을 선택합니다.</p>
+      </div>
+      <div class="process-step sr d3">
+        <div class="step-num">3</div>
+        <h3 class="step-title">스타일 & 옵션 조정</h3>
+        <p class="step-desc">다크/라이트 모드, EXIF 정보 입력, 프레임 색상 등 원하는 대로 세밀하게 조정합니다.</p>
+      </div>
+      <div class="process-step sr d4">
+        <div class="step-num">4</div>
+        <h3 class="step-title">다운로드</h3>
+        <p class="step-desc">JPG / PNG / WebP 중 선택해 고화질로 저장합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ── FAQ ── -->
+<section class="faq-sec">
+  <div class="wrap">
+    <div class="sec-head sr">
+      <span class="label">FAQ</span>
+      <h2 class="sec-h2"><em>자주</em> 묻는 질문</h2>
+    </div>
+    <div class="faq-list">
+
+      <div class="faq-item sr d1">
+        <button class="faq-q" aria-expanded="false">
+          정말 무료인가요?
+          <span class="faq-q-icon"><svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></span>
+        </button>
+        <div class="faq-a" role="region">
+          <div class="faq-a-inner">네, 완전 무료이며 회원가입도 필요 없습니다. 광고도 없고, 숨겨진 유료 기능도 없습니다.</div>
+        </div>
+      </div>
+
+      <div class="faq-item sr d2">
+        <button class="faq-q" aria-expanded="false">
+          사진이 서버에 업로드되나요?
+          <span class="faq-q-icon"><svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></span>
+        </button>
+        <div class="faq-a" role="region">
+          <div class="faq-a-inner">아닙니다. 모든 처리는 브라우저에서 이루어지며 사진이 서버로 전송되지 않습니다. 개인 사진이 외부로 나가는 일은 없습니다.</div>
+        </div>
+      </div>
+
+      <div class="faq-item sr d3">
+        <button class="faq-q" aria-expanded="false">
+          어떤 캔버스 비율을 지원하나요?
+          <span class="faq-q-icon"><svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></span>
+        </button>
+        <div class="faq-a" role="region">
+          <div class="faq-a-inner">1:1, 4:5, 3:4 (인스타 피드), 9:16 (릴스·스토리), 4:3, 3:2, 2:3 총 7가지 비율을 지원합니다.</div>
+        </div>
+      </div>
+
+      <div class="faq-item sr d4">
+        <button class="faq-q" aria-expanded="false">
+          화질이 떨어지나요?
+          <span class="faq-q-icon"><svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></span>
+        </button>
+        <div class="faq-a" role="region">
+          <div class="faq-a-inner">EXIF 프레임 디자이너는 JPEG 95% 품질로 저장됩니다. 프레임·분할·변환 도구에서는 PNG·WebP도 지원하며 품질을 직접 조절해 파일 크기를 최적화할 수 있습니다.</div>
+        </div>
+      </div>
+
+      <div class="faq-item sr">
+        <button class="faq-q" aria-expanded="false">
+          EXIF 정보란 무엇인가요?
+          <span class="faq-q-icon"><svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></span>
+        </button>
+        <div class="faq-a" role="region">
+          <div class="faq-a-inner">카메라가 촬영 시 자동으로 기록하는 메타데이터입니다. 카메라 모델, 렌즈, 초점거리, 조리개, 셔터속도, ISO 등의 정보가 담겨 있습니다. EXIF 프레임 모드에서 이를 감각적으로 표시합니다.</div>
+        </div>
+      </div>
+
+      <div class="faq-item sr">
+        <button class="faq-q" aria-expanded="false">
+          누가 만들었나요?
+          <span class="faq-q-icon"><svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></span>
+        </button>
+        <div class="faq-a" role="region">
+          <div class="faq-a-inner">아마추어 취미 사진작가 노대영이 직접 만들었습니다.<br>자세한 내용은 <a href="/devnote.html">개발 노트</a>를 참고하세요.<br><a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">인스타그램</a>과 <a href="https://324.ing" target="_blank" rel="noopener noreferrer">홈페이지</a>에서 그의 사진을 감상하세요.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta-sec">
+  <div class="wrap">
+    <div class="cta-inner sr">
+      <span class="label">Get Started</span>
+      <h2 class="cta-h2">지금 바로<br><em>시작해보세요</em></h2>
+      <p class="cta-p">무료로 시작하기. 회원가입 불필요.<br>지금 바로 사진에 프레임을 추가해보세요.</p>
+      <a href="/" class="btn-cta">
+        무료로 시작하기
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="8" x2="13" y2="8"/><polyline points="9,4 13,8 9,12"/>
+        </svg>
+      </a>
+      <div class="cta-chips">
+        <span class="cta-chip">완전 무료</span>
+        <span class="cta-chip">회원가입 불필요</span>
+        <span class="cta-chip">서버 업로드 없음</span>
+        <span class="cta-chip">고화질 JPEG</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="wrap">
+    <div class="foot-inner">
+      <a href="/" class="foot-logo">f.324.ing</a>
+      <ul class="foot-links">
+        <li><a href="/">앱 열기</a></li>
+        <li><a href="/blog/">블로그</a></li>
+        <li><a href="/about.html">소개</a></li>
+        <li><a href="/devnote.html">개발 노트</a></li>
+        <li><a href="https://www.instagram.com/dyno/">인스타그램</a></li>
+      </ul>
+      <p class="foot-copy">© 2026 324.ing · Built by DY</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll reveal ──
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.sr').forEach(el => io.observe(el));
+
+  // ── FAQ accordion ──
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      // Close all
+      document.querySelectorAll('.faq-item.open').forEach(i => {
+        i.classList.remove('open');
+        i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+      });
+      // Open clicked if was closed
+      if (!isOpen) {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+</script>
+<script src="/site.js" defer></script>
+
+</body>
+</html>

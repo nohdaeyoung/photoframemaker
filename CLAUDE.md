@@ -132,6 +132,103 @@ npm run cap:run:android    # 빌드 + Android 실행
 
 ---
 
+## EXIF 프레임 모드 (`/exif.html`)
+
+### 아키텍처
+
+```
+exif.html                        EXIF 프레임 전용 페이지
+app.js (ExifApp 초기화)          ExifApp 인스턴스 생성 및 마운트
+js/modes/exif-mode.js            ExifApp 클래스 (AppBase 상속)
+js/overlays/exif-overlays.js     18개 오버레이 드로잉 함수
+```
+
+### ExifApp 핵심 특징
+
+- `getFrameWidth()` 오버라이드 → 항상 `0` (프레임 없음)
+- `renderMode()`: 원본 이미지 치수 기준으로 스타일별 자연 캔버스 크기 계산, 별도 패딩 없음
+- `getExifOverlayDimensions()`: 스타일별 `canvasWidth/Height`, `imageX/Y/W/H`, `barX/Y/W/H` 반환
+- `_drawExifOverlay()`: `exifStyle` 값으로 해당 오버레이 함수 디스패치
+
+### 18개 EXIF 스타일
+
+| 스타일 | 캔버스 확장 방향 | 전용 옵션 |
+|--------|----------------|-----------|
+| filmstrip | 상하 (stripH×2) | 필름 브랜드 |
+| minimal | 없음 (이미지 위 오버레이) | — |
+| magazine | 좌측 (barW) | — |
+| signature | 하단 (barH) | — |
+| letterbox | 상하 (barH×2) | — |
+| polaroid | 상하 (topH+botH) | 폰트 |
+| leica | 하단 (barH) | — |
+| fujistyle | 상하 (topH+botH) | — |
+| fujirecipe | 상하 (topM+barH) | — |
+| glass | 없음 (이미지 위 오버레이) | 테마, 위치 |
+| leicalux | 하단 (barH) | — |
+| instax | 사방 (sideM×2 + botH) | 폰트 |
+| filmstock | 상하 (stripH×2) | 필름 브랜드 |
+| shoton | 하단 (barH) | — |
+| editorial | 사방 (margin×2 + barH) | — |
+| hud | 상하 (topH+botH) | 액센트 색상 |
+| minimalbar | 하단 (barH) | — |
+| cardgrid | 하단 (barH) | 카드 레이아웃 (1~6) |
+
+### 다운로드
+
+`js/utils/download.js` → `downloadExifFrame()`:
+- `app.getExifOverlayDimensions(원본 해상도)`로 오프스크린 캔버스 크기 결정
+- `app._drawExifOverlay()` 호출로 오버레이 합성 후 PNG 다운로드
+
+### UI 주의사항
+
+- 프레임 비율/색상 섹션: `display:none` (EXIF 모드 불필요)
+- AppBase stub 엘리먼트 div: `display:none` (다운로드 버튼 위 불필요한 인풋 방지)
+- 데스크톱/모바일 이중 구조 동일하게 유지
+
+---
+
+## Featured 랜딩 페이지 (`/featured/`)
+
+### 기술 스택
+- React 19 + Vite + TypeScript + Tailwind CSS v4 + Framer Motion
+- 빌드: `cd featured-landing && npm run build`
+- 소스: `/Volumes/Dev/daeyoung-openclaw-main/featured-landing/`
+
+### 컴포넌트 구조
+```
+featured-landing/src/
+  components/
+    layout/   Navbar.tsx, Footer.tsx
+    sections/ HeroSection, ModesSection, StepSection, ColorsSection,
+              ExifSection, PreviewSection, FAQSection, CTASection
+    ui/       FrameMockup.tsx (히어로 이미지 + EXIF 바)
+  App.tsx     메인 레이아웃
+  main.tsx    엔트리포인트
+```
+
+### 배포 방법
+```bash
+# 1. 빌드
+cd /Volumes/Dev/daeyoung-openclaw-main/featured-landing && npm run build
+
+# 2. 양쪽에 복사
+cp -r dist/* /Volumes/Dev/photoframemaker/www/featured/
+mkdir -p /Volumes/Dev/daeyoung-openclaw-main/featured && cp -r dist/* /Volumes/Dev/daeyoung-openclaw-main/featured/
+
+# 3. Cloudflare Workers 배포
+cd /Volumes/Dev/photoframemaker && npm run build && npx wrangler deploy
+
+# 4. Vercel 배포
+cd /Volumes/Dev/daeyoung-openclaw-main && npx vercel --prod --yes
+```
+
+### 주의사항
+- Vite `base: '/featured/'` 필수 (서브디렉토리 배포)
+- 히어로 이미지: `public/hero-photo.jpg` (FUJIFILM GFX100RF, 35mm f/4.0 1/2500s ISO 400)
+- 네비게이션 순서: Featured → Tools → Blog → Dev Note → About (site.js, worker.js와 동기화)
+
+---
+
 ## 블로그 시스템 (Blog + Admin)
 
 ### 호스팅 아키텍처 (중요!)

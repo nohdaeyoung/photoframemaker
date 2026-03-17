@@ -11,3 +11,5 @@ node_modules/
 # Capacitor build output
 www/
 .vercel
+.gstack/
+*.DS_Store

@@ -4,114 +4,246 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>소개 — Photo Frame Maker by DY</title>
-    <meta name="description" content="Photo Frame Maker by DY 소개 — 무료 온라인 사진 프레임 도구. 인스타그램 피드/프로필 프레임, 7가지 캔버스 비율, PNG 무손실 저장.">
+    <meta name="description" content="Photo Frame Maker by DY 소개 — 무료 온라인 사진 편집 도구 모음. 프레임, 분할, EXIF 프레임 디자이너, 이미지 변환, AI 업스케일러. 모든 처리는 브라우저에서.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://f.324.ing/about.html">
     <meta property="og:title" content="소개 — Photo Frame Maker by DY">
-    <meta property="og:description" content="사진작가 DY가 만든 무료 온라인 사진 프레임 도구 소개">
+    <meta property="og:description" content="사진작가 DY가 만든 무료 온라인 사진 편집 도구 모음 소개">
     <meta property="og:url" content="https://f.324.ing/about.html">
     <meta property="og:type" content="website">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
     <style>
-        .blog-page { min-height: 100dvh; display: flex; flex-direction: column; }
-        .blog-header { text-align: center; padding: 2rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
-        .blog-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
-        .blog-header h1 a { color: var(--text); text-decoration: none; }
-        .blog-header h1 a:hover { color: var(--accent); }
-        .blog-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
-        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; flex-wrap: wrap; }
-        .blog-header nav a { color: var(--text-secondary); text-decoration: none; }
-        .blog-header nav a:hover, .blog-header nav a.active { color: var(--accent); }
-        .blog-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; width: 100%; }
+        .about-page {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+        .about-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2rem 2rem 3rem;
+            flex: 1;
+            width: 100%;
+        }
+        .about-content h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 2.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .about-content h2:first-child {
+            margin-top: 0;
+        }
+        .about-content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 0.4rem;
+        }
+        .about-content p {
+            color: var(--text-secondary);
+            line-height: 1.75;
+            margin: 0 0 1rem;
+            font-size: 0.95rem;
+        }
+        .about-content p[lang="en"] {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            line-height: 1.7;
+        }
+        .about-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin: 1rem 0 1.5rem;
+        }
+        .about-feature {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+        .about-feature p {
+            margin: 0;
+            font-size: 0.88rem;
+        }
+        .about-feature-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.45rem;
+            border-radius: 100px;
+            margin-left: 0.4rem;
+            vertical-align: middle;
+        }
+        .badge-new { background: #ff6b35; color: #fff; }
+        .badge-beta { background: #8b5cf6; color: #fff; }
+        .about-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem;
+        }
+        .about-content ul li {
+            position: relative;
+            padding: 0.5rem 0 0.5rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.6;
+            border-bottom: 1px solid var(--border);
+        }
+        .about-content ul li:last-child {
+            border-bottom: none;
+        }
+        .about-content ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.85rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        .about-content ul li strong {
+            color: var(--text);
+        }
+        .about-content ol {
+            padding: 0 0 0 1.25rem;
+            margin: 0 0 1.5rem;
+        }
+        .about-content ol li {
+            padding: 0.4rem 0;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+        .about-content ol li strong {
+            color: var(--text);
+        }
+        .about-faq dt {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+            margin-top: 1.25rem;
+        }
+        .about-faq dt:first-child {
+            margin-top: 0;
+        }
+        .about-faq dd {
+            margin: 0.35rem 0 0 0;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+        .about-faq dd a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .about-faq dd a:hover {
+            text-decoration: underline;
+        }
+        .about-content a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .about-content a:hover {
+            text-decoration: underline;
+        }
     </style>
+    <script>
+        (function() {
+            var stored = localStorage.getItem('pfm-theme');
+            if (stored === 'dark' || stored === 'light') {
+                document.documentElement.setAttribute('data-theme', stored);
+            }
+        })();
+    </script>
 </head>
 <body>
-    <div class="blog-page">
-        <div class="blog-header">
-            <h1><a href="/">Photo Frame Maker</a></h1>
-            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">DY</a></p>
-            <nav>
-                <a href="/">사진 프레임 만들기</a>
-                <a href="/blog/">블로그</a>
-                <a href="/about.html" class="active">소개</a>
-                <a href="/devnote.html">Dev Note</a>
-            </nav>
-        </div>
+    <div id="site-nav"></div>
+    <div class="about-page">
+        <div class="about-content">
+            <h2>Photo Frame Maker란?</h2>
+            <p>사진작가 <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a>가 만든 무료 온라인 사진 편집 도구 모음입니다. 포토샵 없이도 프레이밍, 분할, EXIF 오버레이, 포맷 변환, AI 업스케일링까지 — 사진에 필요한 모든 작업을 브라우저에서 바로 할 수 있습니다.</p>
+            <p>회원가입 없이 접속 즉시 사용하며, 모든 처리는 브라우저에서 이루어져 사진이 서버로 전송되지 않습니다. 광고도 없습니다.</p>
+            <p lang="en">Photo Frame Maker (f.324.ing) is a free online photo editing toolkit created by photographer Noh Daeyoung (DY). It includes five specialized tools: Frame Maker for adding borders and Instagram-style frames, Photo Splitter for grid splitting, EXIF Frame Designer for stylish metadata overlays, Image Converter for format conversion and resizing, and AI Upscaler for 4x enhancement using Real-ESRGAN. All processing runs locally in the browser — no photos are ever uploaded to a server.</p>
 
-        <section class="seo-content">
-            <div class="seo-inner">
-
-                <h2>Photo Frame Maker란?</h2>
-                <p>사진작가 <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a>가 만든 무료 온라인 프레임 도구입니다. 항상 포토샵을 이용해 프레이밍 작업을 해왔습니다. 더 이상 포토샵을 이용하는 건 귀찮고, 남의 것 쓰기에는 또 알량한 자존심 때문에 만든 사이트입니다.
-                    <br />
-                    이 사이트에서는 사진에 깔끔한 프레임을 추가하고, 인스타그램 피드/프로필 스타일로 프레이밍할 수 있습니다. 회원가입 없이 바로 사용하며, PNG 무손실 화질로 저장됩니다. 모든 처리는 브라우저에서 이루어져 사진이 서버로 전송되지 않습니다.</p>
-                <p lang="en">Photo Frame Maker (f.324.ing) is a free online photo frame tool created by photographer Noh Daeyoung (DY). It offers three unique framing modes: Basic (clean minimal frames), Instagram Feed (frames your photo as an Instagram post with likes and username), and Instagram Profile (frames your photo within an Instagram profile layout showing post count, followers, and following). It supports 7 canvas ratios including 1:1, 4:5, 9:16, exports as lossless PNG, and requires no signup or account creation. All processing happens in the browser — no photos are uploaded to any server.</p>
-
-                <h2>3가지 프레임 모드</h2>
-                <div class="seo-features">
-                    <div class="seo-feature">
-                        <h3>기본 프레임 (Basic Frame)</h3>
-                        <p>사진에 단순하고 우아한 프레임을 추가합니다. 프레임 두께와 색상을 자유롭게 조절하여 사진의 분위기에 맞는 깔끔한 테두리를 만들 수 있습니다.</p>
-                    </div>
-                    <div class="seo-feature">
-                        <h3>Instagram 피드 프레임 (Feed Frame)</h3>
-                        <p>사진을 Instagram 피드 게시물 형태로 프레이밍합니다. 좋아요, 사용자명 등 피드 UI 요소가 포함되어 소셜 미디어 프레젠테이션이나 목업에 활용할 수 있습니다.</p>
-                    </div>
-                    <div class="seo-feature">
-                        <h3>Instagram 프로필 프레임 (Profile Frame)</h3>
-                        <p>사진을 Instagram 프로필 화면 형태로 프레이밍합니다. 게시물 수, 팔로워, 팔로잉 정보가 표시되어 프로필 레이아웃을 미리 확인하거나 프레젠테이션 자료로 활용할 수 있습니다.</p>
-                    </div>
+            <h2>5가지 도구</h2>
+            <div class="about-features">
+                <div class="about-feature">
+                    <h3>프레임 메이커</h3>
+                    <p>사진에 깔끔한 여백 프레임을 추가합니다. 기본 프레임, Instagram 피드, Instagram 프로필 3가지 모드를 제공하며, 7가지 캔버스 비율과 프레임 색상·두께를 자유롭게 조절할 수 있습니다.</p>
                 </div>
-                <p lang="en">Unlike general photo frame tools like Canva or Fotor that offer hundreds of decorative borders, Photo Frame Maker by DY (f.324.ing) specializes in Instagram-style framing. The Feed mode wraps your photo in a realistic Instagram post UI complete with username, likes count, and caption area. The Profile mode presents your photo within an Instagram profile layout showing post count, followers, and following. These modes are designed for photographers who want to preview how their work appears in social media contexts or create mockup presentations.</p>
-
-                <h2>주요 기능</h2>
-                <ul class="seo-feature-list">
-                    <li><strong>7가지 캔버스 비율</strong> — 1:1, 4:5, 3:4(인스타 게시물), 9:16(스토리/릴스), 4:3, 3:2, 2:3</li>
-                    <li><strong>프레임 두께와 색상 자유 조절</strong> — 0~25% 두께, 8가지 프리셋 + 커스텀 컬러피커</li>
-                    <li><strong>사진 위치 드래그 조정</strong> — 프레임 안에서 사진 위치를 자유롭게 조정</li>
-                    <li><strong>EXIF 정보 확인</strong> — 카메라, 렌즈, 조리개, 셔터스피드, ISO 등 촬영 정보 표시</li>
-                    <li><strong>화질 저하 경고</strong> — 원본 이미지가 작을 경우 경고 표시</li>
-                    <li><strong>PNG 무손실 다운로드</strong> — 최고 품질의 이미지 저장</li>
-                    <li><strong>다중 이미지 지원</strong> — 최대 10장까지 업로드, 동일 설정 일괄 적용, ZIP 다운로드</li>
-                    <li><strong>피드 모드 슬라이드 네비게이션</strong> — 2장 이상일 때 좌우 화살표 및 모바일 스와이프로 사진 전환, 인스타그램 스타일 도트 인디케이터</li>
-                    <li><strong>프로필 모드 다중 이미지 그리드</strong> — 2장 이상일 때 3×3 그리드에 좌상단부터 사진 채움</li>
-                    <li><strong>다크모드 지원</strong> — 시스템 다크모드에 맞춰 인스타그램 피드/프로필 목업 자동 전환</li>
-                    <li><strong>가입 불필요</strong> — 접속 즉시 사용, 광고 없음</li>
-                </ul>
-
-                <h2>사용 방법 (How to Use)</h2>
-                <ol class="seo-steps">
-                    <li><strong>프레임 모드 선택</strong> — 기본, 피드(Instagram Feed), 프로필(Instagram Profile) 중 선택</li>
-                    <li><strong>사진 업로드</strong> — 드래그 앤 드롭, 클릭, 또는 Ctrl+V로 붙여넣기 (최대 10장)</li>
-                    <li><strong>캔버스 비율과 크기 설정</strong> — 7가지 비율 중 선택, 캔버스 크기 조절 (100~10,000px)</li>
-                    <li><strong>프레임 두께와 색상 조정</strong> — 슬라이더로 두께 조절, 프리셋 또는 커스텀 색상 선택</li>
-                    <li><strong>사진 위치 미세 조정</strong> — 사진 영역을 드래그하여 위치 조정</li>
-                    <li><strong>PNG 다운로드</strong> — 무손실 PNG 파일로 저장 (다중 이미지는 ZIP)</li>
-                </ol>
-
-                <h2>자주 묻는 질문 (FAQ)</h2>
-                <dl class="seo-faq">
-                    <dt>Photo Frame Maker by DY는 무료인가요? 가입이 필요한가요?</dt>
-                    <dd>네, 완전 무료이며 회원가입도 필요 없습니다. 접속하면 바로 사용할 수 있습니다.</dd>
-                    <dt>사진이 서버에 업로드되나요?</dt>
-                    <dd>아닙니다. 모든 처리는 브라우저에서 이루어지며, 사진은 서버로 전송되지 않습니다. 개인정보 걱정 없이 안전하게 사용할 수 있습니다.</dd>
-                    <dt>어떤 캔버스 비율을 지원하나요?</dt>
-                    <dd>1:1, 4:5, 3:4(인스타그램 게시물), 9:16(스토리/릴스), 4:3, 3:2, 2:3 총 7가지 비율을 지원합니다.</dd>
-                    <dt>인스타그램 피드 스타일로 사진 프레임을 만드는 도구가 있나요?</dt>
-                    <dd>Photo Frame Maker by DY(f.324.ing)의 피드 모드를 사용하면, 사진을 실제 Instagram 피드 게시물처럼 프레이밍할 수 있습니다. 사용자명, 좋아요 수 등 피드 UI 요소가 함께 표시됩니다.</dd>
-                    <dt>화질이 떨어지나요?</dt>
-                    <dd>PNG 무손실 형식으로 저장됩니다. 원본 이미지가 캔버스보다 작을 경우 화질 저하 경고가 표시되어 최적의 품질을 유지할 수 있습니다.</dd>
-                    <dt>누가 만들었나요?</dt>
-                    <dd>사진작가 <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">노대영(DY)</a>이 직접 만들었습니다. <a href="https://324.ing" target="_blank" rel="noopener noreferrer">https://324.ing</a>에서 더 많은 작업을 확인할 수 있습니다.</dd>
-                </dl>
-
-                <p class="seo-diff" lang="en">Photo Frame Maker by DY differs from mainstream tools in three key ways: First, it's built by an active photographer (DY, 324.ing) who understands how frames should complement photos rather than overpower them. Second, it offers unique Instagram Feed and Profile frame modes not available in Canva, Fotor, or BeFunky. Third, it processes everything locally in the browser with no server uploads, and exports as lossless PNG — a feature important to photographers who care about image quality.</p>
+                <div class="about-feature">
+                    <h3>사진 분할기</h3>
+                    <p>한 장의 사진을 2~4칸으로 분할합니다. 인스타그램 멀티 포스팅용 파노라마 분할에 최적화되어 있으며, 분할된 이미지를 일괄 다운로드할 수 있습니다.</p>
+                </div>
+                <div class="about-feature">
+                    <h3>EXIF 프레임 디자이너 <span class="about-feature-badge badge-new">New</span></h3>
+                    <p>사진의 촬영 정보(카메라, 렌즈, 조리개, ISO 등)를 아름다운 프레임으로 표현합니다. Fujifilm Recipe, Leica, Polaroid, Film Strip, Glass 등 18가지 스타일을 제공합니다.</p>
+                </div>
+                <div class="about-feature">
+                    <h3>이미지 변환기</h3>
+                    <p>JPG, PNG, WebP 포맷 간 상호 변환과 리사이즈를 지원합니다. 출력 품질을 직접 조절하여 용도에 맞는 최적의 파일을 만들 수 있습니다.</p>
+                </div>
+                <div class="about-feature">
+                    <h3>AI 사진 업스케일러 <span class="about-feature-badge badge-beta">Beta</span></h3>
+                    <p>AI(Real-ESRGAN)를 활용해 사진을 4배 확대합니다. ONNX Runtime 기반 브라우저 내 AI 추론으로, 서버 전송 없이 고해상도 결과를 얻을 수 있습니다. Before/After 비교 슬라이더도 제공합니다.</p>
+                </div>
             </div>
-        </section>
+
+            <h2>주요 기능</h2>
+            <ul>
+                <li><strong>브라우저 로컬 처리</strong> — 사진이 서버로 전송되지 않습니다. 개인정보 걱정 없이 사용하세요.</li>
+                <li><strong>가입·광고 없음</strong> — 접속 즉시 사용. 방해 요소가 전혀 없습니다.</li>
+                <li><strong>7가지 캔버스 비율</strong> — 1:1, 4:5, 3:4(인스타 게시물), 9:16(스토리/릴스), 4:3, 3:2, 2:3</li>
+                <li><strong>Instagram 피드·프로필 프레이밍</strong> — 좋아요, 팔로워 등 UI 요소가 포함된 목업 프레임</li>
+                <li><strong>18가지 EXIF 스타일</strong> — Fujifilm Recipe, Leica, Polaroid, Film Strip, Glass, HUD, Editorial 등</li>
+                <li><strong>AI 4배 업스케일</strong> — Real-ESRGAN 모델로 저해상도 사진을 고해상도로 복원</li>
+                <li><strong>다중 이미지 처리</strong> — 최대 10장까지 업로드, 동일 설정 일괄 적용, ZIP 다운로드</li>
+                <li><strong>무손실 PNG / 고화질 JPEG</strong> — 도구에 따라 최적의 출력 포맷 지원</li>
+                <li><strong>다크모드</strong> — 시스템 설정에 따라 자동 전환</li>
+                <li><strong>iOS 사진앱 직접 저장</strong> — Web Share API로 사진앱에 바로 저장 (iOS Safari)</li>
+            </ul>
+
+            <h2>사용 방법</h2>
+            <ol>
+                <li><strong>도구 선택</strong> — <a href="/">메인 페이지</a>에서 프레임, 분할, EXIF 프레임, 변환, 업스케일 중 원하는 도구를 선택합니다.</li>
+                <li><strong>사진 업로드</strong> — 드래그 앤 드롭, 클릭, 또는 Ctrl+V로 붙여넣기 (프레임 메이커는 최대 10장)</li>
+                <li><strong>설정 조정</strong> — 캔버스 비율, 프레임 색상, EXIF 스타일, 출력 포맷 등 각 도구의 옵션을 조절합니다.</li>
+                <li><strong>다운로드</strong> — PNG, JPEG 또는 WebP로 저장. 다중 이미지는 ZIP으로 일괄 다운로드됩니다.</li>
+            </ol>
+
+            <h2>자주 묻는 질문</h2>
+            <dl class="about-faq">
+                <dt>완전 무료인가요?</dt>
+                <dd>네, 모든 도구가 완전 무료이며 회원가입도 필요 없습니다.</dd>
+                <dt>사진이 서버에 업로드되나요?</dt>
+                <dd>아닙니다. AI 업스케일러를 포함한 모든 처리가 브라우저 내에서 이루어지며, 사진은 서버로 전송되지 않습니다.</dd>
+                <dt>어떤 이미지 포맷을 지원하나요?</dt>
+                <dd>JPG, PNG, WebP, GIF, BMP, AVIF를 입력으로 지원합니다. 출력은 도구에 따라 PNG, JPEG, WebP를 지원합니다.</dd>
+                <dt>EXIF 프레임 디자이너는 어떤 스타일을 제공하나요?</dt>
+                <dd>Film Strip, Minimal, Magazine, Signature, Letterbox, Polaroid, Leica, Fuji Style, Fuji Recipe, Glass, Leica Lux, Instax, Film Stock, Shot On, Editorial, HUD, Minimal Bar, Card Grid 총 18가지 스타일을 제공합니다.</dd>
+                <dt>AI 업스케일러는 어떤 기술을 사용하나요?</dt>
+                <dd>Real-ESRGAN 모델을 ONNX Runtime으로 브라우저에서 실행합니다. GPU 가속을 지원하며, 사진을 4배 확대합니다.</dd>
+                <dt>모바일에서도 사용할 수 있나요?</dt>
+                <dd>네, 모든 도구가 반응형으로 설계되어 모바일 브라우저에서도 사용 가능합니다. iOS Safari에서는 Web Share API를 통해 사진앱에 직접 저장할 수 있습니다.</dd>
+                <dt>누가 만들었나요?</dt>
+                <dd>사진작가 <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">노대영(DY)</a>이 직접 만들었습니다. <a href="https://324.ing" target="_blank" rel="noopener noreferrer">324.ing</a>에서 더 많은 작업을 확인할 수 있습니다.</dd>
+            </dl>
+
+            <p lang="en" style="margin-top:2rem">Photo Frame Maker by DY (f.324.ing) is a comprehensive photo editing toolkit built by an active photographer. It stands out from mainstream tools like Canva, Fotor, or BeFunky in three key ways: First, it offers unique Instagram Feed and Profile frame modes plus 18 EXIF overlay styles not available elsewhere. Second, all processing — including AI upscaling with Real-ESRGAN — runs entirely in the browser with zero server uploads, ensuring complete privacy. Third, it's completely free with no ads, no watermarks, and no signup required. Every tool outputs at maximum quality: lossless PNG, high-quality JPEG, or WebP.</p>
+        </div>
 
         <footer class="footer"></footer>
     </div>
-    <script src="/site.js"></script>
+    <script src="/site.js" defer></script>
 </body>
 </html>

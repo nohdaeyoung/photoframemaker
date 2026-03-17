@@ -1,0 +1,120 @@
+/* nav.css — top-nav 전용 스타일 (newexif 등 외부 앱에서 사용) */
+
+:root {
+    --bg: #f6f4f0;
+    --surface: #ffffff;
+    --surface-2: #f0ede8;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --border: #e2dfd9;
+    --border-light: #d6d3cc;
+    --accent: #a87a52;
+    --accent-subtle: rgba(168, 122, 82, 0.06);
+}
+
+.top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1000;
+}
+.top-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--text);
+}
+.top-nav-logo-text {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.top-nav-links {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+}
+.top-nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 1.05rem;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.2s;
+}
+.top-nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 1.5px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.2s;
+}
+.top-nav-link:hover { color: var(--text); }
+.top-nav-link:hover::after { transform: scaleX(1); }
+.top-nav-link.active { color: var(--text); }
+.top-nav-link.active::after { transform: scaleX(1); }
+
+.top-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.top-nav-hamburger {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.top-nav-hamburger svg { width: 20px; height: 20px; }
+.top-nav-hamburger:hover { background: var(--surface); }
+
+.top-nav-mobile-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 0;
+    z-index: 100;
+    flex-direction: column;
+}
+.top-nav-mobile-menu.open { display: flex; }
+.top-nav-mobile-link {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+.top-nav-mobile-link:hover { background: var(--surface); color: var(--text); }
+.top-nav-mobile-link.active { color: var(--text); }
+
+@media (max-width: 600px) {
+    .top-nav-links { display: none; }
+    .top-nav-hamburger { display: flex; }
+}

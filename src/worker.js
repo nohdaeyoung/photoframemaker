@@ -395,14 +395,6 @@ function renderLayout(title, description, content, settings, extra = {}) {
     <link rel="stylesheet" href="/style.css">
     <style>
         .blog-page { min-height: 100dvh; display: flex; flex-direction: column; }
-        .blog-header { text-align: center; padding: 2rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
-        .blog-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
-        .blog-header h1 a { color: var(--text); text-decoration: none; }
-        .blog-header h1 a:hover { color: var(--accent); }
-        .blog-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
-        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; flex-wrap: wrap; }
-        .blog-header nav a { color: var(--text-secondary); text-decoration: none; }
-        .blog-header nav a:hover, .blog-header nav a.active { color: var(--accent); }
         .blog-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; width: 100%; }
         .blog-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 1.5rem; margin-bottom: 1.5rem; transition: box-shadow 0.2s; }
         .blog-card:hover { box-shadow: var(--shadow-lg); }
@@ -442,17 +434,29 @@ function renderLayout(title, description, content, settings, extra = {}) {
     ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
 </head>
 <body>
-    <div class="blog-page">
-        <div class="blog-header">
-            <h1><a href="/">${escapeHtml(settings.site_title || 'Photo Frame Maker')}</a></h1>
-            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">${escapeHtml(settings.site_author || 'DY')}</a></p>
-            <nav>
-                <a href="/">사진 프레임 만들기</a>
-                <a href="/blog/" class="${extra.navActive === 'blog' ? 'active' : ''}">블로그</a>
-                <a href="/about.html">소개</a>
-                <a href="/devnote.html">Dev Note</a>
-            </nav>
+    <nav class="top-nav" id="top-nav">
+        <a class="top-nav-logo" href="/"><span class="top-nav-logo-text">${escapeHtml(settings.site_title || 'Photo Frame Maker')}</span></a>
+        <ul class="top-nav-links">
+            <li><a href="/featured/" class="top-nav-link">Featured</a></li>
+            <li><a href="/" class="top-nav-link">Tools</a></li>
+            <li><a href="/blog/" class="top-nav-link active">Blog</a></li>
+            <li><a href="/devnote.html" class="top-nav-link">DevNote</a></li>
+            <li><a href="/about.html" class="top-nav-link">About</a></li>
+        </ul>
+        <div class="top-nav-actions">
+            <button class="top-nav-hamburger" id="nav-hamburger" type="button" aria-label="메뉴 열기" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
         </div>
+        <div class="top-nav-mobile-menu" id="nav-mobile-menu">
+            <a href="/featured/" class="top-nav-mobile-link">Featured</a>
+            <a href="/" class="top-nav-mobile-link">Tools</a>
+            <a href="/blog/" class="top-nav-mobile-link active">Blog</a>
+            <a href="/devnote.html" class="top-nav-mobile-link">DevNote</a>
+            <a href="/about.html" class="top-nav-mobile-link">About</a>
+        </div>
+    </nav>
+    <div class="blog-page">
         <div class="blog-container">
             ${content}
         </div>
@@ -460,6 +464,15 @@ function renderLayout(title, description, content, settings, extra = {}) {
             <p>&copy; 2026 <a href="https://324.ing" target="_blank" rel="noopener noreferrer">324.ing</a> &middot; Built by photographer <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer">DY</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/about.html">About</a> &middot; <a href="/devnote.html">Dev Note</a></p>
         </footer>
     </div>
+    <script>
+    (function(){
+        var h=document.getElementById('nav-hamburger'),m=document.getElementById('nav-mobile-menu');
+        if(h&&m){
+            h.addEventListener('click',function(){var o=m.classList.toggle('open');h.setAttribute('aria-expanded',o);});
+            document.addEventListener('click',function(e){if(!h.contains(e.target)&&!m.contains(e.target)){m.classList.remove('open');h.setAttribute('aria-expanded','false');}});
+        }
+    })();
+    </script>
 </body>
 </html>`;
 }

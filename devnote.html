@@ -14,48 +14,233 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
     <style>
-        .blog-page { min-height: 100dvh; display: flex; flex-direction: column; }
-        .blog-header { text-align: center; padding: 2rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
-        .blog-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
-        .blog-header h1 a { color: var(--text); text-decoration: none; }
-        .blog-header h1 a:hover { color: var(--accent); }
-        .blog-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
-        .blog-header nav { margin-top: 0.75rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; flex-wrap: wrap; }
-        .blog-header nav a { color: var(--text-secondary); text-decoration: none; }
-        .blog-header nav a:hover, .blog-header nav a.active { color: var(--accent); }
-        .blog-container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; width: 100%; }
-        .devnote-back { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
-        .devnote-back:hover { text-decoration: underline; }
-        .devnote-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .devnote-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
-        .devnote-date { font-size: 1.2rem; font-weight: 700; margin: 2rem 0 0.75rem; color: var(--accent); }
-        .devnote-section { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.4rem; }
-        hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
-        ul { padding-left: 1.25rem; margin-bottom: 0.5rem; }
-        li { margin-bottom: 0.25rem; font-size: 0.95rem; line-height: 1.6; }
-        code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 0.88rem; font-family: 'Fira Code', monospace; border: 1px solid var(--border); }
-        strong { font-weight: 600; }
+        .devnote-page {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+        .devnote-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2rem 2rem 3rem;
+            flex: 1;
+            width: 100%;
+        }
+        .devnote-hero {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .devnote-hero h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 0.5rem;
+        }
+        .devnote-hero p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .devnote-date-header {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 2.5rem 0 1rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+        }
+        .devnote-date-header:first-of-type {
+            margin-top: 0;
+        }
+        .devnote-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 1.5rem 0 0.5rem;
+        }
+        .devnote-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1rem;
+        }
+        .devnote-content ul li {
+            position: relative;
+            padding: 0.4rem 0 0.4rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+        .devnote-content ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.75rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        .devnote-content ul li strong {
+            color: var(--text);
+        }
+        .devnote-content code {
+            background: var(--surface);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: 'Fira Code', 'SF Mono', monospace;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .devnote-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+        .devnote-content a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .devnote-content a:hover {
+            text-decoration: underline;
+        }
     </style>
+    <script>
+        (function() {
+            var stored = localStorage.getItem('pfm-theme');
+            if (stored === 'dark' || stored === 'light') {
+                document.documentElement.setAttribute('data-theme', stored);
+            }
+        })();
+    </script>
 </head>
 <body>
-    <div class="blog-page">
-        <div class="blog-header">
-            <h1><a href="/">Photo Frame Maker</a></h1>
-            <p>by <a href="https://www.instagram.com/dyno/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">DY</a></p>
-            <nav>
-                <a href="/">사진 프레임 만들기</a>
-                <a href="/blog/">블로그</a>
-                <a href="/about.html">소개</a>
-                <a href="/devnote.html" class="active">Dev Note</a>
-            </nav>
-        </div>
-        <div class="blog-container">
-            <h1 class="devnote-title">Dev Note</h1>
-            <p class="devnote-subtitle">Claude Code를 활용한 개발 과정 기록 — 사진작가 DY가 직접 만드는 사진 프레임 도구</p>
+    <div id="site-nav"></div>
+    <div class="devnote-page">
+        <div class="devnote-content">
+            <div class="devnote-hero">
+                <h1>Dev Note</h1>
+                <p>Claude Code를 활용한 개발 과정 기록 — 사진작가 DY가 직접 만드는 사진 프레임 도구</p>
+            </div>
 
-            <h2 class="devnote-date">2026-03-13</h2>
+            <h2 class="devnote-date-header">2026-03-17</h2>
 
-            <h3 class="devnote-section">블로그 시스템 구축</h3>
+            <h3 class="devnote-section-title">빌드 시스템 전환 (build.js)</h3>
+            <ul>
+                <li><code>package.json</code> 빌드 스크립트를 긴 <code>cp</code> 체인에서 <code>node build.js</code>로 전환</li>
+                <li>CSS 미니파이: PostCSS + cssnano (<code>style.css</code> -32%, <code>nav.css</code> -25%)</li>
+                <li>JS 미니파이: terser (<code>app.js</code> -45%, <code>site.js</code> -44%), <code>js/</code> 하위 모듈 재귀 미니파이</li>
+                <li>HTML, admin, images(&lt;1MB), 서브디렉토리(newexif, upscale, featured) 자동 복사</li>
+                <li><code>execFileSync</code> 사용으로 shell injection 방지 (보안 강화)</li>
+            </ul>
+
+            <h3 class="devnote-section-title">사이트 속도 최적화</h3>
+            <ul>
+                <li>Google Fonts 비렌더블로킹 로딩: <code>media="print" onload="this.media='all'"</code> + <code>&lt;link rel="preload"&gt;</code></li>
+                <li>모든 HTML 파일 <code>&lt;script src="/site.js" defer&gt;</code> 적용 (파서 블로킹 제거)</li>
+                <li>grain 텍스처 오버레이 GPU 컴포지팅: <code>will-change: transform; transform: translateZ(0)</code></li>
+                <li>정적 에셋 30일 캐시: <code>Cache-Control: public, max-age=2592000, stale-while-revalidate=86400</code></li>
+            </ul>
+
+            <h3 class="devnote-section-title">Vercel 설정 이슈 해결</h3>
+            <ul>
+                <li><code>cleanUrls: true</code> 추가 시 404 발생 — legacy <code>routes</code>와 modern <code>cleanUrls</code> 혼용 불가 확인</li>
+                <li>modern <code>rewrites</code> 전환 시도 → <code>/blog/</code> Workers 프록시 깨짐 (filesystem이 먼저 처리)</li>
+                <li>최종 해결: legacy <code>routes</code> 유지, <code>cleanUrls</code> 제거, 캐시 헤더 룰을 <code>{ "handle": "filesystem" }</code> 직전에 배치</li>
+            </ul>
+
+            <h3 class="devnote-section-title">tools.html 업데이트</h3>
+            <ul>
+                <li>AI 사진 업스케일러 카드 추가 (5번째, Beta 배지)</li>
+                <li>EXIF 프레임 디자이너에 "New" 배지 추가</li>
+                <li>JSON-LD 구조화 데이터 포지션 업데이트: Frame(1), Split(2), EXIF(3), Convert(4), Upscaler(5)</li>
+            </ul>
+
+            <h3 class="devnote-section-title">빌드 스크립트 버그 수정</h3>
+            <ul>
+                <li><code>/featured/</code> 빈 페이지 — <code>build.js</code>의 <code>cpDirs</code> 배열에서 <code>'featured'</code> 누락 → 추가</li>
+                <li>빌드 후 <code>ls www/</code>로 출력물 검증하는 습관 필요 (반복 이슈 방지)</li>
+            </ul>
+
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-03-16</h2>
+
+            <h3 class="devnote-section-title">EXIF 프레임 모드 신규 구현</h3>
+            <ul>
+                <li><code>exif.html</code> — EXIF 프레임 전용 페이지 신규 추가</li>
+                <li><code>js/modes/exif-mode.js</code> — <code>AppBase</code> 상속 <code>ExifApp</code> 클래스, 18개 EXIF 스타일 렌더링</li>
+                <li><code>js/overlays/exif-overlays.js</code> — filmstrip, minimal, magazine, signature, letterbox, polaroid, leica, fujistyle, fujirecipe, glass, leicalux, instax, filmstock, shoton, editorial, hud, minimalbar, cardgrid 오버레이 구현</li>
+                <li>스타일별 전용 옵션: 필름 브랜드, 폰트, Glass 테마/위치, HUD 액센트, CardGrid 레이아웃</li>
+            </ul>
+
+            <h3 class="devnote-section-title">EXIF 프레임 캔버스 비율 처리</h3>
+            <ul>
+                <li>각 스타일이 자체 확장 치수만 사용 — 사진 원본 비율을 강제로 맞추는 여백 제거</li>
+                <li>filmstrip/letterbox/hud/fujistyle → 상하에만 바 추가, magazine → 좌측 바, signature/leica 등 → 하단 바</li>
+                <li>instax/editorial → 사방 여백+바 구조 유지, 스타일 외 영역에 불필요한 패딩 없음</li>
+            </ul>
+
+            <h3 class="devnote-section-title">프레임 기능 제거 (EXIF 모드 전용)</h3>
+            <ul>
+                <li><code>ExifApp.getFrameWidth()</code> 오버라이드 → 항상 0 반환 (프레임 두께 없음)</li>
+                <li>프레임 비율, 프레임 색상 UI 섹션 <code>display:none</code>으로 숨김</li>
+                <li>AppBase가 요구하는 stub 엘리먼트 전체 <code>display:none</code> 처리 (다운로드 버튼 위 불필요한 인풋 제거)</li>
+            </ul>
+
+            <h3 class="devnote-section-title">다운로드 버그 수정</h3>
+            <ul>
+                <li><code>downloadExifFrame()</code>에서 존재하지 않는 <code>app.drawExifOverlay()</code> 호출 → <code>app._drawExifOverlay()</code>로 수정</li>
+                <li>다운로드 시에도 renderMode()와 동일한 오버레이 치수 로직 적용, 올바른 원본 해상도 출력</li>
+            </ul>
+
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-03-15</h2>
+
+            <h3 class="devnote-section-title">Featured 랜딩 페이지 제작</h3>
+            <ul>
+                <li>React 19 + Vite + TypeScript + Tailwind CSS v4 + Framer Motion 기반 랜딩 페이지 신규 제작</li>
+                <li>Hero, Modes, Steps, Colors, EXIF, Preview, FAQ, CTA 총 8개 섹션 구성</li>
+                <li>스크롤 트리거 애니메이션 (fade-up, scale, stagger) 적용</li>
+                <li>히어로 이미지에 실제 촬영 사진(야자수) 적용, EXIF 메타데이터(35mm · f/4.0 · 1/2500s · ISO 400) 실제 값 표시</li>
+                <li>반응형 레이아웃: 데스크톱/모바일 최적화 (Steps 섹션 가로↔세로 전환 등)</li>
+            </ul>
+
+            <h3 class="devnote-section-title">SEO 최적화</h3>
+            <ul>
+                <li>Open Graph, Twitter Card 메타태그 추가</li>
+                <li>JSON-LD 구조화 데이터 (WebApplication 스키마)</li>
+                <li>Canonical URL, robots, keywords, author, theme-color 설정</li>
+                <li>기존 photoframemaker 파비콘 활용 (SVG 대신 ICO/PNG)</li>
+            </ul>
+
+            <h3 class="devnote-section-title">네비게이션 통합</h3>
+            <ul>
+                <li>전체 사이트 네비게이션 순서 통일: Featured → Tools → Blog → Dev Note → About</li>
+                <li>Featured 랜딩 Navbar, <code>site.js</code>, <code>worker.js</code> SSR 3곳 동기화</li>
+            </ul>
+
+            <h3 class="devnote-section-title">듀얼 배포 구성</h3>
+            <ul>
+                <li>Vite <code>base: '/featured/'</code> 설정으로 서브디렉토리 배포 대응</li>
+                <li>빌드 결과물을 <code>www/featured/</code>(Cloudflare Workers)와 <code>featured/</code>(Vercel) 양쪽에 복사</li>
+                <li><code>f.324.ing/featured/</code> 경로로 Vercel + Cloudflare Workers 동시 서빙</li>
+            </ul>
+
+            <h3 class="devnote-section-title">PDCA 품질 관리</h3>
+            <ul>
+                <li>Plan → Design → Do → Check(Gap Analysis) → Act 전 과정 수행</li>
+                <li>초기 Gap Analysis 89% → 애니메이션 3건 보완 후 95%+ 달성</li>
+            </ul>
+
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-03-13</h2>
+
+            <h3 class="devnote-section-title">블로그 시스템 구축</h3>
             <ul>
                 <li>Cloudflare Workers (Hono) + D1 SQLite + R2 기반 블로그 시스템 구축</li>
                 <li>SSR 블로그 목록/상세 페이지 (<code>/blog/</code>, <code>/blog/:slug/</code>)</li>
@@ -65,60 +250,58 @@
                 <li>어드민 대시보드, 글 목록, 사이트 설정 페이지 구현</li>
             </ul>
 
-            <h3 class="devnote-section">호스팅 아키텍처</h3>
+            <h3 class="devnote-section-title">호스팅 아키텍처</h3>
             <ul>
                 <li><strong>Vercel</strong>: 메인 사이트 정적 파일 서빙 (<code>f.324.ing</code>)</li>
                 <li><strong>Cloudflare Workers</strong>: 블로그/API/어드민 (<code>photoframemaker.dynoworld.workers.dev</code>)</li>
                 <li>Vercel <code>vercel.json</code> rewrites로 <code>/blog/*</code>, <code>/api/*</code>, <code>/admin/*</code>를 Workers로 프록시</li>
-                <li>정적 파일(파비콘, OG 이미지)은 Vercel 프로젝트 루트에 위치해야 서빙됨 — <code>www/</code>는 Cloudflare용</li>
+                <li>정적 파일(파비콘, OG 이미지)은 Vercel 프로젝트 루트에 위치해야 서빙됨</li>
             </ul>
 
-            <h3 class="devnote-section">파비콘 / OG 이미지 적용</h3>
+            <h3 class="devnote-section-title">파비콘 / OG 이미지 적용</h3>
             <ul>
                 <li><code>images/</code> 폴더의 favicon.ico, favicon_*.png, og-image.png를 프로젝트 루트에 복사 후 Vercel 배포</li>
                 <li>어드민 사이트 설정에서 파비콘·OG 이미지를 R2에 업로드하고 적용하는 기능 추가</li>
-                <li>블로그 SSR 페이지에 파비콘 link 태그 자동 삽입 (<code>settings.favicon_url</code> 또는 정적 fallback)</li>
+                <li>블로그 SSR 페이지에 파비콘 link 태그 자동 삽입</li>
             </ul>
 
-            <h3 class="devnote-section">블로그 SEO 개선</h3>
+            <h3 class="devnote-section-title">블로그 SEO 개선</h3>
             <ul>
                 <li><code>og:type</code> 'blog' → 유효한 값 'website'/'article'로 수정</li>
                 <li><code>og:image</code> 상대 URL → 절대 URL 자동 변환 (소셜 크롤러 호환)</li>
                 <li>이미지 없을 때 <code>og:image</code> 태그 자체 생략 (빈 content 방지)</li>
                 <li>Twitter 카드 완성: <code>twitter:title</code>, <code>twitter:description</code>, <code>twitter:image</code> 추가</li>
                 <li><code>og:locale: ko_KR</code>, <code>og:site_name</code> 추가</li>
-                <li><code>settings.site_keywords</code>로 <code>meta keywords</code> 자동 출력</li>
                 <li>JSON-LD BlogPosting: 이미지 절대 URL 변환, <code>dateModified</code> null 폴백 처리</li>
-                <li>사이트맵 <code>lastmod</code> 형식 W3C Datetime 표준으로 수정 (<code>2026-03-13T10:30:00Z</code>)</li>
-                <li>사이트맵 <code>/about/</code> → <code>/about.html</code> 수정</li>
+                <li>사이트맵 <code>lastmod</code> 형식 W3C Datetime 표준으로 수정</li>
             </ul>
 
-            <h3 class="devnote-section">어드민 에디터 개선</h3>
+            <h3 class="devnote-section-title">어드민 에디터 개선</h3>
             <ul>
                 <li>글 수정 시 ID로 직접 조회하는 <code>GET /api/admin/posts/:id</code> 라우트 추가</li>
                 <li>기존 목록 API 검색 방식(10개 제한으로 누락 가능) → ID 직접 조회로 수정</li>
                 <li>HTML 소스 직접 편집 모드 추가 (WYSIWYG ↔ HTML 토글)</li>
             </ul>
 
-            <h3 class="devnote-section">블로그 기타 버그 수정</h3>
+            <h3 class="devnote-section-title">블로그 기타 버그 수정</h3>
             <ul>
                 <li>블로그 nav <code>/about/</code> → <code>/about.html</code> (Vercel 정적 파일 경로 맞춤)</li>
                 <li>블로그 헤더/타이틀이 어드민 설정값 반영하도록 수정 (하드코딩 제거)</li>
                 <li>어드민 비밀번호: Cloudflare Workers 시크릿 <code>ADMIN_PASSWORD_HASH</code>로 관리</li>
             </ul>
 
-            <hr>
-            <h2 class="devnote-date">2026-03-02</h2>
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-03-02</h2>
 
-            <h3 class="devnote-section">iOS Safari 다운로드 개선 (Web Share API)</h3>
+            <h3 class="devnote-section-title">iOS Safari 다운로드 개선 (Web Share API)</h3>
             <ul>
-                <li>iOS Safari 웹 브라우저에서 저장 시 <code>navigator.share()</code> 사용하여 공유 시트 표시</li>
+                <li>iOS Safari에서 저장 시 <code>navigator.share()</code> 사용하여 공유 시트 표시</li>
                 <li>기존 <code>&lt;a download&gt;</code> 방식은 파일앱으로만 저장되던 문제 해결</li>
                 <li>공유 시트에서 "사진에 저장" 선택 시 사진앱에 직접 저장 가능</li>
                 <li>유저 취소(AbortError) 시 조용히 종료, 미지원 환경에서는 기존 방식 폴백</li>
             </ul>
 
-            <h3 class="devnote-section">여러 장 일괄 공유 (Batch Share)</h3>
+            <h3 class="devnote-section-title">여러 장 일괄 공유 (Batch Share)</h3>
             <ul>
                 <li><code>tryBatchShare()</code> 메서드 추가: 여러 파일을 한 번의 공유 시트로 처리</li>
                 <li>기존에는 여러 장/분할 다운로드 시 공유 시트가 반복 표시되던 문제 해결</li>
@@ -126,10 +309,10 @@
                 <li>데스크톱은 기존대로 ZIP, Android 네이티브는 갤러리 직접 저장 유지</li>
             </ul>
 
-            <hr>
-            <h2 class="devnote-date">2026-03-01</h2>
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-03-01</h2>
 
-            <h3 class="devnote-section">SEO/GEO 전략 적용</h3>
+            <h3 class="devnote-section-title">SEO/GEO 전략 적용</h3>
             <ul>
                 <li>메타 태그 최적화 (title, description, keywords, canonical URL)</li>
                 <li>Open Graph / Twitter Card 메타태그 추가</li>
@@ -137,59 +320,59 @@
                 <li>한국어/영어 이중 콘텐츠 제공</li>
             </ul>
 
-            <h3 class="devnote-section">애널리틱스/서치콘솔 연동</h3>
+            <h3 class="devnote-section-title">애널리틱스/서치콘솔 연동</h3>
             <ul>
                 <li>Google Tag Manager (GTM-5F5CWSJX) 추가</li>
                 <li>Google Analytics 4 (G-ZE7EBPTLFG) 추가</li>
                 <li>네이버 서치어드바이저 사이트 인증 태그 추가</li>
             </ul>
 
-            <h3 class="devnote-section">이미지 드래그 위치 조정 수정</h3>
+            <h3 class="devnote-section-title">이미지 드래그 위치 조정 수정</h3>
             <ul>
                 <li>이미지 표시 모드를 contain → cover로 변경 (프레임 내 꽉 채움)</li>
                 <li>드래그로 이미지 위치 미세조정 시 offset clamping 적용</li>
             </ul>
 
-            <h3 class="devnote-section">썸네일 스트립 개선</h3>
+            <h3 class="devnote-section-title">썸네일 스트립 개선</h3>
             <ul>
                 <li>썸네일 크기 25% 확대 (52→65px, 모바일 48→60px)</li>
                 <li>썸네일 스트립 가운데 정렬 수정</li>
             </ul>
 
-            <h3 class="devnote-section">인스타그램 다크모드 지원</h3>
+            <h3 class="devnote-section-title">인스타그램 다크모드 지원</h3>
             <ul>
                 <li><code>prefers-color-scheme: dark</code>로 피드/프로필 목업 다크모드 자동 전환</li>
             </ul>
 
-            <h3 class="devnote-section">About 페이지 분리</h3>
+            <h3 class="devnote-section-title">About 페이지 분리</h3>
             <ul>
                 <li>메인 페이지 하단 SEO 콘텐츠를 <code>about.html</code>로 분리</li>
                 <li>Vercel 배포 설정 (<code>vercel.json</code>) 추가</li>
             </ul>
 
-            <h3 class="devnote-section">모바일 썸네일 UX 전면 개편</h3>
+            <h3 class="devnote-section-title">모바일 썸네일 UX 전면 개편</h3>
             <ul>
                 <li>썸네일 목록을 하단 '사진' 탭 패널 안으로 이동, 5열 그리드 레이아웃</li>
                 <li>피드/프로필 모드에서 썸네일이 목업을 가리는 문제 수정</li>
             </ul>
 
-            <hr>
-            <h2 class="devnote-date">2026-02-28</h2>
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-02-28</h2>
 
-            <h3 class="devnote-section">인스타그램 비율 추가</h3>
+            <h3 class="devnote-section-title">인스타그램 비율 추가</h3>
             <ul>
                 <li>4:5 (인스타 게시물), 9:16 (스토리/릴스) 비율 버튼 추가</li>
                 <li>비율 버튼 레이아웃을 그리드로 변경 (데스크톱 4열, 모바일 3열)</li>
             </ul>
 
-            <h3 class="devnote-section">인스타그램 미리보기 모드</h3>
+            <h3 class="devnote-section-title">인스타그램 미리보기 모드</h3>
             <ul>
                 <li><strong>피드 모드</strong>: 인스타 게시물 형태 목업 (프로필 헤더 + 이미지 + 아이콘 + 캡션)</li>
                 <li><strong>프로필 모드</strong>: 인스타 계정 페이지 목업 (프로필 헤더 + 통계 + 3×3 그리드)</li>
                 <li>기본/피드/프로필 3가지 프리뷰 모드 토글</li>
             </ul>
 
-            <h3 class="devnote-section">다중 이미지 처리 구현</h3>
+            <h3 class="devnote-section-title">다중 이미지 처리 구현</h3>
             <ul>
                 <li>최대 10장까지 이미지 업로드 지원</li>
                 <li>이미지 배열 데이터 모델 (<code>images[]</code>, <code>currentIndex</code>)</li>
@@ -197,16 +380,16 @@
                 <li>다중 이미지 ZIP 다운로드 (JSZip)</li>
             </ul>
 
-            <h3 class="devnote-section">Capacitor 프로젝트 셋업</h3>
+            <h3 class="devnote-section-title">Capacitor 프로젝트 셋업</h3>
             <ul>
                 <li>Capacitor 8.1.0 기반 Android 네이티브 앱 구조 추가</li>
                 <li><code>capacitor.config.ts</code> 설정 (appId: com.dy.photoframemaker)</li>
             </ul>
 
-            <hr>
-            <h2 class="devnote-date">2026-02-27</h2>
+            <hr class="devnote-divider">
+            <h2 class="devnote-date-header">2026-02-27</h2>
 
-            <h3 class="devnote-section">프로젝트 초기 구현</h3>
+            <h3 class="devnote-section-title">프로젝트 초기 구현</h3>
             <ul>
                 <li>HTML/CSS/JS 기반 사진 프레임 메이커 웹앱 구현</li>
                 <li>캔버스 비율 선택 (1:1, 3:4, 4:3, 3:2, 2:3)</li>
@@ -214,20 +397,21 @@
                 <li>PNG 무손실 다운로드</li>
             </ul>
 
-            <h3 class="devnote-section">EXIF 메타데이터</h3>
+            <h3 class="devnote-section-title">EXIF 메타데이터</h3>
             <ul>
                 <li>JPEG EXIF 파싱 구현 (카메라, 렌즈, 초점거리, 조리개, 셔터속도, ISO, 촬영일)</li>
                 <li>자체 파서 구현 (외부 라이브러리 없음)</li>
             </ul>
 
-            <h3 class="devnote-section">Cloudflare Workers 배포 설정</h3>
+            <h3 class="devnote-section-title">Cloudflare Workers 배포 설정</h3>
             <ul>
                 <li><code>wrangler.jsonc</code> 설정 추가, Cloudflare 배포 구성</li>
                 <li>Dev Note, Prompt Log 페이지 생성, <code>CLAUDE.md</code> 프로젝트 컨텍스트 문서 추가</li>
             </ul>
         </div>
+
         <footer class="footer"></footer>
     </div>
-    <script src="/site.js"></script>
+    <script src="/site.js" defer></script>
 </body>
 </html>

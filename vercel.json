@@ -1,22 +1,22 @@
 {
-  "buildCommand": null,
-  "outputDirectory": ".",
+  "buildCommand": "npm run build",
+  "outputDirectory": "www",
   "routes": [
-    {
-      "src": "/(.*)",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0"
-      },
-      "continue": true
-    },
+    { "src": "/", "dest": "/tools.html" },
+    { "src": "/exif", "dest": "/exif.html" },
     { "src": "/blog(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/blog$1" },
     { "src": "/api/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/api/$1" },
     { "src": "/admin/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/admin/$1" },
     { "src": "/uploads/(.*)", "dest": "https://photoframemaker.dynoworld.workers.dev/uploads/$1" },
     { "src": "/feed.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/feed.xml" },
     { "src": "/sitemap.xml", "dest": "https://photoframemaker.dynoworld.workers.dev/sitemap.xml" },
+    {
+      "src": "/(.+\\.(css|js|woff2?|ttf|ico|png|jpg|webp|svg|avif|wasm|onnx))$",
+      "headers": {
+        "Cache-Control": "public, max-age=2592000, stale-while-revalidate=86400"
+      },
+      "continue": true
+    },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
